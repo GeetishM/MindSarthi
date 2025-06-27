@@ -122,12 +122,12 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
                       CircleAvatar(
                         radius: 50,
-                        backgroundColor: Colors.blueGrey[400],
+                        backgroundColor: Colors.white,
                         child: Text(
                           _profileInitial ?? 'U',
                           style: const TextStyle(
                             fontSize: 40,
-                            color: Colors.white,
+                            color: Colors.black,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

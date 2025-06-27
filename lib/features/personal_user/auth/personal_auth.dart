@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mindsarthi/features/personal_user/auth/otp_verification.dart';
 import 'package:toastification/toastification.dart';
+import 'otp_verification.dart';
 
 class PersonalAuth extends StatefulWidget {
   const PersonalAuth({super.key});
@@ -13,64 +13,68 @@ class PersonalAuth extends StatefulWidget {
 }
 
 class _PersonalAuthState extends State<PersonalAuth> {
+  final _auth = FirebaseAuth.instance;
   String? _phoneNumber;
   String? _phoneError;
-  final _auth = FirebaseAuth.instance;
 
-  bool get isValid => _phoneNumber != null && _phoneError == null;
+  bool get _isValid => _phoneNumber != null && _phoneError == null;
 
   void _validatePhone(String? value) {
     setState(() {
-      _phoneError =
-          (value == null || value.isEmpty) ? 'Phone number is required' : null;
+      _phoneError = (value == null || value.isEmpty) ? 'Phone number is required' : null;
     });
   }
 
-  void _sendOtp() {
+  Future<void> _sendOtp() async {
     _validatePhone(_phoneNumber);
     if (_phoneError != null) return;
 
-    _auth.verifyPhoneNumber(
-      phoneNumber: _phoneNumber!,
-      verificationCompleted: (cred) async {
-        // Auto-retrieved or instant verification
-        await _auth.signInWithCredential(cred);
-      },
-      verificationFailed: (e) {
-        toastification.show(
-          context: context,
-          type: ToastificationType.error,
-          title: const Text('OTP Error'),
-          description: Text(e.message ?? 'Unknown error'),
-        );
-      },
-      codeSent: (verificationId, resendToken) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (_) => OtpVerificationScreen(
-                  phoneNumber: _phoneNumber!,
-                  verificationId: verificationId,
-                ),
-          ),
-        );
-      },
-      codeAutoRetrievalTimeout: (_) {},
-    );
+    try {
+      await _auth.verifyPhoneNumber(
+        phoneNumber: _phoneNumber!,
+        verificationCompleted: (cred) async {
+          await _auth.signInWithCredential(cred);
+        },
+        verificationFailed: (e) {
+          toastification.show(
+            context: context,
+            type: ToastificationType.error,
+            title: const Text('OTP Error'),
+            description: Text(e.message ?? 'Unknown error'),
+          );
+        },
+        codeSent: (verificationId, resendToken) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OtpVerificationScreen(
+                phoneNumber: _phoneNumber!,
+                verificationId: verificationId,
+              ),
+            ),
+          );
+        },
+        codeAutoRetrievalTimeout: (_) {},
+      );
 
-    toastification.show(
-      context: context,
-      type: ToastificationType.info,
-      title: const Text('OTP Sent'),
-      description: const Text('Please check your SMS inbox.'),
-    );
+      toastification.show(
+        context: context,
+        type: ToastificationType.info,
+        title: const Text('OTP Sent'),
+        description: const Text('Please check your SMS inbox.'),
+      );
+    } catch (e) {
+      toastification.show(
+        context: context,
+        type: ToastificationType.error,
+        title: const Text('Verification Failed'),
+        description: Text(e.toString()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isValid = _phoneNumber != null && _phoneError == null;
-
     return Scaffold(
       backgroundColor: const Color(0xFFEDEDED),
       body: Center(
@@ -84,41 +88,24 @@ class _PersonalAuthState extends State<PersonalAuth> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Top bar
               Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 20,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text(
-                      "Log In or Sign Up",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(width: 20),
-                  ],
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                alignment: Alignment.center,
+                child: const Text(
+                  "Log In or Sign Up",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
               const Divider(thickness: 1),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 20,
-                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Welcome to MindSarthi",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    Center(
+                      child: const Text(
+                        "Welcome to MindSarthi",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(height: 15),
@@ -151,7 +138,7 @@ class _PersonalAuthState extends State<PersonalAuth> {
                           ),
                         ),
                         child: Text(
-                          isValid ? "Continue" : "Enter your phone",
+                          _isValid ? "Continue" : "Enter your phone",
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -160,9 +147,7 @@ class _PersonalAuthState extends State<PersonalAuth> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
                     Row(
                       children: const [
                         Expanded(child: Divider()),
@@ -173,90 +158,17 @@ class _PersonalAuthState extends State<PersonalAuth> {
                         Expanded(child: Divider()),
                       ],
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Google Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                            horizontal: 16,
-                          ),
-                          side: const BorderSide(color: Colors.grey),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: SvgPicture.asset(
-                                'assets/icons/google.svg',
-                                height: 20,
-                              ),
-                            ),
-                            const Center(
-                              child: Text(
-                                "Continue with Google",
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    _buildSocialButton(
+                      icon: SvgPicture.asset('assets/icons/google.svg', height: 20),
+                      text: "Continue with Google",
+                      onPressed: () {},
                     ),
-
                     const SizedBox(height: 10),
-
-                    // Apple Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                            horizontal: 16,
-                          ),
-                          side: const BorderSide(color: Colors.grey),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            const Align(
-                              alignment: Alignment.centerLeft,
-                              child: Icon(
-                                Icons.apple,
-                                color: Colors.black,
-                                size: 25,
-                              ),
-                            ),
-                            const Center(
-                              child: Text(
-                                "Continue with Apple",
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    _buildSocialButton(
+                      icon: const Icon(Icons.apple, color: Colors.black, size: 25),
+                      text: "Continue with Apple",
+                      onPressed: () {},
                     ),
                   ],
                 ),
@@ -268,16 +180,49 @@ class _PersonalAuthState extends State<PersonalAuth> {
     );
   }
 
+  Widget _buildSocialButton({
+    required Widget icon,
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          side: const BorderSide(color: Colors.grey),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Align(alignment: Alignment.centerLeft, child: icon),
+            Center(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   OutlineInputBorder _buildBorder({bool focused = false}) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(
-        color:
-            _phoneError != null
-                ? Colors.red
-                : focused
-                ? (isValid ? Colors.green : const Color(0xFF222222))
-                : (isValid ? Colors.green : const Color(0xFFBDBDBD)),
+        color: _phoneError != null
+            ? Colors.red
+            : focused
+                ? (_isValid ? Colors.green : const Color(0xFF222222))
+                : (_isValid ? Colors.green : const Color(0xFFBDBDBD)),
         width: focused ? 2 : 1.5,
       ),
     );

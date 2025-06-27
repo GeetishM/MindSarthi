@@ -1,87 +1,134 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/features/app_lock/app_lock_screen.dart';
+import 'package:mindsarthi/features/personal_user/auth/personal_auth.dart';
 import 'package:mindsarthi/features/personal_user/screens/profile.dart';
 
 class Sidebar extends StatelessWidget {
+  const Sidebar({super.key});
+
+  // Fetch user profile from Firestore
+  Future<Map<String, dynamic>?> fetchUserProfile() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+    return doc.data();
+  }
+
+  // Get initial from nickname
+  String? getProfileInitial(String? nickname) {
+    if (nickname == null || nickname.trim().isEmpty) return null;
+    return nickname.trim()[0].toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
       child: Container(
-        color: Colors.white, // Light background color
+        color: Colors.white,
         child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-            Material(
-              color: Colors.grey[200],
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ProfilePage()),
-                  );
-                },
-                child: DrawerHeader(
-                  decoration: BoxDecoration(
-                    color: Colors.transparent, // No extra color needed here
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.grey[400],
-                          child: Icon(
-                            Icons.person,
-                            size: 40,
-                            color: Colors.black,
+            FutureBuilder<Map<String, dynamic>?>(
+              future: fetchUserProfile(),
+              builder: (context, snapshot) {
+                final data = snapshot.data;
+
+                final nickname = data?['nickname'] ?? 'User';
+                final photoUrl = data?['photoUrl'];
+                final _profileInitial = getProfileInitial(nickname);
+
+                return Material(
+                  color: Colors.grey[200],
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfilePage(),
+                        ),
+                      );
+                    },
+                    child: DrawerHeader(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.pinkAccent,
+                            backgroundImage: (photoUrl != null && photoUrl.toString().isNotEmpty)
+                                ? NetworkImage(photoUrl) as ImageProvider<Object>
+                                : null,
+                            child: (photoUrl == null || photoUrl.toString().isEmpty)
+                                ? Text(
+                                    _profileInitial ?? 'U',
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : null,
                           ),
-                        ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Namaste, $nickname!",
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 18,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 10),
-                      Center(
-                        child: Text(
-                          "Nameste, User!",
-                          style: TextStyle(color: Colors.black, fontSize: 18),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
 
             _buildSidebarOption(
-              icon: Icons.person,
+              icon: Icons.lock,
               title: "App Lock",
               onTap: () {
-                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AppLockSettingsScreen(),
+                  ),
+                );
               },
             ),
-            
+
             Divider(color: Colors.grey[400]),
+
             _buildSidebarOption(
               icon: Icons.logout,
               title: "Log Out",
+              textColor: Colors.red,
               onTap: () async {
                 try {
-                  await FirebaseAuth.instance.signOut(); // Sign out the user
-                  Navigator.pushReplacementNamed(
+                  await FirebaseAuth.instance.signOut();
+                  Navigator.pushAndRemoveUntil(
                     context,
-                    '/welcome',
-                  ); // Navigate to login screen
+                    MaterialPageRoute(builder: (_) => const PersonalAuth()),
+                    (route) => false,
+                  );
                 } catch (e) {
-                  print("Error signing out: $e"); // Handle errors
+                  print("Error signing out: $e");
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Logout failed: $e')),
+                  );
                 }
               },
-              textColor: Colors.red,
-            ),
-            _buildSidebarOption(
-              icon: Icons.delete,
-              title: "Delete My Account",
-              onTap: () {
-                Navigator.pop(context);
-              },
-              textColor: Colors.red,
             ),
           ],
         ),
