@@ -93,7 +93,6 @@ class _PersonalAuthState extends State<PersonalAuth> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
-                    Icon(Icons.close),
                     Text(
                       "Log In or Sign Up",
                       style: TextStyle(
