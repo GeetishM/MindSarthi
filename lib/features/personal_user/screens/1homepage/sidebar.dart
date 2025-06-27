@@ -52,60 +52,12 @@ class Sidebar extends StatelessWidget {
 
             _buildSidebarOption(
               icon: Icons.person,
-              title: "Personal Information",
+              title: "App Lock",
               onTap: () {
                 Navigator.pop(context);
               },
             ),
-            _buildSidebarOption(
-              icon: Icons.list_alt,
-              title: "My Plans",
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            _buildSidebarOption(
-              icon: Icons.lock,
-              title: "Change Password",
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            _buildSidebarOption(
-              icon: Icons.language,
-              title: "Language",
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            _buildSidebarOption(
-              icon: Icons.card_giftcard,
-              title: "Referral Program",
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            _buildSidebarOption(
-              icon: Icons.contact_support,
-              title: "Contact Us",
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            _buildSidebarOption(
-              icon: Icons.help_outline,
-              title: "FAQs",
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            _buildSidebarOption(
-              icon: Icons.info,
-              title: "About",
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
+            
             Divider(color: Colors.grey[400]),
             _buildSidebarOption(
               icon: Icons.logout,
