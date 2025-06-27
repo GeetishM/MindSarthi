@@ -1,0 +1,118 @@
+{
+    "national_helpline": "1800-599-0019",
+    "states": [
+      {
+        "name": "Andhra Pradesh",
+        "helpline": "0863-2232446"
+      },
+      {
+        "name": "Arunachal Pradesh",
+        "helpline": "104"
+      },
+      {
+        "name": "Assam",
+        "helpline": "0361-2233446"
+      },
+      {
+        "name": "Bihar",
+        "helpline": "104"
+      },
+      {
+        "name": "Chhattisgarh",
+        "helpline": "0771-2235091"
+      },
+      {
+        "name": "Goa",
+        "helpline": "104"
+      },
+      {
+        "name": "Gujarat",
+        "helpline": "1800-233-3330"
+      },
+      {
+        "name": "Haryana",
+        "helpline": "8558893911"
+      },
+      {
+        "name": "Himachal Pradesh",
+        "helpline": "1800-180-2324"
+      },
+      {
+        "name": "Jharkhand",
+        "helpline": "104"
+      },
+      {
+        "name": "Karnataka",
+        "helpline": "104"
+      },
+      {
+        "name": "Kerala",
+        "helpline": "104"
+      },
+      {
+        "name": "Madhya Pradesh",
+        "helpline": "104"
+      },
+      {
+        "name": "Maharashtra",
+        "helpline": "020-26127394"
+      },
+      {
+        "name": "Manipur",
+        "helpline": "104"
+      },
+      {
+        "name": "Meghalaya",
+        "helpline": "108"
+      },
+      {
+        "name": "Mizoram",
+        "helpline": "102"
+      },
+      {
+        "name": "Nagaland",
+        "helpline": "7005539653"
+      },
+      {
+        "name": "Odisha",
+        "helpline": "0674-2394041"
+      },
+      {
+        "name": "Punjab",
+        "helpline": "104"
+      },
+      {
+        "name": "Rajasthan",
+        "helpline": "0141-2225624"
+      },
+      {
+        "name": "Sikkim",
+        "helpline": "104"
+      },
+      {
+        "name": "Tamil Nadu",
+        "helpline": "104"
+      },
+      {
+        "name": "Telangana",
+        "helpline": "104"
+      },
+      {
+        "name": "Tripura",
+        "helpline": "0381-2315879"
+      },
+      {
+        "name": "Uttar Pradesh",
+        "helpline": "1800-180-5145"
+      },
+      {
+        "name": "Uttarakhand",
+        "helpline": "104"
+      },
+      {
+        "name": "West Bengal",
+        "helpline": "033-23576000"
+      }
+    ]
+  }
+  
