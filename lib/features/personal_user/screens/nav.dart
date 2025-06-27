@@ -4,7 +4,7 @@ import 'package:mindsarthi/features/personal_user/screens/1homepage/home.dart';
 import 'package:mindsarthi/features/personal_user/screens/2consultpage/consult.dart';
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/insight.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/community.dart';
-import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/chatpal.dart';
+import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/screen/chat_screen.dart';
 
 
 class NavBar extends StatefulWidget {
@@ -23,7 +23,7 @@ class _NavBarState extends State<NavBar> {
     const ConsultPage(),
     const InsightPage(),
     CommunityPage(),
-    const ChatpalPage(),
+    const ChatScreen(),
   ];
 
   @override
