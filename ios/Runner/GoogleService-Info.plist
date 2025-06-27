@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>581867410538-1rhal43f7884icpnuugo8ol302r8nm5i.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.581867410538-1rhal43f7884icpnuugo8ol302r8nm5i</string>
+	<key>API_KEY</key>
+	<string>AIzaSyC186RdtXGUZYWeb6lFfxZa4AtoOFQLWZw</string>
+	<key>GCM_SENDER_ID</key>
+	<string>581867410538</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.mindsarthi</string>
+	<key>PROJECT_ID</key>
+	<string>mindsarthi-ae32b</string>
+	<key>STORAGE_BUCKET</key>
+	<string>mindsarthi-ae32b.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:581867410538:ios:ae1b0c1eef69cc360ea613</string>
+</dict>
+</plist>

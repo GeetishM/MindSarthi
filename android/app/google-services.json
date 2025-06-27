@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "581867410538",
+    "project_id": "mindsarthi-ae32b",
+    "storage_bucket": "mindsarthi-ae32b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:581867410538:android:723a27d51a67e5230ea613",
+        "android_client_info": {
+          "package_name": "com.example.mindsarthi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8Ylau9K4OgQjF_C4pMcyYrHt5hSDtkXc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
