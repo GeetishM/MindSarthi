@@ -7,6 +7,7 @@ import 'package:mindsarthi/features/personal_user/screens/1homepage/Journal/jour
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/chat_history.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
 import 'package:mindsarthi/features/personal_user/screens/nav.dart';
+import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
 
 
