@@ -24,71 +24,90 @@ class DialogBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: Colors.transparent,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      backgroundColor: const Color(0xFFF4EEFF), // Soft lavender background
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: Colors.deepPurpleAccent[100]!,
+          width: 1.2,
+        ),
+      ),
       content: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFFE0C3FC), // soft lavender
-              Color(0xFF8EC5FC), // pastel blue
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 18.0),
-              child: TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  hintText: 'Add a new task',
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.7),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: 'Add a new task',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Colors.deepPurpleAccent[100]!,
+                    width: 1.2,
                   ),
                 ),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (value) => handleSave(),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Colors.deepPurpleAccent[100]!,
+                    width: 1.2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Colors.deepPurpleAccent[200]!,
+                    width: 1.5,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
               ),
+              style: const TextStyle(color: Colors.black87),
+              textInputAction: TextInputAction.done,
+              onSubmitted: (value) => handleSave(),
             ),
+            const SizedBox(height: 22),
             Row(
-              mainAxisSize:
-                  MainAxisSize.min, // Prevents Row from stretching too much
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Flexible(
                   child: MyButton(
                     text: "Save",
                     onPressed: handleSave,
-                    color: const Color.fromARGB(255, 32, 223, 38),
+                    color: Colors.deepPurpleAccent[200],
                     icon: Icons.check,
+                    textColor: Colors.white,
+                    borderRadius: 10,
                   ),
                 ),
-                const SizedBox(width: 10), // Slightly reduced spacing
+                const SizedBox(width: 12),
                 Flexible(
                   child: MyButton(
                     text: "Cancel",
                     onPressed: onCancel,
-                    color: const Color.fromARGB(255, 244, 73, 61),
+                    color: Colors.redAccent,
                     icon: Icons.close,
+                    textColor: Colors.white,
+                    borderRadius: 10,
                   ),
                 ),
               ],

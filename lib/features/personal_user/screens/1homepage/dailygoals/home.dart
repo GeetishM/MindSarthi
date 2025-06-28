@@ -17,7 +17,7 @@ class TodaysGoals extends StatefulWidget {
 }
 
 class _TodaysGoalsState extends State<TodaysGoals> {
-  // reference the Hive box
+  // reference the Hive box 
   final _myBox = Hive.box('mybox');
   ToDoDataBase db = ToDoDataBase();
 
@@ -41,14 +41,12 @@ class _TodaysGoalsState extends State<TodaysGoals> {
   // text controller
   final _controller = TextEditingController();
 
-  /* Hardcoded / initial list of todo tasks
+ /* Hardcoded / initial list of todo tasks
   List toDoList = [
-    ['Read Existing Novels in Lib', false],
-    ['Home Chores', false],
-    ['CAT prep', false],
-    ['Watch Movies', false],
+    ['Wake up', false],
+    ['Drink Water', false],
   ];
-  */
+ */ 
 
   // checkbox was tapped
   void checkboxChanged(bool? value, int index) {
@@ -144,26 +142,32 @@ class _TodaysGoalsState extends State<TodaysGoals> {
     final selfCareCount = 0; // Not tracked in List<List<dynamic>>
 
     return Scaffold(
-      backgroundColor:
-          Colors.transparent, // Make scaffold background transparent
+      backgroundColor: Colors.grey.shade300, // Changed from gradient to white
       appBar: AppBar(
-        title: const Text('Todo App'),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFF8E2DE2), // Purple
-                Color.fromARGB(255, 33, 51, 243), // Blue
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+        title: const Text('Daily Goals'),
+        // Comment out the gradient flexibleSpace
+        // flexibleSpace: Container(
+        //   decoration: const BoxDecoration(
+        //     gradient: LinearGradient(
+        //       colors: [
+        //         Color(0xFF8E2DE2), // Purple
+        //         Color.fromARGB(255, 33, 51, 243), // Blue
+        //       ],
+        //       begin: Alignment.topLeft,
+        //       end: Alignment.bottomRight,
+        //     ),
+        //   ),
+        // ),
+        backgroundColor: Colors.deepPurpleAccent[200], // Use purple accent
+        elevation: 0,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          // fontWeight: FontWeight.bold,
+          fontSize: 24,
         ),
-
         actions: [
           IconButton(
-            icon: const Icon(Icons.lightbulb_outline, color: Colors.deepOrangeAccent,),
+            icon: const Icon(Icons.lightbulb_outline, color: Colors.deepOrangeAccent),
             tooltip: 'Insights',
             onPressed: () {
               Navigator.of(context).push(
@@ -179,31 +183,20 @@ class _TodaysGoalsState extends State<TodaysGoals> {
             },
           ),
         ],
-        backgroundColor: Colors.transparent,
-        elevation: 0, // Remove shadow
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 24,
-        ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color.fromARGB(255, 244, 197, 213), // Your main color
-              Color.fromARGB(255, 255, 240, 245), // A lighter, soft pink
-              Color.fromARGB(
-                255,
-                222,
-                160,
-                200,
-              ), // A gentle purple-pink for depth
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        color: Colors.white, // Changed from gradient to white
+        // decoration: const BoxDecoration(
+        //   gradient: LinearGradient(
+        //     colors: [
+        //       Color.fromARGB(255, 244, 197, 213),
+        //       Color.fromARGB(255, 255, 240, 245),
+        //       Color.fromARGB(255, 222, 160, 200),
+        //     ],
+        //     begin: Alignment.topLeft,
+        //     end: Alignment.bottomRight,
+        //   ),
+        // ),
         child: LayoutBuilder(
           builder: (context, constraints) {
             // Calculate boundaries based on the available space
@@ -231,176 +224,70 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                         title: "Daily Progress",
                       ),
                     ),
-
                     Expanded(
-                      // Add a scrollbar to the ListView
                       child: Scrollbar(
-                        thumbVisibility: true, // Show scrollbar thumb
-                        thickness: 8, // Thickness of the scrollbar thumb
-                        interactive:
-                            true, // Allow interaction with the scrollbar
-                        radius: Radius.circular(
-                          10,
-                        ), // Rounded corners for the scrollbar thumb
-
+                        thumbVisibility: true,
+                        thickness: 8,
+                        interactive: true,
+                        radius: Radius.circular(10),
                         child: ListView.builder(
                           padding: const EdgeInsets.only(bottom: 32),
                           itemCount: db.toDoList.length,
                           itemBuilder: (context, index) {
-                            // Define two sets of gradient colors for alternation
-                            final List<Color> gradient1 = [
-                              const Color.fromARGB(255, 249, 124, 151),
-                              const Color.fromARGB(255, 248, 164, 116),
-                            ];
-                            final List<Color> gradient2 = [
-                              const Color.fromARGB(255, 252, 149, 195),
-                              const Color.fromARGB(255, 248, 94, 150),
-                            ];
-
-                            final List<Color> selectedGradient = index % 2 == 0
-                                ? gradient1
-                                : gradient2;
-
-                            final borderRadius = BorderRadius.circular(32);
-
                             return Padding(
                               padding: const EdgeInsets.symmetric(
                                 vertical: 6,
                                 horizontal: 12,
-                              ), // <-- OUTSIDE Dismissible
-                              child: ClipRRect(
-                                borderRadius: borderRadius,
-                                child: Dismissible(
-                                  key: ValueKey(
-                                    db.toDoList[index][0] + index.toString(),
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(32),
+                                  border: Border.all(
+                                    color: Colors.deepPurpleAccent[100]!,
+                                    width: 2,
                                   ),
-                                  direction: DismissDirection.horizontal,
-                                  background: Container(
-                                    alignment: Alignment.centerLeft,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          selectedGradient[0], // tile left color
-                                          selectedGradient[1], // tile right color
-                                          Color.lerp(
-                                            selectedGradient[1],
-                                            Color(0xFF8E2DE2),
-                                            0.5,
-                                          )!, // blend color
-                                          const Color(
-                                            0xFF8E2DE2,
-                                          ), // edit button color
-                                        ],
-                                        stops: [0.0, 0.7, 0.85, 1.0],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                      ),
-                                      borderRadius: borderRadius,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.08), // Softer shadow, similar to Insights
+                                      blurRadius: 16, // More blur for card-like elevation
+                                      offset: Offset(0, 6), // Slightly less offset for a subtle lift
                                     ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      children: const [
-                                        SizedBox(width: 24),
-                                        Icon(
-                                          Icons.edit,
-                                          color: Colors.white,
-                                          size: 28,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          "Edit",
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                      ],
+                                  ],
+                                ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                                  leading: Checkbox(
+                                    value: db.toDoList[index][1],
+                                    onChanged: (value) {
+                                      checkboxChanged(value, index);
+                                    },
+                                  ),
+                                  title: Text(
+                                    db.toDoList[index][0],
+                                    style: TextStyle(
+                                      decoration: db.toDoList[index][1]
+                                          ? TextDecoration.lineThrough
+                                          : TextDecoration.none,
+                                        decorationThickness: 2,
+                                      color: Colors.black87,
+                                      fontSize: 18,
                                     ),
                                   ),
-                                  secondaryBackground: Container(
-                                    alignment: Alignment.centerRight,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          selectedGradient[1], // tile right color
-                                          selectedGradient[0], // tile left color
-                                          Color.lerp(
-                                            selectedGradient[0],
-                                            Color(0xFFE53935),
-                                            0.5,
-                                          )!, // blend color
-                                          const Color(
-                                            0xFFE53935,
-                                          ), // delete button color
-                                        ],
-                                        stops: [0.0, 0.7, 0.85, 1.0],
-                                        begin: Alignment.centerRight,
-                                        end: Alignment.centerLeft,
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, color: Colors.deepPurpleAccent),
+                                        onPressed: () => editTask(index),
+                                        tooltip: "Edit",
                                       ),
-                                      borderRadius: borderRadius,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: const [
-                                        Text(
-                                          "Delete",
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                        SizedBox(width: 8),
-                                        Icon(
-                                          Icons.delete,
-                                          color: Colors.white,
-                                          size: 32,
-                                        ),
-                                        SizedBox(width: 24),
-                                      ],
-                                    ),
-                                  ),
-                                  onDismissed: (direction) {
-                                    if (direction ==
-                                        DismissDirection.endToStart) {
-                                      deleteTask(context, index);
-                                    } else if (direction ==
-                                        DismissDirection.startToEnd) {
-                                      editTask(index);
-                                    }
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: selectedGradient,
-                                        stops: [0.0, 1.0],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                        onPressed: () => deleteTask(context, index),
+                                        tooltip: "Delete",
                                       ),
-                                      borderRadius: borderRadius,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.15),
-                                          blurRadius: 12,
-                                          offset: Offset(0, 6),
-                                          spreadRadius: 1,
-                                        ),
-                                      ],
-                                    ),
-                                    child: TodoTile(
-                                      taskName: db.toDoList[index][0],
-                                      taskCompleted: db.toDoList[index][1],
-                                      onChanged: (value) {
-                                        checkboxChanged(value, index);
-                                      },
-                                      deleteFunction: (context) =>
-                                          deleteTask(context, index),
-                                      containerColor: Colors.transparent,
-                                      onEdit: () => editTask(index),
-                                      task: db.toDoList[index], // Just pass the list
-                                    ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -418,9 +305,9 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                   child: Draggable(
                     feedback: FloatingActionButton(
                       onPressed: createNewTask,
-                      backgroundColor: const Color.fromARGB(255, 204, 53, 189),
-                      foregroundColor: Colors.black,
-                      child: Icon(Icons.add, color: Colors.black),
+                      backgroundColor: Colors.deepPurpleAccent[200], // Purple accent
+                      foregroundColor: Colors.white,
+                      child: Icon(Icons.add, color: Colors.white),
                     ),
                     childWhenDragging: Container(),
                     onDragEnd: (details) {
@@ -442,9 +329,9 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                     },
                     child: FloatingActionButton(
                       onPressed: createNewTask,
-                      backgroundColor: const Color.fromARGB(255, 204, 53, 189),
-                      foregroundColor: Colors.black,
-                      child: Icon(Icons.add, color: Colors.black),
+                      backgroundColor: Colors.deepPurpleAccent[200], // Purple accent
+                      foregroundColor: Colors.white,
+                      child: Icon(Icons.add, color: Colors.white),
                     ),
                   ),
                 ),

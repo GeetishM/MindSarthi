@@ -11,7 +11,7 @@ class MyButton extends StatelessWidget {
     required this.text, 
     required this.onPressed, 
     this.color,
-    this.icon,
+    this.icon, required Color textColor, required int borderRadius,
   });
 
   @override
