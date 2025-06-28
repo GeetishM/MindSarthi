@@ -34,6 +34,11 @@ class _JournalState extends State<Journal> {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasEntries = journalBox.isNotEmpty;
+    final double searchBarHeight = 60;
+    final double appBarHeight =
+        kToolbarHeight + (hasEntries ? searchBarHeight : 0);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("My Journal"),
@@ -45,32 +50,43 @@ class _JournalState extends State<Journal> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
+          preferredSize: Size.fromHeight(
+            journalBox.isNotEmpty ? 60 : 0,
+          ),
           child: ValueListenableBuilder(
             valueListenable: journalBox.listenable(),
             builder: (context, Box<JournalEntry> box, _) {
-              if (box.values.isEmpty) return const SizedBox.shrink();
-
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search by title, tag or word...',
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onChanged: (value) {
-                    setState(() => searchQuery = value.toLowerCase());
-                  },
-                ),
-              );
+              final bool hasEntries = box.isNotEmpty;
+              return hasEntries
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                      child: Material(
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(12),
+                        shadowColor: Colors.black.withOpacity(0.2),
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Search by title, tag or word...',
+                            prefixIcon: const Icon(Icons.search),
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setState(() => searchQuery = value.toLowerCase());
+                          },
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink();
             },
           ),
         ),
       ),
+
       body: LayoutBuilder(
         builder: (context, constraints) {
           const double fabSize = 56;
@@ -266,8 +282,11 @@ class _JournalState extends State<Journal> {
                                         Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
-                                          children: [                         
-                                            EntryDates(createdAt: entry.createdAt, lastEdited: entry.lastEdited),
+                                          children: [
+                                            EntryDates(
+                                              createdAt: entry.createdAt,
+                                              lastEdited: entry.lastEdited,
+                                            ),
                                           ],
                                         ),
                                       ],

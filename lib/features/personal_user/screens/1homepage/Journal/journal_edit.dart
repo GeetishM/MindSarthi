@@ -123,7 +123,7 @@ class _JournalEditState extends State<JournalEdit> {
         action: SnackBarAction(
           label: 'Undo',
           onPressed: () async {
-            await box.putAt(deletedIndex, deletedEntry);
+            await box.add(deletedEntry); // <-- Use add instead of putAt
             setState(() {});
           },
         ),
