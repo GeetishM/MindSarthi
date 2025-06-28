@@ -65,7 +65,9 @@ class MoodTrackerHomePage extends StatelessWidget {
   Widget _buildMoodButton(BuildContext context, Mood mood) {
     return GestureDetector(
       onTap: () => Navigator.push(
-          context, MaterialPageRoute(builder: (context) => EmotionSelectionPage(mood: mood))),
+        context,
+        MaterialPageRoute(builder: (context) => EmotionSelectionPage(mood: mood)),
+      ),
       child: Column(
         children: [
           Icon(mood.icon, size: 50),

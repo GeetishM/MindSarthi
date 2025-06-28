@@ -26,7 +26,7 @@ class _UserSelectionState extends State<UserSelection> {
         type: ToastificationType.warning,
         style: ToastificationStyle.flat,
         alignment: Alignment.topCenter,
-        autoCloseDuration: const Duration(seconds: 3),
+        autoCloseDuration: const Duration(seconds: 2),
       );
     } else {
       // Navigate based on selected role
@@ -50,6 +50,9 @@ class _UserSelectionState extends State<UserSelection> {
     required String description,
     required String roleKey,
     required String imagePath,
+    required double imageHeight,
+    required double imageWidth,
+    required double fontScale,
   }) {
     final isSelected = selectedRole == roleKey;
 
@@ -69,32 +72,46 @@ class _UserSelectionState extends State<UserSelection> {
         ),
         child: Row(
           children: [
+            // Text section
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: 16 * fontScale,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: 14 * fontScale,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     description,
-                    style: const TextStyle(color: Colors.black54),
+                    style: TextStyle(
+                      fontSize: 13 * fontScale,
+                      color: Colors.black54,
+                    ),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(width: 12),
-            SvgPicture.asset(imagePath, height: 120, width: 120),
+
+            // Image
+            SvgPicture.asset(
+              imagePath,
+              height: imageHeight,
+              width: imageWidth,
+            ),
           ],
         ),
       ),
@@ -103,6 +120,10 @@ class _UserSelectionState extends State<UserSelection> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final fontScale = size.width / 375; // base width for scaling
+    final isSmall = size.height < 600;
+
     return Scaffold(
       appBar: AppBar(
         leading: BackButton(
@@ -116,61 +137,90 @@ class _UserSelectionState extends State<UserSelection> {
         foregroundColor: Colors.black,
       ),
       backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Choose your role to get started",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              "This helps us personalize your space and show you the right tools.",
-              style: TextStyle(color: Colors.black54),
-            ),
-            const SizedBox(height: 20),
-            buildRoleCard(
-              title: "Personal User",
-              subtitle: "I’m here for myself",
-              description:
-                  "To build healthier habits and access everyday support tools",
-              roleKey: "personal",
-              imagePath: "assets/illustrations/curiosity-pana 1.svg", // your asset
-            ),
-            buildRoleCard(
-              title: "Professional User",
-              subtitle: "I’m here as a Mental Health Professional",
-              description:
-                  "To offer support, manage clients, and grow my practice",
-              roleKey: "professional",
-              imagePath: "assets/illustrations/curiosity-pana 1.svg",
-            ),
-            buildRoleCard(
-              title: "Organizational User",
-              subtitle: "I’m here as part of my Organization",
-              description: "To access wellness tools provided by the workplace",
-              roleKey: "organization",
-              imagePath: "assets/illustrations/curiosity-pana 1.svg",
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _continue,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurpleAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Choose your role to get started",
+                style: TextStyle(
+                  fontSize: 20 * fontScale,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                "This helps us personalize your space and show you the right tools.",
+                style: TextStyle(
+                  fontSize: 14 * fontScale,
+                  color: Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Role Cards
+              buildRoleCard(
+                title: "Personal User",
+                subtitle: "I’m here for myself",
+                description:
+                    "To build healthier habits and access everyday support tools",
+                roleKey: "personal",
+                imagePath: "assets/illustrations/curiosity-pana 1.svg",
+                imageHeight: size.width * 0.25,
+                imageWidth: size.width * 0.25,
+                fontScale: fontScale,
+              ),
+              buildRoleCard(
+                title: "Professional User",
+                subtitle: "I’m here as a Mental Health Professional",
+                description:
+                    "To offer support, manage clients, and grow my practice",
+                roleKey: "professional",
+                imagePath: "assets/illustrations/curiosity-pana 1.svg",
+                imageHeight: size.width * 0.25,
+                imageWidth: size.width * 0.25,
+                fontScale: fontScale,
+              ),
+              buildRoleCard(
+                title: "Organizational User",
+                subtitle: "I’m here as part of my Organization",
+                description:
+                    "To access wellness tools provided by the workplace",
+                roleKey: "organization",
+                imagePath: "assets/illustrations/curiosity-pana 1.svg",
+                imageHeight: size.width * 0.25,
+                imageWidth: size.width * 0.25,
+                fontScale: fontScale,
+              ),
+
+              const SizedBox(height: 30),
+
+              // Continue Button
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _continue,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurpleAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    'Continue',
+                    style: TextStyle(
+                      fontSize: 16 * fontScale,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-                child: const Text('Continue', style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
-            ),
-            const SizedBox(height: 20),
-          ],
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );

@@ -3,12 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/database.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/home.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/MoodInputs/screens/mood_tracker_home_page.dart';
-import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/data/database.dart';
-import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/todaysGoals.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/panic_sos/sos_helper.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/sidebar.dart';
+import 'package:toastification/toastification.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,17 +21,13 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final ToDoDataBase db = ToDoDataBase();
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
-
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   String? savedPreference;
   String? savedContactOrState;
-
   @override
   void initState() {
     super.initState();
@@ -60,41 +58,95 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _saveUserPreference(String preference, String value) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
     await _storage.write(key: 'sos_preference', value: preference);
     await _storage.write(key: 'sos_value', value: value);
-    await _firestore.collection('users').doc('user_sos_data').set({
-      'preference': preference,
-      'value': value,
-    });
+
+    await _firestore.collection('users').doc(user.uid).set({
+      'sos_preference': preference,
+      'sos_value': value,
+    }, SetOptions(merge: true)); // merge keeps other existing fields intact
+
     setState(() {
       savedPreference = preference;
       savedContactOrState = value;
     });
+
+    toastification.show(
+      context: context,
+      title: const Text("SOS contact saved successfully"),
+      autoCloseDuration: const Duration(seconds: 2),
+      type: ToastificationType.success,
+      style: ToastificationStyle.flat,
+      alignment: Alignment.bottomCenter,
+      icon: const Icon(Icons.check_circle),
+    );
   }
 
   void _showChoiceDialog() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: Colors.white,
       builder: (context) {
-        return AlertDialog(
-          title: Text("Select SOS Contact"),
-          content: Column(
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                title: Text("State Helpline"),
-                onTap: () {
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.deepPurpleAccent[200],
+                size: 48,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Set up your SOS Contact",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "Choose a reliable contact method we can alert when you’re in distress.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.map_outlined),
+                label: const Text("Use State Helpline"),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.deepPurpleAccent[200],
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                onPressed: () {
                   Navigator.pop(context);
                   _askForState();
                 },
               ),
-              ListTile(
-                title: Text("Friend/Family"),
-                onTap: () {
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.contact_phone),
+                label: const Text("Use Friend/Family Contact"),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.deepPurpleAccent[200],
+                  side: BorderSide(color: Colors.deepPurpleAccent[200]!),
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                onPressed: () {
                   Navigator.pop(context);
                   _askForContact();
                 },
               ),
+              const SizedBox(height: 16),
             ],
           ),
         );
@@ -103,57 +155,245 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _askForState() {
-    TextEditingController stateController = TextEditingController();
-    showDialog(
+    final List<String> states = [
+      "Andhra Pradesh",
+      "Arunachal Pradesh",
+      "Assam",
+      "Bihar",
+      "Chhattisgarh",
+      "Goa",
+      "Gujarat",
+      "Haryana",
+      "Himachal Pradesh",
+      "Jharkhand",
+      "Karnataka",
+      "Kerala",
+      "Madhya Pradesh",
+      "Maharashtra",
+      "Manipur",
+      "Meghalaya",
+      "Mizoram",
+      "Nagaland",
+      "Odisha",
+      "Punjab",
+      "Rajasthan",
+      "Sikkim",
+      "Tamil Nadu",
+      "Telangana",
+      "Tripura",
+      "Uttar Pradesh",
+      "Uttarakhand",
+      "West Bengal",
+    ];
+
+    String? selectedState;
+
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      elevation: 12,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) {
-        return AlertDialog(
-          title: Text("Enter Your State"),
-          content: TextField(
-            controller: stateController,
-            decoration: InputDecoration(hintText: "e.g., Maharashtra"),
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            top: 24,
+            left: 24,
+            right: 24,
           ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                String state = stateController.text.trim();
-                if (state.isNotEmpty) {
-                  await _saveUserPreference("helpline", state);
-                }
-                Navigator.pop(context);
-              },
-              child: Text("Save"),
-            ),
-          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Select Your State",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurpleAccent[200],
+                ),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  labelText: "State",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.deepPurpleAccent[200]!,
+                    ),
+                  ),
+                ),
+                isExpanded: true,
+                items:
+                    states.map((state) {
+                      return DropdownMenuItem(value: state, child: Text(state));
+                    }).toList(),
+                onChanged: (value) => selectedState = value,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: Colors.grey[200],
+                        foregroundColor: Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                      label: const Text("Cancel"),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurpleAccent[200],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () async {
+                        if (selectedState != null) {
+                          await _saveUserPreference("helpline", selectedState!);
+                          Navigator.pop(context);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Please select a state"),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.save_rounded),
+                      label: const Text("Save"),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         );
       },
     );
   }
 
   void _askForContact() {
-    TextEditingController contactController = TextEditingController();
-    showDialog(
+    String? phoneNumber;
+
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      elevation: 12,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) {
-        return AlertDialog(
-          title: Text("Enter Contact Number"),
-          content: TextField(
-            controller: contactController,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(hintText: "e.g., +91XXXXXXXXXX"),
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            top: 24,
+            left: 24,
+            right: 24,
           ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                String contact = contactController.text.trim();
-                if (contact.isNotEmpty) {
-                  await _saveUserPreference("friend", contact);
-                }
-                Navigator.pop(context);
-              },
-              child: Text("Save"),
-            ),
-          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Enter Emergency Contact",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurpleAccent[200],
+                ),
+              ),
+              const SizedBox(height: 16),
+              IntlPhoneField(
+                decoration: InputDecoration(
+                  labelText: 'Phone Number',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.deepPurpleAccent[200]!,
+                    ),
+                  ),
+                ),
+                initialCountryCode: 'IN',
+                onChanged: (phone) => phoneNumber = phone.completeNumber,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: Colors.grey[200],
+                        foregroundColor: Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                      label: const Text("Cancel"),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurpleAccent[200],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () async {
+                        if (phoneNumber != null && phoneNumber!.length >= 10) {
+                          await _saveUserPreference("friend", phoneNumber!);
+                          Navigator.pop(context);
+                        } else {
+                          toastification.show(
+                            context: context,
+                            title: const Text("Enter a valid phone number"),
+                            autoCloseDuration: const Duration(seconds: 2),
+                            type: ToastificationType.error,
+                            style: ToastificationStyle.flat,
+                            alignment: Alignment.bottomCenter,
+                            icon: const Icon(Icons.error),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.save_alt_rounded),
+                      label: const Text("Save"),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         );
       },
     );
@@ -164,8 +404,18 @@ class _HomePageState extends State<HomePage> {
       String? helplineNumber = await HelplineService.getStateHelpline(
         savedContactOrState!,
       );
-      helplineNumber ??= "1800-599-0019";
-      _makePhoneCall(helplineNumber);
+      if (helplineNumber != null) {
+        _makePhoneCall(helplineNumber);
+      } else {
+        toastification.show(
+          context: context,
+          title: const Text("Helpline not found"),
+          description: const Text("Please select a valid state."),
+          type: ToastificationType.error,
+          style: ToastificationStyle.flat,
+          alignment: Alignment.bottomCenter,
+        );
+      }
     } else if (savedPreference == "friend" && savedContactOrState != null) {
       _makePhoneCall(savedContactOrState!);
     } else {
@@ -195,10 +445,6 @@ class _HomePageState extends State<HomePage> {
     return null;
   }
 
-  Future<List<Map<String, dynamic>>> _fetchGoals() async {
-    await db.loadData();
-    return db.toDoList;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -283,7 +529,7 @@ class _HomePageState extends State<HomePage> {
           const SliverToBoxAdapter(child: SizedBox(height: 20)),
           _buildSectionTitle("Relief Resources"),
           _buildReliefSection(screenWidth),
-          _buildGoalsSection(),
+          _buildSimpleGoalsSection(),
           _buildJournalSection(),
         ],
       ),
@@ -377,99 +623,50 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  SliverToBoxAdapter _buildGoalsSection() {
+  SliverToBoxAdapter _buildSimpleGoalsSection() {
     return SliverToBoxAdapter(
-      child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _fetchGoals(),
-        builder: (context, snapshot) {
-          final goals = snapshot.data ?? [];
-          final hasGoals = goals.isNotEmpty;
-
-          return GestureDetector(
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const TodaysGoals()),
+      child: GestureDetector(
+        onTap: () => Navigator.pushNamed(context, '/todaysgoals'), // Use your route
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+            ],
+            color: Colors.white,
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Today\'s Goals',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Set and track your daily goals to stay motivated and productive.',
+                      style: TextStyle(fontSize: 14, color: Colors.black),
+                    ),
+                  ],
                 ),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Today's Goals",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  if (!hasGoals)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16.0),
-                      child: Center(
-                        child: Text(
-                          "Add a new Goal",
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                      ),
-                    )
-                  else
-                    SizedBox(
-                      height: 100, // Restrict height to show a few items
-                      child: ListView.builder(
-                        itemCount: goals.length.clamp(
-                          0,
-                          3,
-                        ), // Show up to 3 items
-                        itemBuilder: (context, index) {
-                          return ListTile(
-                            title: Text(goals[index]['taskName']),
-                            trailing: Checkbox(
-                              value: goals[index]['completed'],
-                              onChanged: (value) {
-                                setState(
-                                  () => db.updateTask(index, value ?? false),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  if (hasGoals)
-                    Align(
-                      alignment: Alignment.bottomRight,
-                      child: TextButton(
-                        onPressed:
-                            () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const TodaysGoals(),
-                              ),
-                            ),
-                        child: const Text(
-                          "View More",
-                          style: TextStyle(
-                            fontSize: 16,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+              SvgPicture.asset(
+                'assets/illustrations/Handholdingpen.svg',
+                width: 100,
+                height: 100,
               ),
-            ),
-          );
-        },
+            ],
+          ),
+        ),
       ),
     );
   }

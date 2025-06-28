@@ -25,11 +25,11 @@ class _EmotionSelectionPageState extends State<EmotionSelectionPage> {
   Future<void> _saveMood() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    
+
     await FirebaseFirestore.instance
         .collection('users')
-        .doc("mood_inputs")
-        .collection("Mood Input")
+        .doc(user.uid)
+        .collection("mood_inputs")
         .add({
       'mood': widget.mood.name,
       'emotions': _selectedEmotions,
