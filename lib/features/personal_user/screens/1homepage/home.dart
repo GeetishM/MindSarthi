@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/MoodInputs/screens/mood_tracker_home_page.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/data/database.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/todaysGoals.dart';
@@ -18,15 +19,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // For todo database
   final ToDoDataBase db = ToDoDataBase();
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
 
-  //for sidebar
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  //For SOS data
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   String? savedPreference;
@@ -35,13 +33,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    //
     _scrollController.addListener(() {
       setState(() => _isScrolled = _scrollController.offset > 0);
     });
-    //For SOS preference
     _loadUserPreference();
-    _fetchUsername();
   }
 
   @override
@@ -50,7 +45,6 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  //For SOS preference
   Future<void> _loadUserPreference() async {
     String? preference = await _storage.read(key: 'sos_preference');
     String? contactOrState = await _storage.read(key: 'sos_value');
@@ -65,7 +59,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  //For SOS preference
   Future<void> _saveUserPreference(String preference, String value) async {
     await _storage.write(key: 'sos_preference', value: preference);
     await _storage.write(key: 'sos_value', value: value);
@@ -187,17 +180,19 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<String?> _fetchUsername() async {
+  Future<String?> _fetchNickname() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
 
-    final userDoc =
+    final doc =
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .get();
-
-    return userDoc.exists ? userDoc['username'] as String? : null;
+    if (doc.exists) {
+      return doc.data()?['nickname'] as String?;
+    }
+    return null;
   }
 
   Future<List<Map<String, dynamic>>> _fetchGoals() async {
@@ -208,10 +203,9 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      key: _scaffoldKey, // Assign the GlobalKey to the Scaffold
+      key: _scaffoldKey,
       drawer: Sidebar(),
       body: CustomScrollView(
         controller: _scrollController,
@@ -224,23 +218,33 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Row(
                     children: [
-                      const SizedBox(height: 20),
                       IconButton(
                         icon: SvgPicture.asset(
                           'assets/icons/menu.svg',
                           height: 24.0,
                           width: 24.0,
                         ),
-                        onPressed: () {
-                          _scaffoldKey.currentState
-                              ?.openDrawer(); // Use _scaffoldKey to open the drawer
-                        },
+                        onPressed:
+                            () => _scaffoldKey.currentState?.openDrawer(),
                       ),
                       const SizedBox(width: 10),
                       FutureBuilder<String?>(
-                        future: _fetchUsername(),
+                        future: _fetchNickname(),
                         builder: (context, snapshot) {
-                          final username = snapshot.data ?? 'User';
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Shimmer.fromColors(
+                              baseColor: Colors.grey[300]!,
+                              highlightColor: Colors.grey[100]!,
+                              child: Container(
+                                width: 140,
+                                height: 24,
+                                color: Colors.white,
+                              ),
+                            );
+                          }
+
+                          final nickname = snapshot.data ?? '';
                           return Row(
                             children: [
                               const Text(
@@ -250,9 +254,9 @@ class _HomePageState extends State<HomePage> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(width: 8), // Add spacing
+                              const SizedBox(width: 8),
                               Text(
-                                username,
+                                nickname,
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -278,34 +282,7 @@ class _HomePageState extends State<HomePage> {
           SliverToBoxAdapter(child: MoodTrackerHomePage()),
           const SliverToBoxAdapter(child: SizedBox(height: 20)),
           _buildSectionTitle("Relief Resources"),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildSupportContainer(
-                    'assets/icons/Anxiety.png',
-                    'Anxiety and Panic Attacks',
-                    '/anxietypanic',
-                    screenWidth,
-                  ),
-                  _buildSupportContainer(
-                    'assets/icons/depression.png',
-                    'Depression',
-                    '/depression',
-                    screenWidth,
-                  ),
-                  _buildSupportContainer(
-                    'assets/icons/Suicidal.png',
-                    'Self Harm and Suicidal Ideation',
-                    '/selfharm',
-                    screenWidth,
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _buildReliefSection(screenWidth),
           _buildGoalsSection(),
           _buildJournalSection(),
         ],
@@ -332,6 +309,69 @@ class _HomePageState extends State<HomePage> {
         child: Text(
           title,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  SliverToBoxAdapter _buildReliefSection(double screenWidth) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSupportContainer(
+              'assets/icons/Anxiety.png',
+              'Anxiety and Panic Attacks',
+              '/anxietypanic',
+              screenWidth,
+            ),
+            _buildSupportContainer(
+              'assets/icons/depression.png',
+              'Depression',
+              '/depression',
+              screenWidth,
+            ),
+            _buildSupportContainer(
+              'assets/icons/Suicidal.png',
+              'Self Harm and Suicidal Ideation',
+              '/selfharm',
+              screenWidth,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  GestureDetector _buildSupportContainer(
+    String imagePath,
+    String label,
+    String routeName,
+    double screenWidth,
+  ) {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, routeName),
+      child: Container(
+        width: (screenWidth - 60) / 3,
+        height: 170,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.black.withOpacity(0.1)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(imagePath, width: 80, height: 80, color: Colors.black),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 15, color: Colors.black),
+            ),
+          ],
         ),
       ),
     );
@@ -471,44 +511,12 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               SvgPicture.asset(
-                'lib/personal/assets/Handholdingpen.svg',
+                'assets/illustrations/Handholdingpen.svg',
                 width: 120,
                 height: 120,
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  GestureDetector _buildSupportContainer(
-    String imagePath,
-    String label,
-    String routeName,
-    double screenWidth,
-  ) {
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, routeName),
-      child: Container(
-        width: (screenWidth - 60) / 3,
-        height: 170,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.black.withOpacity(0.1)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(imagePath, width: 80, height: 80, color: Colors.black),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15, color: Colors.black),
-            ),
-          ],
         ),
       ),
     );

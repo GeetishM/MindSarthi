@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_screen.dart';
 import 'package:mindsarthi/features/personal_user/auth/personal_auth.dart';
 import 'package:mindsarthi/features/personal_user/screens/profile.dart';
@@ -8,18 +9,14 @@ import 'package:mindsarthi/features/personal_user/screens/profile.dart';
 class Sidebar extends StatelessWidget {
   const Sidebar({super.key});
 
-  // Fetch user profile from Firestore
   Future<Map<String, dynamic>?> fetchUserProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return null;
-
     final doc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
-
     return doc.data();
   }
 
-  // Get initial from nickname
   String? getProfileInitial(String? nickname) {
     if (nickname == null || nickname.trim().isEmpty) return null;
     return nickname.trim()[0].toUpperCase();
@@ -36,8 +33,40 @@ class Sidebar extends StatelessWidget {
             FutureBuilder<Map<String, dynamic>?>(
               future: fetchUserProfile(),
               builder: (context, snapshot) {
-                final data = snapshot.data;
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  // SHIMMER PLACEHOLDER
+                  return Material(
+                    color: Colors.grey[200],
+                    child: DrawerHeader(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Shimmer.fromColors(
+                            baseColor: Colors.grey[300]!,
+                            highlightColor: Colors.grey[100]!,
+                            child: CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Colors.grey[300],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Shimmer.fromColors(
+                            baseColor: Colors.grey[300]!,
+                            highlightColor: Colors.grey[100]!,
+                            child: Container(
+                              height: 16,
+                              width: 120,
+                              color: Colors.grey[300],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
 
+                final data = snapshot.data;
                 final nickname = data?['nickname'] ?? 'User';
                 final photoUrl = data?['photoUrl'];
                 final _profileInitial = getProfileInitial(nickname);
@@ -55,9 +84,7 @@ class Sidebar extends StatelessWidget {
                     },
                     child: DrawerHeader(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: const BoxDecoration(
-                        color: Colors.transparent,
-                      ),
+                      decoration: const BoxDecoration(color: Colors.transparent),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -69,7 +96,7 @@ class Sidebar extends StatelessWidget {
                                 : null,
                             child: (photoUrl == null || photoUrl.toString().isEmpty)
                                 ? Text(
-                                    _profileInitial ?? 'U',
+                                    _profileInitial ?? '',
                                     style: const TextStyle(
                                       fontSize: 32,
                                       color: Colors.white,
