@@ -7,6 +7,7 @@ import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/an
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/depression.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/selfharm.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/home.dart';
+import 'package:mindsarthi/features/personal_user/screens/nav.dart';
 import 'package:mindsarthi/features/professional_user/auth/professional_auth.dart';
 import 'package:mindsarthi/features/welcome.dart';
 
@@ -23,11 +24,14 @@ class AppRouter {
       '/depression': (context) => const Depression(),
       '/selfharm': (context) => const SelfHarm(),
       '/journal': (context) => const Journal(),
+      '/navbar': (context) => const NavBar(),
 
       '/todaysgoals': (context) {
         // Ensure the box is opened before accessing it
         final box = Hive.box('mybox');
         return TodaysGoals(box: box);
+
+        
       },
     };
   }
