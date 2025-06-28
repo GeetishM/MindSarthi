@@ -10,7 +10,7 @@ class JournalEntry extends HiveObject {
   String content;
 
   @HiveField(2)
-  DateTime createdAt;
+  DateTime createdAt; 
 
   @HiveField(3)
   DateTime lastEdited; 
