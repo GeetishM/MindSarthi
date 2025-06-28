@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:lottie/lottie.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/spotify_screen.dart';
 
 class SelfHarm extends StatefulWidget {
   const SelfHarm({super.key});
@@ -30,24 +32,55 @@ class _SelfHarmState extends State<SelfHarm> {
         child: Column(
           children: [
             buildCard(
-              icon: Icons.volunteer_activism_outlined,
-              text: 'How can I help myself?',
-            ),
-            buildCard(
-              icon: Icons.favorite_outline,
-              text: 'What helped me',
-            ),
-            buildCard(
-              icon: Icons.health_and_safety,
-              text: 'Emergency plan',
-            ),
-            buildCard(
-              icon: Icons.calendar_today_outlined,
-              text: 'How long do I manage',
-            ),
-            buildCard(
               icon: Icons.self_improvement_outlined,
               text: 'Breathing exercises',
+              onTap: () => showDialog(
+                context: context,
+                builder: (context) => Dialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Lottie.asset(
+                          'assets/lottie/Breathing.json',
+                          height: 250,
+                          width: 250,
+                          repeat: true,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Breathe in... Breathe out...',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            buildCard(
+              icon: Icons.music_note_rounded,
+              text: 'Music for relaxation',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => const SpotifyPlayerScreen(
+                          playlistId:
+                              '3n9e5pXW7kb3SDgvaxgvnL', // Replace with yours
+                        ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -55,14 +88,16 @@ class _SelfHarmState extends State<SelfHarm> {
     );
   }
 
-  Widget buildCard({required IconData icon, required String text}) {
+  Widget buildCard({
+    required IconData icon,
+    required String text,
+    required VoidCallback onTap,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Card(
-        color: Color(0xFFD1C4E9),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        color: const Color(0xFFD1C4E9),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ListTile(
           leading: Icon(icon, color: Colors.black),
           title: Text(
@@ -73,25 +108,7 @@ class _SelfHarmState extends State<SelfHarm> {
             ),
           ),
           trailing: const Icon(Icons.arrow_forward, color: Colors.black),
-          onTap: () {
-            // Show SVG image in a dialog
-            showDialog(
-              context: context,
-              builder: (context) => Dialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: SvgPicture.asset(
-                    'lib/assets/In progress-amico.svg',
-                    height: 200,
-                    width: 200,
-                  ),
-                ),
-              ),
-            );
-          },
+          onTap: onTap,
         ),
       ),
     );
