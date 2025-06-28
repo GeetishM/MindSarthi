@@ -116,61 +116,67 @@ class _UserSelectionState extends State<UserSelection> {
         foregroundColor: Colors.black,
       ),
       backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Choose your role to get started",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              "This helps us personalize your space and show you the right tools.",
-              style: TextStyle(color: Colors.black54),
-            ),
-            const SizedBox(height: 20),
-            buildRoleCard(
-              title: "Personal User",
-              subtitle: "I’m here for myself",
-              description:
-                  "To build healthier habits and access everyday support tools",
-              roleKey: "personal",
-              imagePath: "assets/illustrations/curiosity-pana 1.svg", // your asset
-            ),
-            buildRoleCard(
-              title: "Professional User",
-              subtitle: "I’m here as a Mental Health Professional",
-              description:
-                  "To offer support, manage clients, and grow my practice",
-              roleKey: "professional",
-              imagePath: "assets/illustrations/curiosity-pana 1.svg",
-            ),
-            buildRoleCard(
-              title: "Organizational User",
-              subtitle: "I’m here as part of my Organization",
-              description: "To access wellness tools provided by the workplace",
-              roleKey: "organization",
-              imagePath: "assets/illustrations/curiosity-pana 1.svg",
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _continue,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurpleAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Choose your role to get started",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                "This helps us personalize your space and show you the right tools.",
+                style: TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 20),
+              buildRoleCard(
+                title: "Personal User",
+                subtitle: "I’m here for myself",
+                description:
+                    "To build healthier habits and access everyday support tools",
+                roleKey: "personal",
+                imagePath: "assets/illustrations/curiosity-pana 1.svg",
+              ),
+              buildRoleCard(
+                title: "Professional User",
+                subtitle: "I’m here as a Mental Health Professional",
+                description:
+                    "To offer support, manage clients, and grow my practice",
+                roleKey: "professional",
+                imagePath: "assets/illustrations/curiosity-pana 1.svg",
+              ),
+              buildRoleCard(
+                title: "Organizational User",
+                subtitle: "I’m here as part of my Organization",
+                description:
+                    "To access wellness tools provided by the workplace",
+                roleKey: "organization",
+                imagePath: "assets/illustrations/curiosity-pana 1.svg",
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _continue,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurpleAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    'Continue',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
                 ),
-                child: const Text('Continue', style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
-            ),
-            const SizedBox(height: 20),
-          ],
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
