@@ -8,10 +8,12 @@ class HelplineService {
     if (_helplineNumbers != null) return;
 
     final String jsonString = await rootBundle.loadString(
-      'assets/json/helpline.json',
+      'lib/personal/pages/1homepage/panic_sos/helpline.json',
     );
+
     final Map<String, dynamic> jsonMap = json.decode(jsonString);
-    _helplineNumbers = jsonMap.map((key, value) => MapEntry(key, value.toString()));
+    _helplineNumbers =
+        jsonMap.map((key, value) => MapEntry(key, value.toString()));
   }
 
   static Future<String?> getStateHelpline(String state) async {
@@ -23,4 +25,4 @@ class HelplineService {
     await loadHelplineNumbers();
     return _helplineNumbers?['national_helpline'];
   }
-} 
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:lottie/lottie.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/spotify_screen.dart';
 
 class Anxity extends StatefulWidget {
   const Anxity({super.key});
@@ -18,11 +19,7 @@ class _AnxityState extends State<Anxity> {
           onPressed: () {
             Navigator.pushNamed(context, '/navbar');
           },
-          icon: const Icon(
-            Icons.arrow_back_ios,
-            size: 20,
-            color: Colors.black,
-          ),
+          icon: const Icon(Icons.arrow_back_ios, size: 20, color: Colors.black),
         ),
       ),
       body: Padding(
@@ -30,24 +27,53 @@ class _AnxityState extends State<Anxity> {
         child: Column(
           children: [
             buildCard(
-              icon: Icons.sos_outlined,
-              text: 'Panic attack tips',
-            ),
-            buildCard(
               icon: Icons.self_improvement_outlined,
               text: 'Breathing exercises',
+              onTap: () => showDialog(
+                context: context,
+                builder: (context) => Dialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Lottie.asset(
+                          'assets/lottie/Breathing.json',
+                          height: 250,
+                          width: 250,
+                          repeat: true,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Breathe in... Breathe out...',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
             buildCard(
-              icon: Icons.calculate_outlined,
-              text: 'Arithmetic',
-            ),
-            buildCard(
-              icon: Icons.sports_basketball_outlined,
-              text: 'Balls game',
-            ),
-            buildCard(
-              icon: Icons.balance_outlined,
-              text: 'Seesaw game',
+              icon: Icons.music_note_rounded,
+              text: 'Music for relaxation',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SpotifyPlayerScreen(
+                      playlistId: '0eU3ubPAnqeSMi9K3YKVpC', // Replace with yours
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -55,14 +81,16 @@ class _AnxityState extends State<Anxity> {
     );
   }
 
-  Widget buildCard({required IconData icon, required String text}) {
+  Widget buildCard({
+    required IconData icon,
+    required String text,
+    required VoidCallback onTap,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Card(
-        color: Color(0xFFD1C4E9),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        color: const Color(0xFFD1C4E9),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ListTile(
           leading: Icon(icon, color: Colors.black),
           title: Text(
@@ -73,25 +101,7 @@ class _AnxityState extends State<Anxity> {
             ),
           ),
           trailing: const Icon(Icons.arrow_forward, color: Colors.black),
-          onTap: () {
-            // Show SVG image in a dialog
-            showDialog(
-              context: context,
-              builder: (context) => Dialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: SvgPicture.asset(
-                    'lib/assets/In progress-amico.svg',
-                    height: 200,
-                    width: 200,
-                  ),
-                ),
-              ),
-            );
-          },
+          onTap: onTap,
         ),
       ),
     );
