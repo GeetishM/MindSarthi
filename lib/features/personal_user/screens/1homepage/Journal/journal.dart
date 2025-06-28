@@ -1,4 +1,3 @@
-// journal.dart (Fixed tag display, search, hint text, lastEdited support)
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'journal_entry.dart';
@@ -34,11 +33,6 @@ class _JournalState extends State<Journal> {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasEntries = journalBox.isNotEmpty;
-    final double searchBarHeight = 60;
-    final double appBarHeight =
-        kToolbarHeight + (hasEntries ? searchBarHeight : 0);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("My Journal"),
@@ -50,43 +44,39 @@ class _JournalState extends State<Journal> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(
-            journalBox.isNotEmpty ? 60 : 0,
-          ),
+          preferredSize: const Size.fromHeight(60),
           child: ValueListenableBuilder(
             valueListenable: journalBox.listenable(),
             builder: (context, Box<JournalEntry> box, _) {
-              final bool hasEntries = box.isNotEmpty;
-              return hasEntries
-                  ? Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                      child: Material(
-                        elevation: 4,
+              if (box.values.isEmpty) return const SizedBox.shrink();
+
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  shadowColor: Colors.black.withOpacity(0.2),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search by title, tag or word...',
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        shadowColor: Colors.black.withOpacity(0.2),
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Search by title, tag or word...',
-                            prefixIcon: const Icon(Icons.search),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                          onChanged: (value) {
-                            setState(() => searchQuery = value.toLowerCase());
-                          },
-                        ),
+                        borderSide: BorderSide.none,
                       ),
-                    )
-                  : const SizedBox.shrink();
+                    ),
+                    onChanged: (value) {
+                      setState(() => searchQuery = value.toLowerCase());
+                    },
+                  ),
+                ),
+              );
             },
           ),
         ),
       ),
-
       body: LayoutBuilder(
         builder: (context, constraints) {
           const double fabSize = 56;
@@ -134,7 +124,7 @@ class _JournalState extends State<Journal> {
                             .toList()
                           ..sort(
                             (a, b) => b.lastEdited.compareTo(a.lastEdited),
-                          ); // ✅ sort by lastEdited
+                          );
 
                     if (entries.isEmpty) {
                       return const Center(
@@ -203,7 +193,6 @@ class _JournalState extends State<Journal> {
                                               createdAt: entry.createdAt,
                                               lastEdited: entry.lastEdited,
                                             ),
-                                          // ✅ use EntryDates widget for lastEdited
                                         ],
                                       ),
                                     ],
@@ -227,9 +216,9 @@ class _JournalState extends State<Journal> {
                             itemCount: entries.length,
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  childAspectRatio: 0.9,
-                                ),
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.9,
+                            ),
                             itemBuilder: (context, index) {
                               final entry = entries[index];
                               return Card(
@@ -270,10 +259,10 @@ class _JournalState extends State<Journal> {
                                                     label: Text('#$tag'),
                                                     backgroundColor:
                                                         Colors.grey.shade200,
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 4,
-                                                        ),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 4,
+                                                    ),
                                                   ),
                                                 )
                                                 .toList(),
