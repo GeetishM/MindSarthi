@@ -14,20 +14,26 @@ import 'package:provider/provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Hive for Journal
+   // Initialize Hive
   await Hive.initFlutter();
+
+  // Initialize Hive for Journal
   Hive.registerAdapter(JournalEntryAdapter());
   await Hive.openBox<JournalEntry>('journalBox');
   await Hive.openBox('journalSettings');
 
-  // Initialize ChatProvider Hive + Firebase
+  // Initialize ChatProvider Hive
   Hive.registerAdapter(ChatHistoryAdapter());
   await Hive.openBox<ChatHistory>('chat_history');
   await ChatProvider.initHive();
+
+  // Open a box for TodaysGoals
+  await Hive.openBox('mybox');
+
+   // Initialize Firebase
   await Firebase.initializeApp();
   
-  
-
+  // Ensure Firebase Auth is initialized
   final user = FirebaseAuth.instance.currentUser;
 
   runApp(
