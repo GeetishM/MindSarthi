@@ -31,29 +31,24 @@ void main() async {
   final user = FirebaseAuth.instance.currentUser;
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
-      ],
-      child: MindSarthi(isLoggedIn: user != null),
-    ),
-  );
+  MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (_) => ChatProvider()),
+    ],
+    child: const MindSarthi(),
+  ),
+);
+
 }
 
 class MindSarthi extends StatelessWidget {
-  final bool isLoggedIn;
-
-  const MindSarthi({
-    super.key,
-    required this.isLoggedIn,
-  });
+  const MindSarthi({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       routes: AppRouter.routes,
-      home: isLoggedIn ? const NavBar() : const WelcomeScreen(),
       title: 'MindSarthi',
       theme: ThemeData(
         brightness: Brightness.light,
@@ -73,7 +68,20 @@ class MindSarthi extends StatelessWidget {
           ),
         ),
       ),
-      
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasData) {
+            return const NavBar();
+          } else {
+            return const WelcomeScreen();
+          }
+        },
+      ),
     );
   }
 }
+
