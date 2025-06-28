@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/features/welcome.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_screen.dart';
 import 'package:mindsarthi/features/personal_user/auth/personal_auth.dart';
@@ -38,7 +40,10 @@ class Sidebar extends StatelessWidget {
                   return Material(
                     color: Colors.grey[200],
                     child: DrawerHeader(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -83,27 +88,37 @@ class Sidebar extends StatelessWidget {
                       );
                     },
                     child: DrawerHeader(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: const BoxDecoration(color: Colors.transparent),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent,
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CircleAvatar(
                             radius: 40,
                             backgroundColor: Colors.pinkAccent,
-                            backgroundImage: (photoUrl != null && photoUrl.toString().isNotEmpty)
-                                ? NetworkImage(photoUrl) as ImageProvider<Object>
-                                : null,
-                            child: (photoUrl == null || photoUrl.toString().isEmpty)
-                                ? Text(
-                                    _profileInitial ?? '',
-                                    style: const TextStyle(
-                                      fontSize: 32,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )
-                                : null,
+                            backgroundImage:
+                                (photoUrl != null &&
+                                        photoUrl.toString().isNotEmpty)
+                                    ? NetworkImage(photoUrl)
+                                        as ImageProvider<Object>
+                                    : null,
+                            child:
+                                (photoUrl == null ||
+                                        photoUrl.toString().isEmpty)
+                                    ? Text(
+                                      _profileInitial ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                    : null,
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -144,16 +159,17 @@ class Sidebar extends StatelessWidget {
               onTap: () async {
                 try {
                   await FirebaseAuth.instance.signOut();
+
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const PersonalAuth()),
+                    MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                     (route) => false,
                   );
                 } catch (e) {
-                  print("Error signing out: $e");
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Logout failed: $e')),
-                  );
+                  print("Logout failed: $e");
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Logout failed: $e')));
                 }
               },
             ),
