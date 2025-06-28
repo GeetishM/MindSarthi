@@ -400,26 +400,42 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _callSavedNumber() async {
-    if (savedPreference == "helpline" && savedContactOrState != null) {
-      String? helplineNumber = await HelplineService.getStateHelpline(
-        savedContactOrState!,
-      );
-      if (helplineNumber != null) {
-        _makePhoneCall(helplineNumber);
-      } else {
-        toastification.show(
-          context: context,
-          title: const Text("Helpline not found"),
-          description: const Text("Please select a valid state."),
-          type: ToastificationType.error,
-          style: ToastificationStyle.flat,
-          alignment: Alignment.bottomCenter,
+    try {
+      if (savedPreference == "helpline" && savedContactOrState != null) {
+        String? helplineNumber = await HelplineService.getStateHelpline(
+          savedContactOrState!,
         );
+
+        if (helplineNumber != null && helplineNumber.isNotEmpty) {
+          await _makePhoneCall(helplineNumber);
+        } else {
+          toastification.show(
+            context: context,
+            title: const Text("Helpline not found"),
+            description: Text(
+              "We couldn't find a helpline for \"$savedContactOrState\".",
+            ),
+            type: ToastificationType.error,
+            style: ToastificationStyle.flat,
+            alignment: Alignment.bottomCenter,
+            autoCloseDuration: const Duration(seconds: 3),
+          );
+        }
+      } else if (savedPreference == "friend" && savedContactOrState != null) {
+        await _makePhoneCall(savedContactOrState!);
+      } else {
+        _showChoiceDialog();
       }
-    } else if (savedPreference == "friend" && savedContactOrState != null) {
-      _makePhoneCall(savedContactOrState!);
-    } else {
-      _showChoiceDialog();
+    } catch (e) {
+      toastification.show(
+        context: context,
+        title: const Text("Something went wrong"),
+        description: Text("Error: $e"),
+        type: ToastificationType.error,
+        style: ToastificationStyle.flat,
+        alignment: Alignment.bottomCenter,
+        autoCloseDuration: const Duration(seconds: 3),
+      );
     }
   }
 
@@ -444,7 +460,6 @@ class _HomePageState extends State<HomePage> {
     }
     return null;
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -626,7 +641,9 @@ class _HomePageState extends State<HomePage> {
   SliverToBoxAdapter _buildSimpleGoalsSection() {
     return SliverToBoxAdapter(
       child: GestureDetector(
-        onTap: () => Navigator.pushNamed(context, '/todaysgoals'), // Use your route
+        onTap:
+            () =>
+                Navigator.pushNamed(context, '/todaysgoals'), // Use your route
         child: Container(
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.all(16),
