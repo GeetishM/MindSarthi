@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lottie/lottie.dart';
 import 'package:toastification/toastification.dart';
 import 'otp_verification.dart';
 
@@ -15,100 +16,169 @@ class PersonalAuth extends StatefulWidget {
 class _PersonalAuthState extends State<PersonalAuth> {
   final _auth = FirebaseAuth.instance;
   String? _phoneNumber;
-  String? _phoneError;
+  bool _isPhoneValid = false;
 
-  bool get _isValid => _phoneNumber != null && _phoneError == null;
-
-  void _validatePhone(String? value) {
-    setState(() {
-      _phoneError = (value == null || value.isEmpty) ? 'Phone number is required' : null;
-    });
+  void _checkPhoneValidity(String? value) {
+    if (value == null || value.isEmpty) {
+      _isPhoneValid = false;
+    } else {
+      // Remove any non-digit characters and check length
+      final digits = value.replaceAll(RegExp(r'\D'), '');
+      _isPhoneValid = digits.length == 10;
+    }
+    setState(() {});
   }
 
   Future<void> _sendOtp() async {
-    _validatePhone(_phoneNumber);
-    if (_phoneError != null) return;
+    if (_phoneNumber == null || !_isPhoneValid) {
+      toastification.show(
+        context: context,
+        type: ToastificationType.warning,
+        title: const Text('Phone number required'),
+        description: const Text('Please enter a valid 10-digit phone number.'),
+        autoCloseDuration: const Duration(seconds: 3),
+      );
+      return;
+    }
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.asset(
+                  'assets/lottie/loading.json',
+                  height: 120,
+                  width: 120,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Sending OTP...',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
 
     try {
       await _auth.verifyPhoneNumber(
         phoneNumber: _phoneNumber!,
         verificationCompleted: (cred) async {
           await _auth.signInWithCredential(cred);
+          if (context.mounted) Navigator.pop(context); // Close loading dialog
         },
         verificationFailed: (e) {
+          Navigator.pop(context); // Close loading dialog
           toastification.show(
             context: context,
             type: ToastificationType.error,
             title: const Text('OTP Error'),
             description: Text(e.message ?? 'Unknown error'),
+            autoCloseDuration: const Duration(seconds: 3),
           );
         },
         codeSent: (verificationId, resendToken) {
+          Navigator.pop(context); // Close loading dialog
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => OtpVerificationScreen(
-                phoneNumber: _phoneNumber!,
-                verificationId: verificationId,
-              ),
+              builder:
+                  (_) => OtpVerificationScreen(
+                    phoneNumber: _phoneNumber!,
+                    verificationId: verificationId,
+                  ),
             ),
           );
+          toastification.show(
+            context: context,
+            type: ToastificationType.info,
+            title: const Text('OTP Sent'),
+            description: const Text('Please check your SMS inbox.'),
+            autoCloseDuration: const Duration(seconds: 4),
+          );
         },
-        codeAutoRetrievalTimeout: (_) {},
-      );
-
-      toastification.show(
-        context: context,
-        type: ToastificationType.info,
-        title: const Text('OTP Sent'),
-        description: const Text('Please check your SMS inbox.'),
+        codeAutoRetrievalTimeout: (_) {
+          Navigator.pop(context); // Close loading dialog if still open
+        },
       );
     } catch (e) {
+      Navigator.pop(context); // Close loading dialog
       toastification.show(
         context: context,
         type: ToastificationType.error,
         title: const Text('Verification Failed'),
         description: Text(e.toString()),
+        autoCloseDuration: const Duration(seconds: 3),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isSmall = size.height < 600;
+    final horizontalPadding = size.width * 0.05;
+    final cardWidth = size.width > 400 ? 380.0 : size.width * 0.9;
+
     return Scaffold(
       backgroundColor: const Color(0xFFEDEDED),
-      body: Center(
-        child: Container(
-          width: 350,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                alignment: Alignment.center,
-                child: const Text(
-                  "Log In or Sign Up",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: 24,
+            ),
+            child: Container(
+              width: cardWidth,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 10),
+                ],
               ),
-              const Divider(thickness: 1),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Center(
-                      child: const Text(
-                        "Welcome to MindSarthi",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    const Text(
+                      "Log In or Sign Up",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Divider(thickness: 1),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Welcome to MindSarthi",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 15),
+
                     IntlPhoneField(
                       decoration: InputDecoration(
                         labelText: 'Phone Number',
@@ -117,29 +187,30 @@ class _PersonalAuthState extends State<PersonalAuth> {
                         border: _buildBorder(),
                         enabledBorder: _buildBorder(),
                         focusedBorder: _buildBorder(focused: true),
-                        errorText: _phoneError,
                       ),
                       initialCountryCode: 'IN',
                       onChanged: (phone) {
                         _phoneNumber = phone.completeNumber;
-                        _validatePhone(_phoneNumber);
+                        _checkPhoneValidity(phone.number);
                       },
                     ),
+
                     const SizedBox(height: 15),
+
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _sendOtp,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: Colors.deepPurpleAccent[200],
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: Text(
-                          _isValid ? "Continue" : "Enter your phone",
-                          style: const TextStyle(
+                        child: const Text(
+                          "Send OTP",
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -147,7 +218,9 @@ class _PersonalAuthState extends State<PersonalAuth> {
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 20),
+
                     Row(
                       children: const [
                         Expanded(child: Divider()),
@@ -158,22 +231,35 @@ class _PersonalAuthState extends State<PersonalAuth> {
                         Expanded(child: Divider()),
                       ],
                     ),
+
                     const SizedBox(height: 20),
+
                     _buildSocialButton(
-                      icon: SvgPicture.asset('assets/icons/google.svg', height: 20),
+                      icon: SvgPicture.asset(
+                        'assets/icons/google.svg',
+                        height: 20,
+                      ),
                       text: "Continue with Google",
                       onPressed: () {},
                     ),
+
                     const SizedBox(height: 10),
+
                     _buildSocialButton(
-                      icon: const Icon(Icons.apple, color: Colors.black, size: 25),
+                      icon: const Icon(
+                        Icons.apple,
+                        color: Colors.black,
+                        size: 25,
+                      ),
                       text: "Continue with Apple",
                       onPressed: () {},
                     ),
+
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -192,7 +278,9 @@ class _PersonalAuthState extends State<PersonalAuth> {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           side: const BorderSide(color: Colors.grey),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         child: Stack(
           alignment: Alignment.center,
@@ -218,11 +306,12 @@ class _PersonalAuthState extends State<PersonalAuth> {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(
-        color: _phoneError != null
-            ? Colors.red
-            : focused
-                ? (_isValid ? Colors.green : const Color(0xFF222222))
-                : (_isValid ? Colors.green : const Color(0xFFBDBDBD)),
+        color:
+            _isPhoneValid
+                ? Colors.green
+                : focused
+                ? const Color(0xFFBDBDBD)
+                : const Color(0xFFBDBDBD),
         width: focused ? 2 : 1.5,
       ),
     );

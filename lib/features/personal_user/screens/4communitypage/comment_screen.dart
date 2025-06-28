@@ -32,6 +32,7 @@ class _CommentScreenState extends State<CommentScreen> {
 
   Future<void> _checkProfileStatus() async {
     final result = await isProfileComplete();
+    if (!mounted) return;
     setState(() {
       _isProfileComplete = result;
       _isCheckingProfile = false;
