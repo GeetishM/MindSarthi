@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/screen/chat_history_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/utility/utilites.dart';
@@ -105,11 +106,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   Expanded(
                     child:
                         chatProvider.inChatMessages.isEmpty
-                            ? const Center(
+                            ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
+                                  const Text(
                                     'Hey there, how are you feeling today?',
                                     style: TextStyle(
                                       fontSize: 18,
@@ -117,8 +118,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
-                                  SizedBox(height: 10),
-                                  Text(
+                                  const SizedBox(height: 10),
+                                  const Text(
                                     "I'm here to listen, whenever you're ready.",
                                     style: TextStyle(
                                       fontSize: 16,
@@ -126,6 +127,15 @@ class _ChatScreenState extends State<ChatScreen> {
                                       color: Colors.grey,
                                     ),
                                     textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    height: 280,
+                                    width: 280,
+                                    child: Lottie.asset(
+                                      'assets/lottie/chatbot.json',
+                                      fit: BoxFit.contain,
+                                    ),
                                   ),
                                 ],
                               ),

@@ -131,14 +131,14 @@ class _PersonalAuthState extends State<PersonalAuth> {
                       child: ElevatedButton(
                         onPressed: _sendOtp,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: Colors.deepPurpleAccent[200],
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         child: Text(
-                          _isValid ? "Continue" : "Enter your phone",
+                          _isValid ? "Continue" : "Send OTP",
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
