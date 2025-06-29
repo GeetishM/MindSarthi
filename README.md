@@ -11,14 +11,21 @@ MindSarthi enables:
 - Real-time panic/SOS system
 - Verified professional consultations
 - Daily wellness tools (mood tracker, journaling, insights)
-- Role-based UX for personal, professional, and organizational users
+- Role-based UX for personal, professional, and organizational users 
 
 ---
 
-## Screenshots
+## 📸 Screenshots
+
+<img src="https://github.com/user-attachments/assets/4452d734-4b81-4b86-a9b6-84db737f4e6d" width="250"/>
+<img src="https://github.com/user-attachments/assets/586488bd-7f89-46af-86a3-4b37d0f3035e" width="250"/>
+<img src="https://github.com/user-attachments/assets/1ad68376-1f0a-4f56-a6e3-ea77d6ba9691" width="250"/>
+<img src="https://github.com/user-attachments/assets/410ca569-2c82-4775-9ceb-a8021b8ab0d3" width="250"/>
+<img src="https://github.com/user-attachments/assets/d3637de6-87bd-4cdb-a0f6-be52e6373e3b" width="250"/>
 
 
 ---
+
 
 ## ⚙ Tech Stack
 
@@ -111,9 +118,6 @@ These files are excluded via `.gitignore` to **protect API keys** and prevent ac
 
 ---
 
-## 📽 Demo Video
-
-[Link to demo video here once ready]
 
 ---
 
