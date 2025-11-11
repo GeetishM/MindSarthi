@@ -1,7 +1,6 @@
 # MindSarthi: Your Pocket Mental Health Companion
 
-*MindSarthi* is a mobile-first mental wellness platform built to deliver accessible, secure, and empathetic support to individuals, mental health professionals, and organizations. Developed during *Hacksagon 2025*, this is a functional MVP submission for the Mobile App track.
-
+*MindSarthi* is a mobile-first mental wellness platform built to deliver accessible, secure, and empathetic support to individuals, mental health professionals, and organizations. 
 ---
 
 ## 📱 Overview
