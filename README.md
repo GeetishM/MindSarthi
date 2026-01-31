@@ -117,15 +117,6 @@ These files are excluded via `.gitignore` to **protect API keys** and prevent ac
 
 ---
 
-
----
-
-## 📣 License
-
-MIT License – free to use for social good. Attribution appreciated!
-
----
-
 ## 🙏 Acknowledgments
 
 - Mentors & Judges from Hacksagon 2025  
