@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 
 class ConsultPage extends StatelessWidget {
   const ConsultPage({super.key});
@@ -151,9 +152,9 @@ class TherapistCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey)),
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -213,10 +214,18 @@ class TherapistCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             vertical: 4, horizontal: 8),
                         decoration: BoxDecoration(
-                          color: Color(0xFFD1C4E9),
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppColors.primaryLight,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.border),
                         ),
-                        child: Text(tag),
+                        child: Text(
+                          tag,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       );
                     }).toList(),
                   ),
@@ -246,10 +255,6 @@ class TherapistCard extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 50),
-              backgroundColor: Colors.deepPurple[500],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
             ),
             child: const Text(
               'Book a Session',
@@ -281,14 +286,11 @@ class SessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.border),
       ),
       child: Container(
-        color: Colors.white,
+        color: AppColors.white,
         width: 300,
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -320,8 +322,9 @@ class SessionCard extends StatelessWidget {
                       Text(
                         status,
                         style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.teal,
+                          fontSize: 14,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),

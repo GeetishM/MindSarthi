@@ -3,23 +3,20 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mindsarthi/core/routes/app_routes.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Journal/journal_entry.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/chat_history.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
 import 'package:mindsarthi/features/personal_user/screens/nav.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
-
-
-
+import 'package:toastification/toastification.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-   // Initialize Hive
+  // Initialize Hive
   await Hive.initFlutter();
-
-  
 
   // Initialize Hive for Journal
   Hive.registerAdapter(JournalEntryAdapter());
@@ -34,21 +31,17 @@ void main() async {
   // Open a box for TodaysGoals
   await Hive.openBox('mybox');
 
-   // Initialize Firebase
+  // Initialize Firebase
   await Firebase.initializeApp();
-  
-  // Ensure Firebase Auth is initialized
-  final user = FirebaseAuth.instance.currentUser;
 
   runApp(
-  MultiProvider(
-    providers: [
-      ChangeNotifierProvider(create: (_) => ChatProvider()),
-    ],
-    child: const MindSarthi(),
-  ),
-);
-
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
+      ],
+      child: const MindSarthi(),
+    ),
+  );
 }
 
 class MindSarthi extends StatelessWidget {
@@ -56,42 +49,35 @@ class MindSarthi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      routes: AppRouter.routes,
-      title: 'MindSarthi',
-      theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color.fromARGB(255, 244, 239, 249),
-        primarySwatch: Colors.indigo,
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          filled: true,
-          fillColor: Colors.white,
+    // ToastificationWrapper must wrap the entire app for toasts to work
+    return ToastificationWrapper(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        routes: AppRouter.routes,
+        title: 'MindSarthi',
+        theme: AppTheme.light,
+        home: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                backgroundColor: AppColors.background,
+                body: Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                    strokeWidth: 2.5,
+                  ),
+                ),
+              );
+            }
+            if (snapshot.hasData) {
+              return const NavBar();
+            } else {
+              return const WelcomeScreen();
+            }
+          },
         ),
-        cardTheme: const CardThemeData(
-          color: Colors.white,
-          elevation: 2,
-          margin: EdgeInsets.all(8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
-        ),
-      ),
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasData) {
-            return const NavBar();
-          } else {
-            return const WelcomeScreen();
-          }
-        },
       ),
     );
   }
 }
-

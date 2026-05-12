@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/welcome.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_screen.dart';
-import 'package:mindsarthi/features/personal_user/auth/personal_auth.dart';
 import 'package:mindsarthi/features/personal_user/screens/profile.dart';
 
 class Sidebar extends StatelessWidget {
@@ -27,171 +27,156 @@ class Sidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: Container(
-        color: Colors.white,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            FutureBuilder<Map<String, dynamic>?>(
-              future: fetchUserProfile(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  // SHIMMER PLACEHOLDER
-                  return Material(
-                    color: Colors.grey[200],
-                    child: DrawerHeader(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Shimmer.fromColors(
-                            baseColor: Colors.grey[300]!,
-                            highlightColor: Colors.grey[100]!,
-                            child: CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Colors.grey[300],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Shimmer.fromColors(
-                            baseColor: Colors.grey[300]!,
-                            highlightColor: Colors.grey[100]!,
-                            child: Container(
-                              height: 16,
-                              width: 120,
-                              color: Colors.grey[300],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
+      backgroundColor: AppColors.white,
+      child: Column(
+        children: [
+          // ── Header ────────────────────────────────────────
+          FutureBuilder<Map<String, dynamic>?>(
+            future: fetchUserProfile(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return _shimmerHeader();
+              }
 
-                final data = snapshot.data;
-                final nickname = data?['nickname'] ?? 'User';
-                final photoUrl = data?['photoUrl'];
-                final _profileInitial = getProfileInitial(nickname);
+              final data = snapshot.data;
+              final nickname = data?['nickname'] ?? 'User';
+              final photoUrl = data?['photoUrl'];
+              final initial = getProfileInitial(nickname);
 
-                return Material(
-                  color: Colors.grey[200],
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ProfilePage(),
-                        ),
-                      );
-                    },
-                    child: DrawerHeader(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: Colors.transparent,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Colors.pinkAccent,
-                            backgroundImage:
-                                (photoUrl != null &&
-                                        photoUrl.toString().isNotEmpty)
-                                    ? NetworkImage(photoUrl)
-                                        as ImageProvider<Object>
-                                    : null,
-                            child:
-                                (photoUrl == null ||
-                                        photoUrl.toString().isEmpty)
-                                    ? Text(
-                                      _profileInitial ?? '',
-                                      style: const TextStyle(
-                                        fontSize: 32,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    )
-                                    : null,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Namaste, $nickname!",
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 18,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            _buildSidebarOption(
-              icon: Icons.lock,
-              title: "App Lock",
-              onTap: () {
-                Navigator.push(
+              return InkWell(
+                onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const AppLockSettingsScreen(),
+                  MaterialPageRoute(builder: (_) => const ProfilePage()),
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryLight,
                   ),
-                );
-              },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: AppColors.white,
+                        backgroundImage: (photoUrl != null &&
+                                photoUrl.toString().isNotEmpty)
+                            ? NetworkImage(photoUrl) as ImageProvider<Object>
+                            : null,
+                        child: (photoUrl == null || photoUrl.toString().isEmpty)
+                            ? Text(
+                                initial ?? 'U',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Namaste, $nickname 👋',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Tap to edit profile',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // ── Menu items ────────────────────────────────────
+          const SizedBox(height: 8),
+
+          _buildItem(
+            icon: Icons.lock_outline_rounded,
+            title: 'App Lock',
+            onTap: (context) => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AppLockSettingsScreen()),
             ),
+          ),
 
-            Divider(color: Colors.grey[400]),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(color: AppColors.divider),
+          ),
 
-            _buildSidebarOption(
-              icon: Icons.logout,
-              title: "Log Out",
-              textColor: Colors.red,
-              onTap: () async {
-                try {
-                  await FirebaseAuth.instance.signOut();
-
+          _buildItem(
+            icon: Icons.logout_rounded,
+            title: 'Log Out',
+            textColor: AppColors.error,
+            iconColor: AppColors.error,
+            onTap: (ctx) async {
+              try {
+                await FirebaseAuth.instance.signOut();
+                if (ctx.mounted) {
                   Navigator.pushAndRemoveUntil(
-                    context,
+                    ctx,
                     MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                     (route) => false,
                   );
-                } catch (e) {
-                  print("Logout failed: $e");
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Logout failed: $e')));
                 }
-              },
-            ),
-          ],
-        ),
+              } catch (e) {
+                if (ctx.mounted) {
+                  AppToast.error(ctx, 'Logout failed', description: e.toString());
+                }
+              }
+            },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSidebarOption({
+  Widget _shimmerHeader() {
+    return Shimmer.fromColors(
+      baseColor: AppColors.shimmerBase,
+      highlightColor: AppColors.shimmerHighlight,
+      child: Container(
+        width: double.infinity,
+        height: 160,
+        color: AppColors.primaryLight,
+      ),
+    );
+  }
+
+  Widget _buildItem({
     required IconData icon,
     required String title,
-    required VoidCallback onTap,
+    required void Function(BuildContext) onTap,
     Color? textColor,
+    Color? iconColor,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: textColor ?? Colors.black),
-      title: Text(
-        title,
-        style: TextStyle(color: textColor ?? Colors.black, fontSize: 16),
+    return Builder(
+      builder: (context) => ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+        leading: Icon(icon, color: iconColor ?? AppColors.textSecondary, size: 22),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: textColor ?? AppColors.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        onTap: () => onTap(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      onTap: onTap,
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/home.dart';
 import 'package:mindsarthi/features/personal_user/screens/2consultpage/consult.dart';
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/insight.dart';
@@ -28,15 +30,13 @@ class _NavBarState extends State<NavBar> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
-    final iconSize = screenWidth < 360 ? 20.0 : 24.0;
-    final labelStyle = screenWidth < 360
-        ? const TextStyle(fontSize: 11, fontWeight: FontWeight.normal)
-        : const TextStyle(fontSize: 12, fontWeight: FontWeight.normal);
+    final iconSize = screenWidth < 360 ? 20.0 : 22.0;
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
         final now = DateTime.now();
         final backPressedRecently = _lastBackPressed != null &&
             now.difference(_lastBackPressed!) < const Duration(seconds: 2);
@@ -45,93 +45,48 @@ class _NavBarState extends State<NavBar> {
           exit(0);
         } else {
           _lastBackPressed = now;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Press back again to exit'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-          return false;
+          AppToast.info(context, 'Press back again to exit');
         }
       },
       child: Scaffold(
         body: _pages[_currentIndex],
-        bottomNavigationBar: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            labelTextStyle: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return labelStyle.copyWith(fontWeight: FontWeight.bold);
-              }
-              return labelStyle;
-            }),
+        bottomNavigationBar: Container(
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            border: Border(
+              top: BorderSide(color: AppColors.border, width: 1),
+            ),
           ),
           child: NavigationBar(
             height: 64,
-            backgroundColor: theme.scaffoldBackgroundColor,
+            backgroundColor: AppColors.white,
             selectedIndex: _currentIndex,
             onDestinationSelected: (index) {
               setState(() => _currentIndex = index);
             },
             destinations: [
-              NavigationDestination(
-                label: 'Home',
-                icon: SvgPicture.asset(
-                  'assets/icons/home.svg',
-                  height: iconSize,
-                ),
-                selectedIcon: SvgPicture.asset(
-                  'assets/icons/homeFill.svg',
-                  height: iconSize,
-                ),
-              ),
-              NavigationDestination(
-                label: 'Consult',
-                icon: SvgPicture.asset(
-                  'assets/icons/stethoscope.svg',
-                  height: iconSize,
-                ),
-                selectedIcon: SvgPicture.asset(
-                  'assets/icons/stethoscopeFill.svg',
-                  height: iconSize,
-                ),
-              ),
-              NavigationDestination(
-                label: 'Insight',
-                icon: SvgPicture.asset(
-                  'assets/icons/book-open-cover.svg',
-                  height: iconSize,
-                ),
-                selectedIcon: SvgPicture.asset(
-                  'assets/icons/book-open-cover-fill.svg',
-                  height: iconSize,
-                ),
-              ),
-              NavigationDestination(
-                label: 'Community',
-                icon: SvgPicture.asset(
-                  'assets/icons/users-class.svg',
-                  height: iconSize,
-                ),
-                selectedIcon: SvgPicture.asset(
-                  'assets/icons/users-class-fill.svg',
-                  height: iconSize,
-                ),
-              ),
-              NavigationDestination(
-                label: 'ChatPal',
-                icon: SvgPicture.asset(
-                  'assets/icons/chatbot-speech-bubble.svg',
-                  height: iconSize,
-                ),
-                selectedIcon: SvgPicture.asset(
-                  'assets/icons/chatbot-speech-bubble-fill.svg',
-                  height: iconSize,
-                ),
-              ),
+              _navItem('Home', 'assets/icons/home.svg', 'assets/icons/homeFill.svg', iconSize),
+              _navItem('Consult', 'assets/icons/stethoscope.svg', 'assets/icons/stethoscopeFill.svg', iconSize),
+              _navItem('Insight', 'assets/icons/book-open-cover.svg', 'assets/icons/book-open-cover-fill.svg', iconSize),
+              _navItem('Community', 'assets/icons/users-class.svg', 'assets/icons/users-class-fill.svg', iconSize),
+              _navItem('ChatPal', 'assets/icons/chatbot-speech-bubble.svg', 'assets/icons/chatbot-speech-bubble-fill.svg', iconSize),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  NavigationDestination _navItem(
+    String label,
+    String icon,
+    String selectedIcon,
+    double size,
+  ) {
+    return NavigationDestination(
+      label: label,
+      icon: SvgPicture.asset(icon, height: size, colorFilter: const ColorFilter.mode(AppColors.textSecondary, BlendMode.srcIn)),
+      selectedIcon: SvgPicture.asset(selectedIcon, height: size, colorFilter: const ColorFilter.mode(AppColors.primary, BlendMode.srcIn)),
     );
   }
 }

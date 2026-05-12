@@ -2,9 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/new_post.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_card.dart';
-import 'package:toastification/toastification.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -87,10 +88,10 @@ class _CommunityPageState extends State<CommunityPage> {
 
   void _onNewPostPressed() {
     if (!_isProfileComplete) {
-      toastification.show(
-        context: context,
-        title: const Text("Complete your profile to create posts"),
-        type: ToastificationType.warning,
+      AppToast.warning(
+        context,
+        'Complete your profile to post',
+        description: 'Go to your profile and fill in all details first.',
       );
       return;
     }
@@ -171,11 +172,16 @@ class _CommunityPageState extends State<CommunityPage> {
                         });
                         _scrollToSelectedChip(index);
                       },
-                      selectedColor: Colors.pinkAccent,
+                      selectedColor: AppColors.primary,
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black,
+                        color: isSelected ? AppColors.white : AppColors.textPrimary,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        fontSize: 13,
                       ),
-                      backgroundColor: Colors.grey.shade200,
+                      backgroundColor: AppColors.background,
+                      side: BorderSide(
+                        color: isSelected ? AppColors.primary : AppColors.border,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),

@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:toastification/toastification.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/theme/app_toast.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -24,11 +25,20 @@ class _ProfilePageState extends State<ProfilePage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _isLoading = true;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _nicknameController.dispose();
+    _ageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -56,25 +66,19 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_usernameController.text.trim().isEmpty ||
         _nicknameController.text.trim().isEmpty ||
         _ageController.text.trim().isEmpty) {
-      toastification.show(
-        context: context,
-        title: const Text("Please fill all fields"),
-        type: ToastificationType.warning,
-      );
+      AppToast.warning(context, 'Please fill all fields');
       return;
     }
 
     if (int.tryParse(_ageController.text.trim()) == null) {
-      toastification.show(
-        context: context,
-        title: const Text("Age must be a number"),
-        type: ToastificationType.error,
-      );
+      AppToast.error(context, 'Age must be a valid number');
       return;
     }
 
     final user = _auth.currentUser;
     if (user == null) return;
+
+    setState(() => _isSaving = true);
 
     final initial = _usernameController.text.trim()[0].toUpperCase();
 
@@ -88,82 +92,130 @@ class _ProfilePageState extends State<ProfilePage> {
       'profileInitial': initial,
     };
 
-    await _firestore.collection('users').doc(user.uid).set(data, SetOptions(merge: true));
-
-    toastification.show(
-      context: context,
-      title: const Text("Profile saved!"),
-      type: ToastificationType.success,
-    );
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .set(data, SetOptions(merge: true));
 
     setState(() {
       _profileInitial = initial;
+      _isSaving = false;
     });
+
+    if (mounted) {
+      AppToast.success(context, 'Profile saved!');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("Profile"),
+        title: const Text('Profile'),
         centerTitle: true,
-        backgroundColor: Colors.blueGrey,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 2.5,
+              ),
+            )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 6,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.white,
-                        child: Text(
-                          _profileInitial ?? 'U',
-                          style: const TextStyle(
-                            fontSize: 40,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  // ── Avatar ──────────────────────────────────
+                  Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.border, width: 2),
+                    ),
+                    child: Center(
+                      child: Text(
+                        _profileInitial ?? 'U',
+                        style: const TextStyle(
+                          fontSize: 36,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Your Profile',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'This information is private and secure',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // ── Form card ───────────────────────────────
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        _buildInput('Username', _usernameController, Icons.person_outline_rounded),
+                        const SizedBox(height: 14),
+                        _buildInput('Nickname', _nicknameController, Icons.tag_rounded),
+                        const SizedBox(height: 14),
+                        _buildInput(
+                          'Phone Number',
+                          TextEditingController(text: _phoneNumber),
+                          Icons.phone_outlined,
+                          readOnly: true,
+                        ),
+                        const SizedBox(height: 14),
+                        _buildDropdown(),
+                        const SizedBox(height: 14),
+                        _buildInput(
+                          'Age',
+                          _ageController,
+                          Icons.cake_outlined,
+                          keyboardType: TextInputType.number,
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isSaving ? null : _saveProfile,
+                            child: _isSaving
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: AppColors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('Save Profile'),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildInput("Username", _usernameController, Icons.person),
-                      const SizedBox(height: 15),
-                      _buildInput("Nickname", _nicknameController, Icons.tag),
-                      const SizedBox(height: 15),
-                      _buildInput(
-                        "Phone Number",
-                        TextEditingController(text: _phoneNumber),
-                        Icons.phone,
-                        readOnly: true,
-                      ),
-                      const SizedBox(height: 15),
-                      _buildDropdown("Gender", _genders, _selectedGender, (val) {
-                        setState(() => _selectedGender = val!);
-                      }),
-                      const SizedBox(height: 15),
-                      _buildInput("Age", _ageController, Icons.calendar_today,
-                          keyboardType: TextInputType.number),
-                      const SizedBox(height: 25),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueGrey,
-                          minimumSize: const Size.fromHeight(50),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: _saveProfile,
-                        icon: const Icon(Icons.save),
-                        label: const Text("Save", style: TextStyle(fontSize: 16)),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
     );
@@ -180,24 +232,33 @@ class _ProfilePageState extends State<ProfilePage> {
       controller: controller,
       readOnly: readOnly,
       keyboardType: keyboardType,
+      style: const TextStyle(
+        fontSize: 14,
+        color: AppColors.textPrimary,
+      ),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        prefixIcon: Icon(icon, size: 20, color: AppColors.textSecondary),
+        filled: true,
+        fillColor: readOnly ? AppColors.background : AppColors.white,
       ),
     );
   }
 
-  Widget _buildDropdown(String label, List<String> options, String value, Function(String?) onChanged) {
+  Widget _buildDropdown() {
     return DropdownButtonFormField<String>(
-      value: value,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: const Icon(Icons.transgender),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      initialValue: _selectedGender,
+      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+      decoration: const InputDecoration(
+        labelText: 'Gender',
+        prefixIcon: Icon(Icons.person_pin_outlined, size: 20, color: AppColors.textSecondary),
+        filled: true,
+        fillColor: AppColors.white,
       ),
-      items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-      onChanged: onChanged,
+      items: _genders
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(),
+      onChanged: (val) => setState(() => _selectedGender = val!),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/Bookmarked_screen.dart';
 import 'bookmark_manager.dart';
 import 'insight_card.dart';
@@ -115,8 +116,16 @@ class _InsightPageState extends State<InsightPage> {
       child: ChoiceChip(
         label: Text(label),
         selected: isSelected,
-        selectedColor: Colors.deepPurple[200],
-        backgroundColor: Colors.grey[200],
+        selectedColor: AppColors.primary,
+        backgroundColor: AppColors.background,
+        side: BorderSide(
+          color: isSelected ? AppColors.primary : AppColors.border,
+        ),
+        labelStyle: TextStyle(
+          color: isSelected ? AppColors.white : AppColors.textPrimary,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          fontSize: 13,
+        ),
         onSelected: (_) {
           setState(() => selectedTag = label);
         },

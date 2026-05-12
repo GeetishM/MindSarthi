@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/database.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/home.dart';
 import 'package:shimmer/shimmer.dart';
@@ -74,34 +76,28 @@ class _HomePageState extends State<HomePage> {
       savedContactOrState = value;
     });
 
-    toastification.show(
-      context: context,
-      title: const Text("SOS contact saved successfully"),
-      autoCloseDuration: const Duration(seconds: 2),
-      type: ToastificationType.success,
-      style: ToastificationStyle.flat,
-      alignment: Alignment.bottomCenter,
-      icon: const Icon(Icons.check_circle),
-    );
+    if (mounted) {
+      AppToast.success(context, 'SOS contact saved successfully');
+    }
   }
 
   void _showChoiceDialog() {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       builder: (context) {
         return Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: Colors.deepPurpleAccent[200],
-                size: 48,
+              const Icon(
+                Icons.emergency_share_rounded,
+                color: AppColors.primary,
+                size: 44,
               ),
               const SizedBox(height: 12),
               Text(
@@ -121,26 +117,16 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 icon: const Icon(Icons.map_outlined),
-                label: const Text("Use State Helpline"),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.deepPurpleAccent[200],
-                  minimumSize: const Size.fromHeight(48),
-                ),
+                label: const Text('Use State Helpline'),
                 onPressed: () {
                   Navigator.pop(context);
                   _askForState();
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               OutlinedButton.icon(
                 icon: const Icon(Icons.contact_phone),
-                label: const Text("Use Friend/Family Contact"),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.deepPurpleAccent[200],
-                  side: BorderSide(color: Colors.deepPurpleAccent[200]!),
-                  minimumSize: const Size.fromHeight(48),
-                ),
+                label: const Text('Use Friend/Family Contact'),
                 onPressed: () {
                   Navigator.pop(context);
                   _askForContact();
@@ -221,15 +207,6 @@ class _HomePageState extends State<HomePage> {
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(
                   labelText: "State",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Colors.deepPurpleAccent[200]!,
-                    ),
-                  ),
                 ),
                 isExpanded: true,
                 items:
@@ -618,9 +595,9 @@ class _HomePageState extends State<HomePage> {
         width: (screenWidth - 60) / 3,
         height: 170,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.black.withOpacity(0.1)),
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -648,11 +625,11 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
-            ],
-            color: Colors.white,
+            color: AppColors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
+          ],
           ),
           child: Row(
             children: [
