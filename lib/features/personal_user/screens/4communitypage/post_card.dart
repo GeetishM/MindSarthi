@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/comment_input_screen.dart';
 import 'comment_screen.dart';
 
@@ -136,235 +137,322 @@ class _PostCardState extends State<PostCard>
   @override
   Widget build(BuildContext context) {
     final data = widget.post.data() as Map<String, dynamic>;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Row: Avatar + Username + Options
-            Row(
-              children: [
-                FutureBuilder<DocumentSnapshot>(
-                  future:
-                      FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(data['uid'])
-                          .get(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      // Show shimmer while loading
-                      return Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: Colors.grey.shade300,
-                          ),
-                          const SizedBox(width: 10),
-                          Container(
-                            width: 80,
-                            height: 14,
-                            color: Colors.grey.shade300,
-                          ),
-                        ],
-                      );
-                    }
-
-                    final userData =
-                        snapshot.data?.data() as Map<String, dynamic>?;
-
-                    if (userData == null || userData['username'] == null) {
-                      return const Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.grey,
-                            child: Text(
-                              '?',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            'Unknown',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      );
-                    }
-
-                    final profileInitial = userData['profileInitial'] ?? '';
-                    final username = userData['username'];
-
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.border,
+          width: 1.2,
+        ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Row: Avatar + Username + Options
+          Row(
+            children: [
+              FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(data['uid'])
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
                     return Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: Colors.pinkAccent,
-                          child: Text(
-                            profileInitial.isNotEmpty
-                                ? profileInitial
-                                : username[0].toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          radius: 20,
+                          backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.border,
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          username,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 80,
+                          height: 14,
+                          color: isDark ? AppColors.darkSurface2 : AppColors.border,
                         ),
                       ],
                     );
-                  },
-                ),
-
-                const Spacer(),
-                IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            // Post Content
-            Text(data['content'] ?? '', style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 12),
-
-            // Bottom Actions
-            Row(
-              children: [
-                // Like button
-                GestureDetector(
-                  onTap: toggleLike,
-                  child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Icon(
-                      isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: isLiked ? Colors.red : Colors.black,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(formatCount(likeCount)),
-
-                // Comment icon and count
-                if (widget.showCommentIcon) ...[
-                  const SizedBox(width: 16),
-                  GestureDetector(
-                    onTap: widget.onCommentTap ?? openComments,
-                    child: const Icon(
-                      Icons.comment_outlined,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  StreamBuilder<QuerySnapshot>(
-                    stream:
-                        FirebaseFirestore.instance
-                            .collection('posts')
-                            .doc(widget.post.id)
-                            .collection('comments')
-                            .snapshots(),
-                    builder: (context, snapshot) {
-                      final count = snapshot.data?.docs.length ?? 0;
-                      return Text(formatCount(count));
-                    },
-                  ),
-                ],
-
-                const Spacer(),
-                const Icon(Icons.send, color: Colors.black),
-              ],
-            ),
-
-            // Inline Comments (Quora style)
-            if (widget.expandComments) ...[
-              const SizedBox(height: 12),
-              // Add a comment prompt
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (_) => CommentInputScreen(postId: widget.post.id),
-                    ),
-                  );
-                },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.0,
-                    vertical: 8.0,
-                  ),
-                  child: Text(
-                    "Add a comment...",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              ),
-              StreamBuilder<QuerySnapshot>(
-                stream:
-                    FirebaseFirestore.instance
-                        .collection('posts')
-                        .doc(widget.post.id)
-                        .collection('comments')
-                        .orderBy('likes', descending: true)
-                        .limit(2)
-                        .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
                   }
-                  if (snapshot.data!.docs.isEmpty) {
-                    return const Text(
-                      'No comments yet.',
-                      style: TextStyle(color: Colors.grey),
+
+                  final userData = snapshot.data?.data() as Map<String, dynamic>?;
+
+                  if (userData == null || userData['username'] == null) {
+                    return Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+                          child: Text(
+                            '?',
+                            style: TextStyle(
+                              color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Unknown',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
                     );
                   }
 
-                  return Column(
-                    children:
-                        snapshot.data!.docs.map((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(data['username'] ?? 'Anonymous'),
-                            subtitle: Text(data['text'] ?? ''),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.favorite_border, size: 18),
-                                const SizedBox(width: 4),
-                                Text((data['likes'] ?? 0).toString()),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+                  final profileInitial = userData['profileInitial'] ?? '';
+                  final username = userData['username'];
+
+                  return Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
+                        child: Text(
+                          profileInitial.isNotEmpty
+                              ? profileInitial
+                              : username[0].toUpperCase(),
+                          style: TextStyle(
+                            color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        username,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),
 
-              // View all comments link
+              const Spacer(),
+              IconButton(
+                icon: Icon(
+                  Icons.more_horiz_rounded,
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                ),
+                onPressed: () {},
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Post Content
+          Text(
+            data['content'] ?? '',
+            style: TextStyle(
+              fontSize: 15,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Bottom Actions
+          Row(
+            children: [
+              // Like button
               GestureDetector(
-                onTap: widget.onCommentTap ?? openComments,
-                child: const Padding(
-                  padding: EdgeInsets.only(top: 4),
-                  child: Text(
-                    'View all comments',
-                    style: TextStyle(color: Colors.pinkAccent),
+                onTap: toggleLike,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Icon(
+                    isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    color: isLiked ? AppColors.accent : (isDark ? AppColors.darkTextHint : AppColors.textHint),
+                    size: 24,
                   ),
                 ),
               ),
+              const SizedBox(width: 6),
+              Text(
+                formatCount(likeCount),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                ),
+              ),
+
+              // Comment icon and count
+              if (widget.showCommentIcon) ...[
+                const SizedBox(width: 20),
+                GestureDetector(
+                  onTap: widget.onCommentTap ?? openComments,
+                  child: Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('posts')
+                      .doc(widget.post.id)
+                      .collection('comments')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    final count = snapshot.data?.docs.length ?? 0;
+                    return Text(
+                      formatCount(count),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
+                    );
+                  },
+                ),
+              ],
+
+              const Spacer(),
+              Icon(
+                Icons.ios_share_rounded,
+                color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                size: 22,
+              ),
             ],
+          ),
+
+          // Inline Comments (Quora style)
+          if (widget.expandComments) ...[
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            // Add a comment prompt
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CommentInputScreen(postId: widget.post.id),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  "Add a comment...",
+                  style: TextStyle(
+                    color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('posts')
+                  .doc(widget.post.id)
+                  .collection('comments')
+                  .orderBy('likes', descending: true)
+                  .limit(2)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.data!.docs.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      'No comments yet.',
+                      style: TextStyle(
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: snapshot.data!.docs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            (data['username'] ?? 'Anonymous') + '  ',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              data['text'] ?? '',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.favorite_border_rounded, 
+                                size: 14,
+                                color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                (data['likes'] ?? 0).toString(),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+
+            // View all comments link
+            GestureDetector(
+              onTap: widget.onCommentTap ?? openComments,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  'View all comments',
+                  style: TextStyle(
+                    color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/screen/chat_history_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/utility/utilites.dart';
@@ -52,11 +53,22 @@ class _ChatScreenState extends State<ChatScreen> {
           }
         });
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
         return Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
-            backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            elevation: 0,
             centerTitle: true,
-            title: const Text('Chat with Gemini'),
+            title: Text(
+              'Sarthi AI',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                letterSpacing: -0.5,
+              ),
+            ),
           ),
           drawer: Drawer(
             child: SafeArea(
@@ -110,21 +122,22 @@ class _ChatScreenState extends State<ChatScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Hey there, how are you feeling today?',
                                     style: TextStyle(
                                       fontSize: 18,
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(height: 10),
-                                  const Text(
+                                  Text(
                                     "I'm here to listen, whenever you're ready.",
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      fontStyle: FontStyle.italic,
-                                      color: Colors.grey,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),

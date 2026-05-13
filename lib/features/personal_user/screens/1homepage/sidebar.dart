@@ -11,8 +11,31 @@ import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/profile.dart';
 
-class Sidebar extends StatelessWidget {
+class Sidebar extends StatefulWidget {
   const Sidebar({super.key});
+
+  @override
+  State<Sidebar> createState() => _SidebarState();
+}
+
+class _SidebarState extends State<Sidebar> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   Future<Map<String, dynamic>?> _fetchUserProfile() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -30,207 +53,234 @@ class Sidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
-    final bgColor = isDark ? AppColors.darkSurface : AppColors.white;
-    final headerBg = isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight;
-    final nameColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    final bgColor = isDark ? AppColors.darkSurface : AppColors.surface;
     final subtitleColor = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
     return Drawer(
       backgroundColor: bgColor,
-      child: Column(
-        children: [
-          // ── Profile header ─────────────────────────────
-          FutureBuilder<Map<String, dynamic>?>(
-            future: _fetchUserProfile(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return _shimmerHeader(isDark);
-              }
+      elevation: 0,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(32)),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // ── Profile Header ─────────────────────────────
+            FutureBuilder<Map<String, dynamic>?>(
+              future: _fetchUserProfile(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return _shimmerHeader(isDark);
+                }
 
-              final data   = snapshot.data;
-              final name   = data?['nickname'] ?? 'User';
-              final photo  = data?['photoUrl'];
-              final letter = _initial(name);
+                final data = snapshot.data;
+                final name = data?['nickname'] ?? 'User';
+                final photo = data?['photoUrl'];
+                final letter = _initial(name);
 
-              return InkWell(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfilePage()),
-                ),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(20, 56, 20, 24),
-                  decoration: BoxDecoration(color: headerBg),
-                  child: Row(
-                    children: [
-                      // Avatar
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor:
-                            isDark ? AppColors.darkSurface2 : AppColors.white,
-                        backgroundImage: (photo != null &&
-                                photo.toString().isNotEmpty)
-                            ? NetworkImage(photo) as ImageProvider<Object>
-                            : null,
-                        child: (photo == null || photo.toString().isEmpty)
-                            ? Text(
-                                letter,
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  color: nameColor,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 14),
-                      // Name & subtitle
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Namaste, $name 👋',
-                              style: TextStyle(
-                                color: nameColor,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'Tap to edit profile',
-                              style: TextStyle(
-                                color: subtitleColor,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfilePage()),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: isDark ? AppColors.darkBorder : AppColors.border,
                         ),
                       ),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: subtitleColor,
-                        size: 20,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 26,
+                            backgroundColor: isDark ? AppColors.darkPrimaryLight : AppColors.white,
+                            backgroundImage: (photo != null && photo.toString().isNotEmpty)
+                                ? NetworkImage(photo) as ImageProvider<Object>
+                                : null,
+                            child: (photo == null || photo.toString().isEmpty)
+                                ? Text(
+                                    letter,
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Namaste, $name 👋',
+                                  style: TextStyle(
+                                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Tap to view profile',
+                                  style: TextStyle(
+                                    color: subtitleColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-
-          // ── Menu items ─────────────────────────────────
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [
-                _buildItem(
-                  icon: Icons.lock_outline_rounded,
-                  title: 'App Lock',
-                  isDark: isDark,
-                  onTap: (ctx) => Navigator.push(
-                    ctx,
-                    MaterialPageRoute(
-                      builder: (_) => const AppLockSettingsScreen(),
                     ),
                   ),
-                ),
-
-                // ── Theme toggle row ────────────────────────
-                _buildThemeToggleRow(context, isDark),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Divider(
-                    color: isDark ? AppColors.darkDivider : AppColors.divider,
-                  ),
-                ),
-
-                _buildItem(
-                  icon: Icons.logout_rounded,
-                  title: 'Log Out',
-                  isDark: isDark,
-                  textColor: AppColors.error,
-                  iconColor: AppColors.error,
-                  onTap: (ctx) async {
-                    try {
-                      await FirebaseAuth.instance.signOut();
-                      if (ctx.mounted) {
-                        Navigator.pushAndRemoveUntil(
-                          ctx,
-                          MaterialPageRoute(
-                            builder: (_) => const WelcomeScreen(),
-                          ),
-                          (route) => false,
-                        );
-                      }
-                    } catch (e) {
-                      if (ctx.mounted) {
-                        AppToast.error(
-                          ctx,
-                          'Logout failed',
-                          description: e.toString(),
-                        );
-                      }
-                    }
-                  },
-                ),
-              ],
+                );
+              },
             ),
-          ),
 
-          // ── Footer ─────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.only(bottom: 24, top: 8),
-            child: Text(
-              'MindSarthi • Your calm companion',
-              style: TextStyle(
-                fontSize: 11,
-                color: subtitleColor,
-                fontStyle: FontStyle.italic,
+            // ── Menu items ─────────────────────────────────
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  _buildAnimatedItem(
+                    index: 0,
+                    icon: Icons.shield_rounded,
+                    title: 'App Lock',
+                    isDark: isDark,
+                    onTap: (ctx) => Navigator.push(
+                      ctx,
+                      MaterialPageRoute(
+                        builder: (_) => const AppLockSettingsScreen(),
+                      ),
+                    ),
+                  ),
+
+                  // ── Theme toggle row ────────────────────────
+                  _buildAnimatedThemeToggleRow(context, isDark, index: 1),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Divider(
+                      color: isDark ? AppColors.darkBorder : AppColors.border,
+                    ),
+                  ),
+
+                  _buildAnimatedItem(
+                    index: 2,
+                    icon: Icons.logout_rounded,
+                    title: 'Log Out',
+                    isDark: isDark,
+                    textColor: AppColors.error,
+                    iconColor: AppColors.error,
+                    onTap: (ctx) async {
+                      try {
+                        await FirebaseAuth.instance.signOut();
+                        if (ctx.mounted) {
+                          Navigator.pushAndRemoveUntil(
+                            ctx,
+                            MaterialPageRoute(
+                              builder: (_) => const WelcomeScreen(),
+                            ),
+                            (route) => false,
+                          );
+                        }
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          AppToast.error(
+                            ctx,
+                            'Logout failed',
+                            description: e.toString(),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+
+            // ── Footer ─────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24, top: 16),
+              child: Text(
+                'MindSarthi • Your pocket companion',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: subtitleColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // ── Theme toggle list tile ────────────────────────────
-  Widget _buildThemeToggleRow(BuildContext context, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        leading: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder: (child, anim) =>
-              ScaleTransition(scale: anim, child: child),
-          child: Icon(
-            isDark ? Icons.nightlight_round : Icons.wb_sunny_rounded,
-            key: ValueKey(isDark),
-            color: isDark ? AppColors.darkPrimary : AppColors.primary,
-            size: 22,
+  // ── Animated Theme toggle list tile ────────────────────────────
+  Widget _buildAnimatedThemeToggleRow(BuildContext context, bool isDark, {required int index}) {
+    final slideAnimation = Tween<Offset>(begin: const Offset(-0.2, 0), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Interval(index * 0.1, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Interval(index * 0.1, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    return FadeTransition(
+      opacity: fadeAnimation,
+      child: SlideTransition(
+        position: slideAnimation,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+              child: Icon(
+                isDark ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded,
+                key: ValueKey(isDark),
+                color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                size: 24,
+              ),
+            ),
+            title: Text(
+              isDark ? 'Dark Mode' : 'Light Mode',
+              style: TextStyle(
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            trailing: const ThemeToggleSwitch(),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            onTap: () => context.read<ThemeProvider>().toggle(),
           ),
         ),
-        title: Text(
-          isDark ? 'Dark Mode' : 'Light Mode',
-          style: TextStyle(
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        trailing: const ThemeToggleSwitch(),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        onTap: () => context.read<ThemeProvider>().toggle(),
       ),
     );
   }
 
-  // ── Standard list tile ────────────────────────────────
-  Widget _buildItem({
+  // ── Animated Standard list tile ────────────────────────────────
+  Widget _buildAnimatedItem({
+    required int index,
     required IconData icon,
     required String title,
     required bool isDark,
@@ -238,40 +288,67 @@ class Sidebar extends StatelessWidget {
     Color? textColor,
     Color? iconColor,
   }) {
-    return Builder(
-      builder: (context) => ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-        leading: Icon(
-          icon,
-          color: iconColor ??
-              (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-          size: 22,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: textColor ??
-                (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
+    final slideAnimation = Tween<Offset>(begin: const Offset(-0.2, 0), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Interval(index * 0.1, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Interval(index * 0.1, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    return FadeTransition(
+      opacity: fadeAnimation,
+      child: SlideTransition(
+        position: slideAnimation,
+        child: Builder(
+          builder: (context) => Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: Icon(
+                icon,
+                color: iconColor ?? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                size: 24,
+              ),
+              title: Text(
+                title,
+                style: TextStyle(
+                  color: textColor ?? (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onTap: () => onTap(context),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              hoverColor: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+            ),
           ),
         ),
-        onTap: () => onTap(context),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
 
   // ── Shimmer placeholder ───────────────────────────────
   Widget _shimmerHeader(bool isDark) {
-    return Shimmer.fromColors(
-      baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
-      highlightColor:
-          isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight,
-      child: Container(
-        width: double.infinity,
-        height: 130,
-        color: isDark ? AppColors.darkSurface : AppColors.primaryLight,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+      child: Shimmer.fromColors(
+        baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
+        highlightColor: isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight,
+        child: Container(
+          width: double.infinity,
+          height: 90,
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : AppColors.primaryLight,
+            borderRadius: BorderRadius.circular(24),
+          ),
+        ),
       ),
     );
   }

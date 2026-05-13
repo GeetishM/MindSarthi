@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/home.dart';
@@ -24,14 +23,41 @@ class _NavBarState extends State<NavBar> {
     const HomePage(),
     const ConsultPage(),
     const InsightPage(),
-    CommunityPage(),
+    const CommunityPage(),
     const ChatScreen(),
+  ];
+
+  final List<_NavItemData> _navItems = [
+    _NavItemData(
+      label: 'Home',
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+    ),
+    _NavItemData(
+      label: 'Experts',
+      icon: Icons.medical_services_outlined,
+      activeIcon: Icons.medical_services_rounded,
+    ),
+    _NavItemData(
+      label: 'Discover',
+      icon: Icons.explore_outlined,
+      activeIcon: Icons.explore_rounded,
+    ),
+    _NavItemData(
+      label: 'Connect',
+      icon: Icons.people_outline_rounded,
+      activeIcon: Icons.people_rounded,
+    ),
+    _NavItemData(
+      label: 'Sarthi AI',
+      icon: Icons.auto_awesome_outlined,
+      activeIcon: Icons.auto_awesome_rounded,
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final iconSize = screenWidth < 360 ? 20.0 : 22.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
       canPop: false,
@@ -49,44 +75,111 @@ class _NavBarState extends State<NavBar> {
         }
       },
       child: Scaffold(
+        extendBody: true, // Allows body to scroll behind the transparent/floating nav bar
         body: _pages[_currentIndex],
-        bottomNavigationBar: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.white,
-            border: Border(
-              top: BorderSide(color: AppColors.border, width: 1),
+        bottomNavigationBar: SafeArea(
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            height: 68,
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : AppColors.surface,
+              borderRadius: BorderRadius.circular(34),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.border,
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark ? Colors.black.withValues(alpha: 0.3) : AppColors.primary.withValues(alpha: 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-          ),
-          child: NavigationBar(
-            height: 64,
-            backgroundColor: AppColors.white,
-            selectedIndex: _currentIndex,
-            onDestinationSelected: (index) {
-              setState(() => _currentIndex = index);
-            },
-            destinations: [
-              _navItem('Home', 'assets/icons/home.svg', 'assets/icons/homeFill.svg', iconSize),
-              _navItem('Consult', 'assets/icons/stethoscope.svg', 'assets/icons/stethoscopeFill.svg', iconSize),
-              _navItem('Insight', 'assets/icons/book-open-cover.svg', 'assets/icons/book-open-cover-fill.svg', iconSize),
-              _navItem('Community', 'assets/icons/users-class.svg', 'assets/icons/users-class-fill.svg', iconSize),
-              _navItem('ChatPal', 'assets/icons/chatbot-speech-bubble.svg', 'assets/icons/chatbot-speech-bubble-fill.svg', iconSize),
-            ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(
+                _navItems.length,
+                (index) => _buildNavItem(index, isDark),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  NavigationDestination _navItem(
-    String label,
-    String icon,
-    String selectedIcon,
-    double size,
-  ) {
-    return NavigationDestination(
-      label: label,
-      icon: SvgPicture.asset(icon, height: size, colorFilter: const ColorFilter.mode(AppColors.textSecondary, BlendMode.srcIn)),
-      selectedIcon: SvgPicture.asset(selectedIcon, height: size, colorFilter: const ColorFilter.mode(AppColors.primary, BlendMode.srcIn)),
+  Widget _buildNavItem(int index, bool isDark) {
+    final item = _navItems[index];
+    final isSelected = _currentIndex == index;
+
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutQuint,
+        padding: EdgeInsets.symmetric(
+          horizontal: isSelected ? 16.0 : 12.0,
+          vertical: 12.0,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return ScaleTransition(scale: animation, child: child);
+              },
+              child: Icon(
+                isSelected ? item.activeIcon : item.icon,
+                key: ValueKey<bool>(isSelected),
+                color: isSelected
+                    ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+                    : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                size: 24,
+              ),
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutQuint,
+              child: SizedBox(
+                width: isSelected ? null : 0,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 6.0),
+                  child: Text(
+                    item.label,
+                    style: TextStyle(
+                      color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
+}
+
+class _NavItemData {
+  final String label;
+  final IconData icon;
+  final IconData activeIcon;
+
+  _NavItemData({
+    required this.label,
+    required this.icon,
+    required this.activeIcon,
+  });
 }

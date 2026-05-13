@@ -131,14 +131,28 @@ class _CommunityPageState extends State<CommunityPage> {
   @override
   Widget build(BuildContext context) {
     chipKeys = List.generate(filters.length, (_) => GlobalKey());
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Community'),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        title: Text(
+          'Connect',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            letterSpacing: -0.5,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.message_outlined, color: Colors.black),
+            icon: Icon(
+              Icons.mark_email_unread_outlined, 
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            ),
             onPressed: () {},
           ),
         ],
@@ -166,24 +180,29 @@ class _CommunityPageState extends State<CommunityPage> {
                       key: chipKeys[index],
                       label: Text(filter),
                       selected: isSelected,
+                      showCheckmark: false,
                       onSelected: (_) {
                         setState(() {
                           selectedFilter = filter;
                         });
                         _scrollToSelectedChip(index);
                       },
-                      selectedColor: AppColors.primary,
+                      selectedColor: isDark ? AppColors.darkPrimary : AppColors.primary,
                       labelStyle: TextStyle(
-                        color: isSelected ? AppColors.white : AppColors.textPrimary,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                        fontSize: 13,
+                        color: isSelected 
+                            ? AppColors.white 
+                            : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 14,
                       ),
-                      backgroundColor: AppColors.background,
+                      backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
                       side: BorderSide(
-                        color: isSelected ? AppColors.primary : AppColors.border,
+                        color: isSelected 
+                            ? Colors.transparent 
+                            : (isDark ? AppColors.darkBorder : AppColors.border),
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     );
                   },

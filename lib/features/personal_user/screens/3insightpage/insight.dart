@@ -47,12 +47,28 @@ class _InsightPageState extends State<InsightPage> {
   Widget build(BuildContext context) {
     final filteredInsights = _filterInsights();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Insights'),
+        title: Text(
+          'Discover',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            letterSpacing: -0.5,
+          ),
+        ),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark),
+            icon: Icon(
+              Icons.bookmark_border_rounded,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            ),
             onPressed: () {
               Navigator.push(
                 context,
@@ -60,6 +76,7 @@ class _InsightPageState extends State<InsightPage> {
               );
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -110,21 +127,31 @@ class _InsightPageState extends State<InsightPage> {
   }
 
   Widget tagChip(String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = selectedTag == label;
+    
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: ChoiceChip(
         label: Text(label),
         selected: isSelected,
-        selectedColor: AppColors.primary,
-        backgroundColor: AppColors.background,
+        showCheckmark: false,
+        selectedColor: isDark ? AppColors.darkPrimary : AppColors.primary,
+        backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
         side: BorderSide(
-          color: isSelected ? AppColors.primary : AppColors.border,
+          color: isSelected 
+              ? Colors.transparent 
+              : (isDark ? AppColors.darkBorder : AppColors.border),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
         labelStyle: TextStyle(
-          color: isSelected ? AppColors.white : AppColors.textPrimary,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-          fontSize: 13,
+          color: isSelected 
+              ? AppColors.white 
+              : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          fontSize: 14,
         ),
         onSelected: (_) {
           setState(() => selectedTag = label);
