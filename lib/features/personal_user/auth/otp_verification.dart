@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/personal_user/screens/nav.dart';
 import 'package:pinput/pinput.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -126,7 +127,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           style: TextStyle(
                             fontSize: 18 * fontScale,
                             fontWeight: FontWeight.bold,
-                            color: Colors.deepPurpleAccent,
+                            color: AppColors.primary,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -167,7 +168,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFF2F2F2),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.deepPurpleAccent),
+                              border: Border.all(color: AppColors.primary),
                             ),
                           ),
                         ),
@@ -196,7 +197,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurpleAccent,
+                              backgroundColor: AppColors.primary,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -222,7 +223,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             "Didn't receive the code? Resend",
                             style: TextStyle(
                               fontSize: 14 * fontScale,
-                              color: Colors.deepPurpleAccent,
+                              color: AppColors.primary,
                             ),
                           ),
                         ),

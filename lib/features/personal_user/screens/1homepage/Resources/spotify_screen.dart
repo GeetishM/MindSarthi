@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -38,10 +39,10 @@ class _SpotifyPlayerScreenState extends State<SpotifyPlayerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.deepPurple[50],
+      backgroundColor: AppColors.primaryLight,
       appBar: AppBar(
         title: const Text('Relaxing Music'),
-        backgroundColor: Colors.deepPurple[100],
+        backgroundColor: AppColors.primaryLight,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => Navigator.pop(context),
@@ -60,7 +61,7 @@ class _SpotifyPlayerScreenState extends State<SpotifyPlayerScreen> {
             Positioned.fill(
               child: Container(
                 padding: const EdgeInsets.all(16),
-                color: Colors.deepPurple[50],
+                color: AppColors.primaryLight,
                 child: Shimmer.fromColors(
                   baseColor: Colors.grey.shade300,
                   highlightColor: Colors.grey.shade100,

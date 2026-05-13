@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/utility/utilites.dart';
@@ -146,7 +147,7 @@ class _BottomChatFieldState extends State<BottomChatField> {
                         },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple,
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   margin: const EdgeInsets.all(5.0),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mindsarthi/features/user_selector/user_selection.dart';
 
@@ -70,7 +71,7 @@ class WelcomeScreen extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurpleAccent[200],
+                        backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),

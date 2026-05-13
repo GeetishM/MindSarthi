@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:toastification/toastification.dart';
 
@@ -63,12 +64,12 @@ class _UserSelectionState extends State<UserSelection> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? Colors.deepPurpleAccent : Colors.grey.shade300,
+            color: isSelected ? AppColors.primary : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
           color:
-              isSelected ? Colors.deepPurple.withOpacity(0.05) : Colors.white,
+              isSelected ? AppColors.primaryLight : Colors.white,
         ),
         child: Row(
           children: [
@@ -204,7 +205,7 @@ class _UserSelectionState extends State<UserSelection> {
                 child: ElevatedButton(
                   onPressed: _continue,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurpleAccent,
+                    backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 
 class InsightsScreen extends StatelessWidget {
   final int dailyTaskCount;
@@ -20,7 +21,7 @@ class InsightsScreen extends StatelessWidget {
       backgroundColor: Colors.white, // Flat white background
       appBar: AppBar(
         title: const Text('Insights'),
-        backgroundColor: Colors.deepPurpleAccent[200],
+        backgroundColor: AppColors.primary,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         titleTextStyle: const TextStyle(
@@ -39,13 +40,13 @@ class InsightsScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
-                  color: Colors.deepPurpleAccent[100]!,
+                  color: AppColors.primaryLight,
                   width: 1.5,
                 ),
               ),
               margin: const EdgeInsets.symmetric(vertical: 10),
               child: ListTile(
-                leading: Icon(Icons.today, size: 32, color: Colors.deepPurpleAccent[200]),
+                leading: Icon(Icons.today, size: 32, color: AppColors.primary),
                 title: const Text('Daily task count', style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text('Mood / Activity'),
                 trailing: Text(
@@ -60,13 +61,13 @@ class InsightsScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
-                  color: Colors.deepPurpleAccent[100]!,
+                  color: AppColors.primaryLight,
                   width: 1.5,
                 ),
               ),
               margin: const EdgeInsets.symmetric(vertical: 10),
               child: ListTile(
-                leading: Icon(Icons.check_circle, size: 32, color: Colors.deepPurpleAccent[200]),
+                leading: Icon(Icons.check_circle, size: 32, color: AppColors.primary),
                 title: const Text('% completed', style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text('Motivation / Productivity'),
                 trailing: Text(
@@ -81,13 +82,13 @@ class InsightsScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
-                  color: Colors.deepPurpleAccent[100]!,
+                  color: AppColors.primaryLight,
                   width: 1.5,
                 ),
               ),
               margin: const EdgeInsets.symmetric(vertical: 10),
               child: ListTile(
-                leading: Icon(Icons.schedule, size: 32, color: Colors.deepPurpleAccent[200]),
+                leading: Icon(Icons.schedule, size: 32, color: AppColors.primary),
                 title: const Text('Reschedules', style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text('Procrastination'),
                 trailing: Text(
@@ -102,13 +103,13 @@ class InsightsScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
-                  color: Colors.deepPurpleAccent[100]!,
+                  color: AppColors.primaryLight,
                   width: 1.5,
                 ),
               ),
               margin: const EdgeInsets.symmetric(vertical: 10),
               child: ListTile(
-                leading: Icon(Icons.self_improvement, size: 32, color: Colors.deepPurpleAccent[200]),
+                leading: Icon(Icons.self_improvement, size: 32, color: AppColors.primary),
                 title: const Text('Self-care task count', style: TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: const Text('Personal Attention'),
                 trailing: Text(

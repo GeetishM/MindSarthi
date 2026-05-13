@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/my_button.dart';
 
 class DialogBox extends StatelessWidget {
@@ -29,7 +30,7 @@ class DialogBox extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
         side: BorderSide(
-          color: Colors.deepPurpleAccent[100]!,
+          color: AppColors.primaryLight,
           width: 1.2,
         ),
       ),
@@ -58,21 +59,21 @@ class DialogBox extends StatelessWidget {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: Colors.deepPurpleAccent[100]!,
+                    color: AppColors.primaryLight,
                     width: 1.2,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: Colors.deepPurpleAccent[100]!,
+                    color: AppColors.primaryLight,
                     width: 1.2,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: Colors.deepPurpleAccent[200]!,
+                    color: AppColors.primary,
                     width: 1.5,
                   ),
                 ),
@@ -93,7 +94,7 @@ class DialogBox extends StatelessWidget {
                   child: MyButton(
                     text: "Save",
                     onPressed: handleSave,
-                    color: Colors.deepPurpleAccent[200],
+                    color: AppColors.primary,
                     icon: Icons.check,
                     textColor: Colors.white,
                     borderRadius: 10,

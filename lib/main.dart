@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mindsarthi/core/routes/app_routes.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/theme/theme_provider.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Journal/journal_entry.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/chat_history.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
@@ -15,28 +16,24 @@ import 'package:toastification/toastification.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Hive
   await Hive.initFlutter();
 
-  // Initialize Hive for Journal
   Hive.registerAdapter(JournalEntryAdapter());
   await Hive.openBox<JournalEntry>('journalBox');
   await Hive.openBox('journalSettings');
 
-  // Initialize ChatProvider Hive
   Hive.registerAdapter(ChatHistoryAdapter());
   await Hive.openBox<ChatHistory>('chat_history');
   await ChatProvider.initHive();
 
-  // Open a box for TodaysGoals
   await Hive.openBox('mybox');
 
-  // Initialize Firebase
   await Firebase.initializeApp();
 
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: const MindSarthi(),
@@ -49,22 +46,29 @@ class MindSarthi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ToastificationWrapper must wrap the entire app for toasts to work
+    final themeProvider = context.watch<ThemeProvider>();
+
     return ToastificationWrapper(
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         routes: AppRouter.routes,
         title: 'MindSarthi',
         theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: themeProvider.themeMode,
         home: StreamBuilder<User?>(
           stream: FirebaseAuth.instance.authStateChanges(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                backgroundColor: AppColors.background,
+              return Scaffold(
+                backgroundColor: themeProvider.isDark
+                    ? AppColors.darkBackground
+                    : AppColors.background,
                 body: Center(
                   child: CircularProgressIndicator(
-                    color: AppColors.primary,
+                    color: themeProvider.isDark
+                        ? AppColors.darkPrimary
+                        : AppColors.primary,
                     strokeWidth: 2.5,
                   ),
                 ),

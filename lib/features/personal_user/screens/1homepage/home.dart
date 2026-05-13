@@ -200,7 +200,7 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepPurpleAccent[200],
+                  color: AppColors.primary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -237,7 +237,7 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurpleAccent[200],
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -298,7 +298,7 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepPurpleAccent[200],
+                  color: AppColors.primary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -311,7 +311,7 @@ class _HomePageState extends State<HomePage> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: Colors.deepPurpleAccent[200]!,
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
@@ -340,7 +340,7 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurpleAccent[200],
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

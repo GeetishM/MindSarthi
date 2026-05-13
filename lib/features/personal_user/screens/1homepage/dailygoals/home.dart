@@ -1,5 +1,6 @@
 // import 'package:Todo/models/task.dart';
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:hive/hive.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/analytics_helper.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/database.dart';
@@ -158,7 +159,7 @@ class _TodaysGoalsState extends State<TodaysGoals> {
         //     ),
         //   ),
         // ),
-        backgroundColor: Colors.deepPurpleAccent[200], // Use purple accent
+        backgroundColor: AppColors.primary, // Use purple accent
         elevation: 0,
         titleTextStyle: const TextStyle(
           color: Colors.white,
@@ -244,7 +245,7 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(32),
                                   border: Border.all(
-                                    color: Colors.deepPurpleAccent[100]!,
+                                    color: AppColors.primaryLight,
                                     width: 2,
                                   ),
                                   boxShadow: [
@@ -278,7 +279,7 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.edit, color: Colors.deepPurpleAccent),
+                                        icon: const Icon(Icons.edit, color: AppColors.primary),
                                         onPressed: () => editTask(index),
                                         tooltip: "Edit",
                                       ),
@@ -305,7 +306,7 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                   child: Draggable(
                     feedback: FloatingActionButton(
                       onPressed: createNewTask,
-                      backgroundColor: Colors.deepPurpleAccent[200], // Purple accent
+                      backgroundColor: AppColors.primary, // Purple accent
                       foregroundColor: Colors.white,
                       child: Icon(Icons.add, color: Colors.white),
                     ),
@@ -329,7 +330,7 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                     },
                     child: FloatingActionButton(
                       onPressed: createNewTask,
-                      backgroundColor: Colors.deepPurpleAccent[200], // Purple accent
+                      backgroundColor: AppColors.primary, // Purple accent
                       foregroundColor: Colors.white,
                       child: Icon(Icons.add, color: Colors.white),
                     ),
