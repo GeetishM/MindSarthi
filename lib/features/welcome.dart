@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gif/gif.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/user_selector/user_selection.dart';
 
@@ -15,7 +15,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
-  late GifController _gifCtrl;
 
   @override
   void initState() {
@@ -31,19 +30,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       begin: const Offset(0, 0.12),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut));
-
-    _gifCtrl = GifController(vsync: this);
-    _gifCtrl.repeat(
-      min: 0,
-      max: 1,
-      period: const Duration(seconds: 3),
-    );
   }
 
   @override
   void dispose() {
     _fadeCtrl.dispose();
-    _gifCtrl.dispose();
     super.dispose();
   }
 
@@ -142,14 +133,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
               const Spacer(flex: 1),
 
-              // ── 2. GIF illustration ───────────────────────────
+              // ── 2. SVG illustration ───────────────────────────
               SizedBox(
                 height: size.height * 0.30,
-                child: Gif(
-                  image: const AssetImage('assets/illustrations/Solidarity.gif'),
-                  controller: _gifCtrl,
+                child: SvgPicture.asset(
+                  'assets/illustrations/Solidarity-pana.svg',
                   fit: BoxFit.contain,
-                  placeholder: (context) => const SizedBox.shrink(),
                 ),
               ),
 

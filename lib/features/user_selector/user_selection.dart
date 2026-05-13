@@ -299,21 +299,19 @@ class _RoleCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: isSelected ? accentColor : AppColors.textPrimary,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: isSelected
-                          ? accentColor.withValues(alpha: 0.8)
-                          : AppColors.textSecondary,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 4),
