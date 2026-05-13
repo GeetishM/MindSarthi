@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -20,27 +21,45 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  
   String? savedPreference;
   String? savedContactOrState;
+
+  late AnimationController _heroBreathController;
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(() {
       setState(() => _isScrolled = _scrollController.offset > 0);
     });
+    
+    _heroBreathController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+
     _loadUserPreference();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _heroBreathController.dispose();
     super.dispose();
+  }
+
+  String _getTimeGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning,';
+    if (hour < 17) return 'Good Afternoon,';
+    return 'Good Evening,';
   }
 
   Future<void> _loadUserPreference() async {
@@ -48,7 +67,10 @@ class _HomePageState extends State<HomePage> {
     String? contactOrState = await _storage.read(key: 'sos_value');
 
     if (preference == null || contactOrState == null) {
-      _showChoiceDialog();
+      // Delay to avoid showing dialog immediately during hero animation load
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) _showChoiceDialog();
+      });
     } else {
       setState(() {
         savedPreference = preference;
@@ -67,7 +89,7 @@ class _HomePageState extends State<HomePage> {
     await _firestore.collection('users').doc(user.uid).set({
       'sos_preference': preference,
       'sos_value': value,
-    }, SetOptions(merge: true)); // merge keeps other existing fields intact
+    }, SetOptions(merge: true));
 
     setState(() {
       savedPreference = preference;
@@ -79,58 +101,144 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<String?> _fetchNickname() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final doc = await _firestore.collection('users').doc(user.uid).get();
+    if (doc.exists) {
+      return doc.data()?['nickname'] as String?;
+    }
+    return null;
+  }
+
+  Future<void> _makePhoneCall(String number) async {
+    final Uri phoneUri = Uri(scheme: "tel", path: number);
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri);
+    }
+  }
+
+  Future<void> _callSavedNumber() async {
+    HapticFeedback.heavyImpact();
+    try {
+      if (savedPreference == "helpline" && savedContactOrState != null) {
+        String? helplineNumber = await HelplineService.getStateHelpline(savedContactOrState!);
+        if (helplineNumber != null && helplineNumber.isNotEmpty) {
+          await _makePhoneCall(helplineNumber);
+        } else {
+          _showErrorToast("We couldn't find a helpline for \"$savedContactOrState\".");
+        }
+      } else if (savedPreference == "friend" && savedContactOrState != null) {
+        await _makePhoneCall(savedContactOrState!);
+      } else {
+        _showChoiceDialog();
+      }
+    } catch (e) {
+      _showErrorToast("Error: $e");
+    }
+  }
+
+  void _showErrorToast(String message) {
+    toastification.show(
+      context: context,
+      title: const Text("Something went wrong"),
+      description: Text(message),
+      type: ToastificationType.error,
+      style: ToastificationStyle.flat,
+      alignment: Alignment.bottomCenter,
+      autoCloseDuration: const Duration(seconds: 3),
+    );
+  }
+
+  // ── Modals & Dialogs ──────────────────────────────────────────
+
   void _showChoiceDialog() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      backgroundColor: AppColors.white,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : AppColors.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.emergency_share_rounded,
-                color: AppColors.primary,
-                size: 44,
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.emergency_share_rounded,
+                  color: AppColors.error,
+                  size: 44,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
               Text(
                 "Set up your SOS Contact",
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                "Choose a reliable contact method we can alert when you’re in distress.",
+              const SizedBox(height: 12),
+              Text(
+                "Choose a reliable contact method we can alert instantly when you’re in distress.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54),
+                style: TextStyle(
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  fontSize: 15,
+                  height: 1.4,
+                ),
               ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.map_outlined),
-                label: const Text('Use State Helpline'),
-                onPressed: () {
-                  Navigator.pop(context);
-                  _askForState();
-                },
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Use State Helpline', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _askForState();
+                  },
+                ),
               ),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.contact_phone),
-                label: const Text('Use Friend/Family Contact'),
-                onPressed: () {
-                  Navigator.pop(context);
-                  _askForContact();
-                },
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.contact_phone_rounded),
+                  label: const Text('Use Friend/Family Contact', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border, width: 2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _askForContact();
+                  },
+                ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
             ],
           ),
         );
@@ -140,34 +248,11 @@ class _HomePageState extends State<HomePage> {
 
   void _askForState() {
     final List<String> states = [
-      "Andhra Pradesh",
-      "Arunachal Pradesh",
-      "Assam",
-      "Bihar",
-      "Chhattisgarh",
-      "Goa",
-      "Gujarat",
-      "Haryana",
-      "Himachal Pradesh",
-      "Jharkhand",
-      "Karnataka",
-      "Kerala",
-      "Madhya Pradesh",
-      "Maharashtra",
-      "Manipur",
-      "Meghalaya",
-      "Mizoram",
-      "Nagaland",
-      "Odisha",
-      "Punjab",
-      "Rajasthan",
-      "Sikkim",
-      "Tamil Nadu",
-      "Telangana",
-      "Tripura",
-      "Uttar Pradesh",
-      "Uttarakhand",
-      "West Bengal",
+      "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+      "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+      "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+      "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+      "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
     ];
 
     String? selectedState;
@@ -175,92 +260,92 @@ class _HomePageState extends State<HomePage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      elevation: 12,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return AnimatedPadding(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            top: 24,
-            left: 24,
-            right: 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Select Your State",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : AppColors.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Select Your State",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(
-                  labelText: "State",
-                ),
-                isExpanded: true,
-                items:
-                    states.map((state) {
-                      return DropdownMenuItem(value: state, child: Text(state));
-                    }).toList(),
-                onChanged: (value) => selectedState = value,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: Colors.grey[200],
-                        foregroundColor: Colors.black87,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                      label: const Text("Cancel"),
+                const SizedBox(height: 24),
+                DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    labelText: "State",
+                    labelStyle: TextStyle(color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  dropdownColor: isDark ? AppColors.darkSurface : AppColors.surface,
+                  style: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                  isExpanded: true,
+                  items: states.map((state) => DropdownMenuItem(value: state, child: Text(state))).toList(),
+                  onChanged: (value) => selectedState = value,
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
                         ),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text("Cancel", style: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary, fontWeight: FontWeight.w600)),
                       ),
-                      onPressed: () async {
-                        if (selectedState != null) {
-                          await _saveUserPreference("helpline", selectedState!);
-                          Navigator.pop(context);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Please select a state"),
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.save_rounded),
-                      label: const Text("Save"),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                        ),
+                        onPressed: () async {
+                          if (selectedState != null) {
+                            await _saveUserPreference("helpline", selectedState!);
+                            if (context.mounted) Navigator.pop(context);
+                          } else {
+                            AppToast.error(context, "Please select a state");
+                          }
+                        },
+                        child: const Text("Save", style: TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: MediaQuery.of(context).padding.bottom),
+              ],
+            ),
           ),
         );
       },
@@ -273,168 +358,98 @@ class _HomePageState extends State<HomePage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      elevation: 12,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return AnimatedPadding(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            top: 24,
-            left: 24,
-            right: 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Enter Emergency Contact",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              IntlPhoneField(
-                decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: AppColors.primary,
-                    ),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : AppColors.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Emergency Contact",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   ),
                 ),
-                initialCountryCode: 'IN',
-                onChanged: (phone) => phoneNumber = phone.completeNumber,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: Colors.grey[200],
-                        foregroundColor: Colors.black87,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                      label: const Text("Cancel"),
+                const SizedBox(height: 24),
+                IntlPhoneField(
+                  style: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                  dropdownTextStyle: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'Phone Number',
+                    labelStyle: TextStyle(color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  initialCountryCode: 'IN',
+                  onChanged: (phone) => phoneNumber = phone.completeNumber,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
                         ),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text("Cancel", style: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary, fontWeight: FontWeight.w600)),
                       ),
-                      onPressed: () async {
-                        if (phoneNumber != null && phoneNumber!.length >= 10) {
-                          await _saveUserPreference("friend", phoneNumber!);
-                          Navigator.pop(context);
-                        } else {
-                          toastification.show(
-                            context: context,
-                            title: const Text("Enter a valid phone number"),
-                            autoCloseDuration: const Duration(seconds: 2),
-                            type: ToastificationType.error,
-                            style: ToastificationStyle.flat,
-                            alignment: Alignment.bottomCenter,
-                            icon: const Icon(Icons.error),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.save_alt_rounded),
-                      label: const Text("Save"),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                        ),
+                        onPressed: () async {
+                          if (phoneNumber != null && phoneNumber!.length >= 10) {
+                            await _saveUserPreference("friend", phoneNumber!);
+                            if (context.mounted) Navigator.pop(context);
+                          } else {
+                            AppToast.error(context, "Enter a valid phone number");
+                          }
+                        },
+                        child: const Text("Save", style: TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: MediaQuery.of(context).padding.bottom),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Future<void> _callSavedNumber() async {
-    try {
-      if (savedPreference == "helpline" && savedContactOrState != null) {
-        String? helplineNumber = await HelplineService.getStateHelpline(
-          savedContactOrState!,
-        );
-
-        if (helplineNumber != null && helplineNumber.isNotEmpty) {
-          await _makePhoneCall(helplineNumber);
-        } else {
-          toastification.show(
-            context: context,
-            title: const Text("Helpline not found"),
-            description: Text(
-              "We couldn't find a helpline for \"$savedContactOrState\".",
-            ),
-            type: ToastificationType.error,
-            style: ToastificationStyle.flat,
-            alignment: Alignment.bottomCenter,
-            autoCloseDuration: const Duration(seconds: 3),
-          );
-        }
-      } else if (savedPreference == "friend" && savedContactOrState != null) {
-        await _makePhoneCall(savedContactOrState!);
-      } else {
-        _showChoiceDialog();
-      }
-    } catch (e) {
-      toastification.show(
-        context: context,
-        title: const Text("Something went wrong"),
-        description: Text("Error: $e"),
-        type: ToastificationType.error,
-        style: ToastificationStyle.flat,
-        alignment: Alignment.bottomCenter,
-        autoCloseDuration: const Duration(seconds: 3),
-      );
-    }
-  }
-
-  Future<void> _makePhoneCall(String number) async {
-    final Uri phoneUri = Uri(scheme: "tel", path: number);
-    if (await canLaunchUrl(phoneUri)) {
-      await launchUrl(phoneUri);
-    }
-  }
-
-  Future<String?> _fetchNickname() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return null;
-
-    final doc =
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-    if (doc.exists) {
-      return doc.data()?['nickname'] as String?;
-    }
-    return null;
-  }
+  // ── Build Method ──────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -444,86 +459,148 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      drawer: Sidebar(),
+      drawer: const Sidebar(),
       body: CustomScrollView(
         controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
         slivers: <Widget>[
+          // Header
+          SliverSafeArea(
+            bottom: false,
+            sliver: SliverToBoxAdapter(
+              child: _FadeSlideEntry(
+                delay: 0,
+                child: _buildHeader(isDark),
+              ),
+            ),
+          ),
+          
+          // Hero Animation
           SliverToBoxAdapter(
-            child: SafeArea(
-              bottom: false,
+            child: _FadeSlideEntry(
+              delay: 1,
+              child: _buildAnimatedHeroCard(isDark),
+            ),
+          ),
+          
+          // Mood Tracker
+          SliverToBoxAdapter(
+            child: _FadeSlideEntry(
+              delay: 2,
+              child: const Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: MoodTrackerHomePage(),
+              ),
+            ),
+          ),
+          
+          // Relief Resources
+          SliverToBoxAdapter(
+            child: _FadeSlideEntry(
+              delay: 3,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                padding: const EdgeInsets.only(top: 32, bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    FutureBuilder<String?>(
-                      future: _fetchNickname(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return Shimmer.fromColors(
-                            baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
-                            highlightColor: isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight,
-                            child: Container(
-                              width: 140,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: isDark ? AppColors.darkSurface : Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          );
-                        }
-
-                        final nickname = snapshot.data ?? '';
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Namaste,',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              nickname.isNotEmpty ? nickname : 'Friend',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurface : AppColors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
-                        boxShadow: [
-                          if (!isDark)
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                        ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        "Relief Resources",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                      child: IconButton(
-                        icon: SvgPicture.asset(
-                          'assets/icons/menu.svg',
-                          height: 22.0,
-                          width: 22.0,
-                          colorFilter: ColorFilter.mode(
-                            isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                            BlendMode.srcIn,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildReliefSection(screenWidth, isDark),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          // Interactive Cards (Goals & Journal)
+          SliverToBoxAdapter(
+            child: _FadeSlideEntry(
+              delay: 4,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Column(
+                  children: [
+                    _InteractiveCard(
+                      title: "Today's Goals",
+                      subtitle: "Set and track your daily goals to stay motivated.",
+                      iconPath: 'assets/illustrations/Handholdingpen.svg',
+                      route: '/todaysgoals',
+                      isDark: isDark,
+                    ),
+                    _InteractiveCard(
+                      title: "Journal",
+                      subtitle: "Your safe space for reflection, growth, and self-discovery.",
+                      iconPath: 'assets/illustrations/Handholdingpen.svg',
+                      route: '/journal',
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 120), // Padding for FAB
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: GestureDetector(
+        onLongPress: _showChoiceDialog,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 90), // Lift above the custom navigation bar
+          child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColors.accent,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _callSavedNumber,
+              borderRadius: BorderRadius.circular(28),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: _isScrolled ? 16 : 24),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.emergency_share_rounded, color: Colors.white),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      child: SizedBox(
+                        width: _isScrolled ? 0 : null,
+                        child: const Padding(
+                          padding: EdgeInsets.only(left: 8.0),
+                          child: Text(
+                            'Panic Assist',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
                           ),
                         ),
-                        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                       ),
                     ),
                   ],
@@ -531,154 +608,223 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-          
-          // ── Hero Illustration ─────────────────────────
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.only(top: 24),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(32),
+        ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => _scaffoldKey.currentState?.openDrawer(),
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface2 : AppColors.surface,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.border,
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(32),
-                  child: SvgPicture.asset(
-                    'assets/illustrations/Illustration.svg',
-                    height: 180,
-                    fit: BoxFit.contain,
-                  ),
-                ),
+                boxShadow: [
+                  if (!isDark)
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                ],
+              ),
+              child: Icon(
+                Icons.menu_rounded,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
               ),
             ),
           ),
-          
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-          const SliverToBoxAdapter(child: MoodTrackerHomePage()),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-          _buildSectionTitle("Relief Resources", isDark),
-          _buildReliefSection(screenWidth, isDark),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-          _buildSimpleGoalsSection(isDark),
-          _buildJournalSection(isDark),
-          const SliverToBoxAdapter(child: SizedBox(height: 40)), // Bottom padding
+          const SizedBox(width: 16),
+          Expanded(
+            child: FutureBuilder<String?>(
+              future: _fetchNickname(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Shimmer.fromColors(
+                    baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
+                    highlightColor: isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight,
+                    child: Container(
+                      width: 160,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurface : Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  );
+                }
+
+                final nickname = snapshot.data ?? 'Friend';
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getTimeGreeting(),
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      nickname.isNotEmpty ? nickname : 'Friend',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         ],
       ),
-      floatingActionButton: GestureDetector(
-        onLongPress: _showChoiceDialog,
-        child: FloatingActionButton.extended(
-          onPressed: _callSavedNumber,
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.white,
-          elevation: 4,
-          label: Text(
-            _isScrolled ? '' : 'Panic Assist',
-            style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+    );
+  }
+
+  Widget _buildAnimatedHeroCard(bool isDark) {
+    return AnimatedBuilder(
+      animation: _heroBreathController,
+      builder: (context, child) {
+        // Creates a subtle scale pulsing effect (breathe in, breathe out)
+        final scale = 1.0 + (_heroBreathController.value * 0.02);
+        return Transform.scale(
+          scale: scale,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Container(
+              width: double.infinity,
+              height: 200,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark 
+                    ? [AppColors.darkPrimaryLight, AppColors.darkSurface2]
+                    : [AppColors.primaryLight, AppColors.surface],
+                ),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: isDark ? AppColors.darkPrimary.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    bottom: -20,
+                    child: SvgPicture.asset(
+                      'assets/illustrations/Illustration.svg',
+                      height: 190,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          icon: const Icon(Icons.emergency_share_rounded),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  SliverToBoxAdapter _buildSectionTitle(String title, bool isDark) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-            letterSpacing: -0.5,
+  Widget _buildReliefSection(double screenWidth, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildPremiumReliefCard(
+            Icons.water_drop_rounded,
+            'Anxiety\n& Panic',
+            '/anxietypanic',
+            screenWidth,
+            AppColors.primary,
+            isDark,
           ),
-        ),
+          _buildPremiumReliefCard(
+            Icons.nights_stay_rounded,
+            'Depression\nSupport',
+            '/depression',
+            screenWidth,
+            Colors.indigoAccent,
+            isDark,
+          ),
+          _buildPremiumReliefCard(
+            Icons.healing_rounded,
+            'Self Harm\nIdeation',
+            '/selfharm',
+            screenWidth,
+            Colors.teal,
+            isDark,
+          ),
+        ],
       ),
     );
   }
 
-  SliverToBoxAdapter _buildReliefSection(double screenWidth, bool isDark) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildSupportContainer(
-              Icons.psychology_alt_rounded,
-              'Anxiety\n& Panic',
-              '/anxietypanic',
-              screenWidth,
-              isDark,
-            ),
-            _buildSupportContainer(
-              Icons.nights_stay_rounded,
-              'Depression\nSupport',
-              '/depression',
-              screenWidth,
-              isDark,
-            ),
-            _buildSupportContainer(
-              Icons.healing_rounded,
-              'Self Harm\nIdeation',
-              '/selfharm',
-              screenWidth,
-              isDark,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  GestureDetector _buildSupportContainer(
-    IconData icon,
-    String label,
-    String routeName,
-    double screenWidth,
-    bool isDark,
-  ) {
+  Widget _buildPremiumReliefCard(IconData icon, String label, String routeName, double screenWidth, Color tintColor, bool isDark) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, routeName),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Navigator.pushNamed(context, routeName);
+      },
       child: Container(
-        width: (screenWidth - 72) / 3,
-        height: 120,
+        width: (screenWidth - 72) / 3, // Matches old design width perfectly
+        height: 130, // Increased height for center alignment
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.surface,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.border,
-            width: 1.2,
+            width: 1.5,
           ),
           boxShadow: [
             if (!isDark)
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: tintColor.withValues(alpha: 0.08),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
               ),
           ],
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 36,
-              color: isDark ? AppColors.darkPrimary : AppColors.primary,
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: tintColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 28, color: tintColor),
             ),
             const SizedBox(height: 12),
             Text(
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
                 color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                height: 1.3,
+                height: 1.2,
               ),
             ),
           ],
@@ -686,27 +832,62 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
 
-  SliverToBoxAdapter _buildSimpleGoalsSection(bool isDark) {
-    return SliverToBoxAdapter(
-      child: GestureDetector(
-        onTap: () => Navigator.pushNamed(context, '/todaysgoals'),
+// ── Custom Widgets ──────────────────────────────────────────────
+
+class _InteractiveCard extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final String iconPath;
+  final String route;
+  final bool isDark;
+
+  const _InteractiveCard({
+    required this.title,
+    required this.subtitle,
+    required this.iconPath,
+    required this.route,
+    required this.isDark,
+  });
+
+  @override
+  State<_InteractiveCard> createState() => _InteractiveCardState();
+}
+
+class _InteractiveCardState extends State<_InteractiveCard> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        HapticFeedback.selectionClick();
+        Navigator.pushNamed(context, widget.route);
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOutQuad,
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : AppColors.surface,
-            borderRadius: BorderRadius.circular(24),
+            color: widget.isDark ? AppColors.darkSurface : AppColors.surface,
+            borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: isDark ? AppColors.darkBorder : AppColors.border,
-              width: 1.2,
+              color: widget.isDark ? AppColors.darkBorder : AppColors.border,
+              width: 1.5,
             ),
             boxShadow: [
-              if (!isDark)
+              if (!widget.isDark)
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
                 ),
             ],
           ),
@@ -717,20 +898,20 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Today\'s Goals',
+                      widget.title,
                       style: TextStyle(
                         fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                        color: widget.isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
-                      'Set and track your daily goals to stay motivated.',
+                      widget.subtitle,
                       style: TextStyle(
-                        fontSize: 13,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        fontSize: 14,
+                        color: widget.isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                         height: 1.4,
                       ),
                     ),
@@ -739,15 +920,15 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(width: 16),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
+                  color: widget.isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
                   shape: BoxShape.circle,
                 ),
                 child: SvgPicture.asset(
-                  'assets/illustrations/Handholdingpen.svg',
-                  width: 50,
-                  height: 50,
+                  widget.iconPath,
+                  width: 36,
+                  height: 36,
                 ),
               ),
             ],
@@ -756,73 +937,40 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
 
-  SliverToBoxAdapter _buildJournalSection(bool isDark) {
-    return SliverToBoxAdapter(
-      child: GestureDetector(
-        onTap: () => Navigator.pushNamed(context, '/journal'),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : AppColors.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isDark ? AppColors.darkBorder : AppColors.border,
-              width: 1.2,
-            ),
-            boxShadow: [
-              if (!isDark)
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Journal',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Your safe space for reflection, growth, and self-discovery.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
-                  shape: BoxShape.circle,
-                ),
-                child: SvgPicture.asset(
-                  'assets/illustrations/Handholdingpen.svg',
-                  width: 50,
-                  height: 50,
-                ),
-              ),
-            ],
-          ),
-        ),
+class _FadeSlideEntry extends StatefulWidget {
+  final Widget child;
+  final int delay; // The multiplier for the staggered delay
+
+  const _FadeSlideEntry({required this.child, required this.delay});
+
+  @override
+  State<_FadeSlideEntry> createState() => _FadeSlideEntryState();
+}
+
+class _FadeSlideEntryState extends State<_FadeSlideEntry> {
+  bool _isVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(Duration(milliseconds: 150 + (widget.delay * 150)), () {
+      if (mounted) setState(() => _isVisible = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 600),
+      opacity: _isVisible ? 1.0 : 0.0,
+      curve: Curves.easeOutCubic,
+      child: AnimatedSlide(
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeOutCubic,
+        offset: _isVisible ? Offset.zero : const Offset(0, 0.2),
+        child: widget.child,
       ),
     );
   }

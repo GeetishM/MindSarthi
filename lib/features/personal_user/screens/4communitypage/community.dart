@@ -275,11 +275,58 @@ class _CommunityPageState extends State<CommunityPage> {
                   return _buildFilteredPostList(posts);
                 },
               ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _onNewPostPressed,
-        label: _isScrolled ? const SizedBox() : const Text("New Post"),
-        icon: const Icon(Icons.create_rounded),
-        isExtended: !_isScrolled,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 90),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColors.accent,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _onNewPostPressed,
+              borderRadius: BorderRadius.circular(28),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: _isScrolled ? 16 : 24),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.create_rounded, color: Colors.white),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      child: SizedBox(
+                        width: _isScrolled ? 0 : null,
+                        child: const Padding(
+                          padding: EdgeInsets.only(left: 8.0),
+                          child: Text(
+                            'New Post',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
