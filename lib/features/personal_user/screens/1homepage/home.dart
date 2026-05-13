@@ -6,8 +6,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
-import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/database.dart';
-import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/home.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/MoodInputs/screens/mood_tracker_home_page.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/panic_sos/sos_helper.dart';
@@ -441,141 +439,194 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       key: _scaffoldKey,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       drawer: Sidebar(),
       body: CustomScrollView(
         controller: _scrollController,
         slivers: <Widget>[
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    FutureBuilder<String?>(
+                      future: _fetchNickname(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Shimmer.fromColors(
+                            baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
+                            highlightColor: isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight,
+                            child: Container(
+                              width: 140,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkSurface : Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          );
+                        }
+
+                        final nickname = snapshot.data ?? '';
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Namaste,',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              nickname.isNotEmpty ? nickname : 'Friend',
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurface : AppColors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                        ],
+                      ),
+                      child: IconButton(
                         icon: SvgPicture.asset(
                           'assets/icons/menu.svg',
-                          height: 24.0,
-                          width: 24.0,
+                          height: 22.0,
+                          width: 22.0,
+                          colorFilter: ColorFilter.mode(
+                            isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            BlendMode.srcIn,
+                          ),
                         ),
-                        onPressed:
-                            () => _scaffoldKey.currentState?.openDrawer(),
+                        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                       ),
-                      const SizedBox(width: 10),
-                      FutureBuilder<String?>(
-                        future: _fetchNickname(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return Shimmer.fromColors(
-                              baseColor: Colors.grey[300]!,
-                              highlightColor: Colors.grey[100]!,
-                              child: Container(
-                                width: 140,
-                                height: 24,
-                                color: Colors.white,
-                              ),
-                            );
-                          }
-
-                          final nickname = snapshot.data ?? '';
-                          return Row(
-                            children: [
-                              const Text(
-                                'Namaste',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                nickname,
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  Center(
-                    child: SvgPicture.asset(
-                      'assets/illustrations/Illustration.svg',
-                      width: screenWidth * 0.6,
-                      height: screenWidth * 0.62,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-          SliverToBoxAdapter(child: MoodTrackerHomePage()),
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
-          _buildSectionTitle("Relief Resources"),
-          _buildReliefSection(screenWidth),
-          _buildSimpleGoalsSection(),
-          _buildJournalSection(),
+          
+          // ── Hero Illustration ─────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 24),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: SvgPicture.asset(
+                    'assets/illustrations/Illustration.svg',
+                    height: 180,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          const SliverToBoxAdapter(child: MoodTrackerHomePage()),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          _buildSectionTitle("Relief Resources", isDark),
+          _buildReliefSection(screenWidth, isDark),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          _buildSimpleGoalsSection(isDark),
+          _buildJournalSection(isDark),
+          const SliverToBoxAdapter(child: SizedBox(height: 40)), // Bottom padding
         ],
       ),
       floatingActionButton: GestureDetector(
         onLongPress: _showChoiceDialog,
         child: FloatingActionButton.extended(
           onPressed: _callSavedNumber,
-          label: Text(_isScrolled ? '' : 'Panic Assist'),
-          icon: SvgPicture.asset(
-            'assets/icons/sos.svg',
-            width: 24.0,
-            height: 24.0,
+          backgroundColor: AppColors.accent,
+          foregroundColor: AppColors.white,
+          elevation: 4,
+          label: Text(
+            _isScrolled ? '' : 'Panic Assist',
+            style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          ),
+          icon: const Icon(Icons.emergency_share_rounded),
+        ),
+      ),
+    );
+  }
+
+  SliverToBoxAdapter _buildSectionTitle(String title, bool isDark) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            letterSpacing: -0.5,
           ),
         ),
       ),
     );
   }
 
-  SliverToBoxAdapter _buildSectionTitle(String title) {
+  SliverToBoxAdapter _buildReliefSection(double screenWidth, bool isDark) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Text(
-          title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-
-  SliverToBoxAdapter _buildReliefSection(double screenWidth) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _buildSupportContainer(
-              'assets/icons/Anxiety.png',
-              'Anxiety and Panic Attacks',
+              Icons.psychology_alt_rounded,
+              'Anxiety\n& Panic',
               '/anxietypanic',
               screenWidth,
+              isDark,
             ),
             _buildSupportContainer(
-              'assets/icons/depression.png',
-              'Depression',
+              Icons.nights_stay_rounded,
+              'Depression\nSupport',
               '/depression',
               screenWidth,
+              isDark,
             ),
             _buildSupportContainer(
-              'assets/icons/Suicidal.png',
-              'Self Harm and Suicidal Ideation',
+              Icons.healing_rounded,
+              'Self Harm\nIdeation',
               '/selfharm',
               screenWidth,
+              isDark,
             ),
           ],
         ),
@@ -584,30 +635,51 @@ class _HomePageState extends State<HomePage> {
   }
 
   GestureDetector _buildSupportContainer(
-    String imagePath,
+    IconData icon,
     String label,
     String routeName,
     double screenWidth,
+    bool isDark,
   ) {
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, routeName),
       child: Container(
-        width: (screenWidth - 60) / 3,
-        height: 170,
+        width: (screenWidth - 72) / 3,
+        height: 120,
         decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+          color: isDark ? AppColors.darkSurface : AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.border,
+            width: 1.2,
+          ),
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(imagePath, width: 80, height: 80, color: Colors.black),
-            const SizedBox(height: 8),
+            Icon(
+              icon,
+              size: 36,
+              color: isDark ? AppColors.darkPrimary : AppColors.primary,
+            ),
+            const SizedBox(height: 12),
             Text(
               label,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15, color: Colors.black),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                height: 1.3,
+              ),
             ),
           ],
         ),
@@ -615,25 +687,32 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  SliverToBoxAdapter _buildSimpleGoalsSection() {
+  SliverToBoxAdapter _buildSimpleGoalsSection(bool isDark) {
     return SliverToBoxAdapter(
       child: GestureDetector(
-        onTap:
-            () =>
-                Navigator.pushNamed(context, '/todaysgoals'), // Use your route
+        onTap: () => Navigator.pushNamed(context, '/todaysgoals'),
         child: Container(
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
-          ],
+            color: isDark ? AppColors.darkSurface : AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark ? AppColors.darkBorder : AppColors.border,
+              width: 1.2,
+            ),
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+            ],
           ),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -642,21 +721,34 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
-                      'Set and track your daily goals to stay motivated and productive.',
-                      style: TextStyle(fontSize: 14, color: Colors.black),
+                      'Set and track your daily goals to stay motivated.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        height: 1.4,
+                      ),
                     ),
                   ],
                 ),
               ),
-              SvgPicture.asset(
-                'assets/illustrations/Handholdingpen.svg',
-                width: 100,
-                height: 100,
+              const SizedBox(width: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: SvgPicture.asset(
+                  'assets/illustrations/Handholdingpen.svg',
+                  width: 50,
+                  height: 50,
+                ),
               ),
             ],
           ),
@@ -665,23 +757,32 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  SliverToBoxAdapter _buildJournalSection() {
+  SliverToBoxAdapter _buildJournalSection(bool isDark) {
     return SliverToBoxAdapter(
       child: GestureDetector(
         onTap: () => Navigator.pushNamed(context, '/journal'),
         child: Container(
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            color: isDark ? AppColors.darkSurface : AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark ? AppColors.darkBorder : AppColors.border,
+              width: 1.2,
+            ),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+              if (!isDark)
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
             ],
-            color: Colors.white,
           ),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -690,21 +791,34 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       'Your safe space for reflection, growth, and self-discovery.',
-                      style: TextStyle(fontSize: 14, color: Colors.black),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        height: 1.4,
+                      ),
                     ),
                   ],
                 ),
               ),
-              SvgPicture.asset(
-                'assets/illustrations/Handholdingpen.svg',
-                width: 120,
-                height: 120,
+              const SizedBox(width: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: SvgPicture.asset(
+                  'assets/illustrations/Handholdingpen.svg',
+                  width: 50,
+                  height: 50,
+                ),
               ),
             ],
           ),
