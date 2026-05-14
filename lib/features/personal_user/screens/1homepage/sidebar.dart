@@ -63,161 +63,181 @@ class _SidebarState extends State<Sidebar> with SingleTickerProviderStateMixin {
         borderRadius: BorderRadius.horizontal(right: Radius.circular(32)),
       ),
       child: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // ── Profile Header ─────────────────────────────
-            FutureBuilder<Map<String, dynamic>?>(
-              future: _fetchUserProfile(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return _shimmerHeader(isDark);
-                }
+            Column(
+              children: [
+                // ── Profile Header ─────────────────────────────
+                FutureBuilder<Map<String, dynamic>?>(
+                  future: _fetchUserProfile(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return _shimmerHeader(isDark);
+                    }
 
-                final data = snapshot.data;
-                final name = data?['nickname'] ?? 'User';
-                final photo = data?['photoUrl'];
-                final letter = _initial(name);
+                    final data = snapshot.data;
+                    final name = data?['nickname'] ?? 'User';
+                    final letter = _initial(name);
 
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                  child: GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ProfilePage()),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: isDark ? AppColors.darkBorder : AppColors.border,
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ProfilePage()),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: isDark ? AppColors.darkBorder : AppColors.border,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 26,
+                                backgroundColor: AppColors.primary,
+                                child: Text(
+                                  letter,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Namaste,\n$name 👋',
+                                      style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w800,
+                                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                        height: 1.2,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Tap to view profile',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: subtitleColor,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 26,
-                            backgroundColor: isDark ? AppColors.darkPrimaryLight : AppColors.white,
-                            backgroundImage: (photo != null && photo.toString().isNotEmpty)
-                                ? NetworkImage(photo) as ImageProvider<Object>
-                                : null,
-                            child: (photo == null || photo.toString().isEmpty)
-                                ? Text(
-                                    letter,
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Namaste, $name 👋',
-                                  style: TextStyle(
-                                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Tap to view profile',
-                                  style: TextStyle(
-                                    color: subtitleColor,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    );
+                  },
+                ),
+
+                // ── Sidebar Items ──────────────────────────────
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      _buildAnimatedItem(
+                        index: 1,
+                        icon: Icons.shield_rounded,
+                        title: 'App Lock',
+                        isDark: isDark,
+                        onTap: (ctx) => Navigator.push(
+                          ctx,
+                          MaterialPageRoute(builder: (_) => const AppLockSettingsScreen()),
+                        ),
                       ),
+                      _buildAnimatedThemeToggleRow(context, isDark, index: 2),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Divider(thickness: 1, height: 1),
+                      ),
+                      _buildAnimatedItem(
+                        index: 3,
+                        icon: Icons.logout_rounded,
+                        title: 'Log Out',
+                        isDark: isDark,
+                        textColor: AppColors.error,
+                        iconColor: AppColors.error,
+                        onTap: (ctx) async {
+                          try {
+                            await FirebaseAuth.instance.signOut();
+                            if (ctx.mounted) {
+                              Navigator.pushAndRemoveUntil(
+                                ctx,
+                                MaterialPageRoute(
+                                  builder: (_) => const WelcomeScreen(),
+                                ),
+                                (route) => false,
+                              );
+                            }
+                          } catch (e) {
+                            if (ctx.mounted) {
+                              AppToast.error(
+                                ctx,
+                                'Logout failed',
+                                description: e.toString(),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Footer ─────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24, top: 16),
+                  child: Text(
+                    'MindSarthi • Your pocket companion',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: subtitleColor,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                );
-              },
+                ),
+              ],
             ),
-
-            // ── Menu items ─────────────────────────────────
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  _buildAnimatedItem(
-                    index: 0,
-                    icon: Icons.shield_rounded,
-                    title: 'App Lock',
-                    isDark: isDark,
-                    onTap: (ctx) => Navigator.push(
-                      ctx,
-                      MaterialPageRoute(
-                        builder: (_) => const AppLockSettingsScreen(),
-                      ),
-                    ),
-                  ),
-
-                  // ── Theme toggle row ────────────────────────
-                  _buildAnimatedThemeToggleRow(context, isDark, index: 1),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Divider(
+            // ── Close Button ─────────────────────────────
+            Positioned(
+              top: 16,
+              right: 16,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface2 : AppColors.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(
                       color: isDark ? AppColors.darkBorder : AppColors.border,
                     ),
+                    boxShadow: [
+                      if (!isDark)
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                    ],
                   ),
-
-                  _buildAnimatedItem(
-                    index: 2,
-                    icon: Icons.logout_rounded,
-                    title: 'Log Out',
-                    isDark: isDark,
-                    textColor: AppColors.error,
-                    iconColor: AppColors.error,
-                    onTap: (ctx) async {
-                      try {
-                        await FirebaseAuth.instance.signOut();
-                        if (ctx.mounted) {
-                          Navigator.pushAndRemoveUntil(
-                            ctx,
-                            MaterialPageRoute(
-                              builder: (_) => const WelcomeScreen(),
-                            ),
-                            (route) => false,
-                          );
-                        }
-                      } catch (e) {
-                        if (ctx.mounted) {
-                          AppToast.error(
-                            ctx,
-                            'Logout failed',
-                            description: e.toString(),
-                          );
-                        }
-                      }
-                    },
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   ),
-                ],
-              ),
-            ),
-
-            // ── Footer ─────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.only(bottom: 24, top: 16),
-              child: Text(
-                'MindSarthi • Your pocket companion',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: subtitleColor,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),

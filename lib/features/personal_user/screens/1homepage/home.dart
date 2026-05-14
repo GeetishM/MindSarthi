@@ -30,6 +30,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   
   String? savedPreference;
   String? savedContactOrState;
+  bool _isDrawerOpen = false;
 
   late AnimationController _heroBreathController;
 
@@ -458,6 +459,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     return Scaffold(
       key: _scaffoldKey,
+      onDrawerChanged: (isOpen) => setState(() => _isDrawerOpen = isOpen),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       drawer: const Sidebar(),
       body: CustomScrollView(
@@ -620,7 +622,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => _scaffoldKey.currentState?.openDrawer(),
+            onTap: () {
+              if (_isDrawerOpen) {
+                Navigator.pop(context);
+              } else {
+                _scaffoldKey.currentState?.openDrawer();
+              }
+            },
             child: Container(
               width: 48,
               height: 48,
@@ -640,7 +648,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ],
               ),
               child: Icon(
-                Icons.menu_rounded,
+                _isDrawerOpen ? Icons.close_rounded : Icons.menu_rounded,
                 color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
               ),
             ),
