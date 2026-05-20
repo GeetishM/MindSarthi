@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
@@ -846,7 +847,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             child: _FadeSlideEntry(
               delay: 3,
               child: Padding(
-                padding: const EdgeInsets.only(top: 32, bottom: 16),
+                padding: const EdgeInsets.only(top: 20, bottom: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -877,7 +878,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             child: _FadeSlideEntry(
               delay: 4,
               child: Padding(
-                padding: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.only(top: 8),
                 child: Column(
                   children: [
                     _InteractiveCard(
@@ -896,7 +897,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       route: '/journal',
                       isDark: isDark,
                     ),
-                    const SizedBox(height: 120), // Padding for FAB
+                    const SizedBox(height: 75), // Optimized padding for FAB
                   ],
                 ),
               ),
@@ -917,12 +918,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             curve: Curves.easeOutCubic,
             height: 56,
             decoration: BoxDecoration(
-              color: AppColors.accent,
+              gradient: const LinearGradient(
+                colors: [AppColors.accent, Color(0xFFFF5E3A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.3),
-                  blurRadius: 16,
+                  color: AppColors.accent.withValues(alpha: 0.4),
+                  blurRadius: 20,
+                  spreadRadius: 1,
                   offset: const Offset(0, 8),
                 ),
               ],
@@ -975,98 +981,174 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _buildHeader(bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () {
-              if (_isDrawerOpen) {
-                Navigator.pop(context);
-              } else {
-                _scaffoldKey.currentState?.openDrawer();
-              }
-            },
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface2 : AppColors.surface,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.border,
-                ),
-                boxShadow: [
-                  if (!isDark)
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                ],
-              ),
-              child: Icon(
-                _isDrawerOpen ? Icons.close_rounded : Icons.menu_rounded,
-                color: isDark
-                    ? AppColors.darkTextPrimary
-                    : AppColors.textPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: FutureBuilder<String?>(
-              future: _fetchNickname(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Shimmer.fromColors(
-                    baseColor: isDark
-                        ? AppColors.darkShimmerBase
-                        : AppColors.shimmerBase,
-                    highlightColor: isDark
-                        ? AppColors.darkShimmerHighlight
-                        : AppColors.shimmerHighlight,
-                    child: Container(
-                      width: 160,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurface : Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  );
-                }
+      child: FutureBuilder<String?>(
+        future: _fetchNickname(),
+        builder: (context, snapshot) {
+          final nickname = snapshot.data ?? 'Friend';
+          final firstLetter = nickname.isNotEmpty ? nickname[0].toUpperCase() : 'F';
+          final hasData = snapshot.connectionState != ConnectionState.waiting;
 
-                final nickname = snapshot.data ?? 'Friend';
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _getTimeGreeting(),
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: isDark
-                            ? AppColors.darkTextSecondary
-                            : AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
+          return Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (_isDrawerOpen) {
+                    Navigator.pop(context);
+                  } else {
+                    _scaffoldKey.currentState?.openDrawer();
+                  }
+                },
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface2 : AppColors.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? AppColors.darkBorder : AppColors.border,
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      if (!isDark)
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                    ],
+                  ),
+                  child: Icon(
+                    _isDrawerOpen ? Icons.close_rounded : Icons.menu_rounded,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: hasData
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getTimeGreeting(),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            nickname.isNotEmpty ? nickname : 'Friend',
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.textPrimary,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Shimmer.fromColors(
+                        baseColor: isDark
+                            ? AppColors.darkShimmerBase
+                            : AppColors.shimmerBase,
+                        highlightColor: isDark
+                            ? AppColors.darkShimmerHighlight
+                            : AppColors.shimmerHighlight,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 100,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              width: 150,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 16),
+              hasData
+                  ? Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [AppColors.darkPrimary, AppColors.accent]
+                              : [AppColors.primary, AppColors.accent],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isDark ? AppColors.darkPrimary : AppColors.primary)
+                                .withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        firstLetter,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                        ),
+                      ),
+                    )
+                  : Shimmer.fromColors(
+                      baseColor: isDark
+                          ? AppColors.darkShimmerBase
+                          : AppColors.shimmerBase,
+                      highlightColor: isDark
+                          ? AppColors.darkShimmerHighlight
+                          : AppColors.shimmerHighlight,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
-                    Text(
-                      nickname.isNotEmpty ? nickname : 'Friend',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
+    );
+  }
+
+  void _showBreathingDialog(BuildContext context, bool isDark) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (context) => _BreathingGuideDialog(isDark: isDark),
     );
   }
 
@@ -1075,42 +1157,151 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       animation: _heroBreathController,
       builder: (context, child) {
         // Creates a subtle scale pulsing effect (breathe in, breathe out)
-        final scale = 1.0 + (_heroBreathController.value * 0.02);
+        final scale = 1.0 + (_heroBreathController.value * 0.015);
         return Transform.scale(
           scale: scale,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Container(
-              width: double.infinity,
-              height: 200,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [AppColors.darkPrimaryLight, AppColors.darkSurface2]
-                      : [AppColors.primaryLight, AppColors.surface],
-                ),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.darkPrimary.withValues(alpha: 0.2)
-                      : AppColors.primary.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned(
-                    bottom: -20,
-                    child: SvgPicture.asset(
-                      'assets/illustrations/Illustration.svg',
-                      height: 190,
-                      fit: BoxFit.contain,
-                    ),
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                _showBreathingDialog(context, isDark);
+              },
+              child: Container(
+                width: double.infinity,
+                height: 180,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [AppColors.darkPrimaryLight, AppColors.darkSurface2]
+                        : [const Color(0xFFE5F5F3), Colors.white],
                   ),
-                ],
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.darkPrimary.withValues(alpha: 0.25)
+                        : AppColors.primary.withValues(alpha: 0.25),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    if (!isDark)
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.06),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -30,
+                        top: -30,
+                        child: Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: (isDark ? AppColors.darkPrimary : AppColors.primary)
+                                .withValues(alpha: 0.05),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 20, 20, 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? AppColors.darkPrimary.withValues(alpha: 0.15)
+                                          : AppColors.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.spa_rounded,
+                                          size: 14,
+                                          color: isDark
+                                              ? AppColors.darkPrimary
+                                              : AppColors.primary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Mindful Breathing',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark
+                                                ? AppColors.darkPrimary
+                                                : AppColors.primary,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Take a Calm Moment',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : AppColors.textPrimary,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Tap to start a guided 4-7-8 breathing exercise.',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.textSecondary,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: Center(
+                                child: Lottie.asset(
+                                  'assets/lottie/Breathing.json',
+                                  height: 110,
+                                  width: 110,
+                                  repeat: true,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -1125,94 +1316,159 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildPremiumReliefCard(
-            Icons.water_drop_rounded,
-            'Anxiety\n& Panic',
-            '/anxietypanic',
-            screenWidth,
-            AppColors.primary,
-            isDark,
+          _PremiumReliefCard(
+            icon: Icons.water_drop_rounded,
+            label: 'Anxiety\n& Panic',
+            routeName: '/anxietypanic',
+            screenWidth: screenWidth,
+            tintColor: AppColors.primary,
+            isDark: isDark,
           ),
-          _buildPremiumReliefCard(
-            Icons.nights_stay_rounded,
-            'Depression\nSupport',
-            '/depression',
-            screenWidth,
-            Colors.indigoAccent,
-            isDark,
+          _PremiumReliefCard(
+            icon: Icons.nights_stay_rounded,
+            label: 'Depression\nSupport',
+            routeName: '/depression',
+            screenWidth: screenWidth,
+            tintColor: Colors.indigoAccent,
+            isDark: isDark,
           ),
-          _buildPremiumReliefCard(
-            Icons.healing_rounded,
-            'Self Harm\nIdeation',
-            '/selfharm',
-            screenWidth,
-            Colors.teal,
-            isDark,
+          _PremiumReliefCard(
+            icon: Icons.healing_rounded,
+            label: 'Self Harm\nIdeation',
+            routeName: '/selfharm',
+            screenWidth: screenWidth,
+            tintColor: Colors.teal,
+            isDark: isDark,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildPremiumReliefCard(
-    IconData icon,
-    String label,
-    String routeName,
-    double screenWidth,
-    Color tintColor,
-    bool isDark,
-  ) {
+class _PremiumReliefCard extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final String routeName;
+  final double screenWidth;
+  final Color tintColor;
+  final bool isDark;
+
+  const _PremiumReliefCard({
+    required this.icon,
+    required this.label,
+    required this.routeName,
+    required this.screenWidth,
+    required this.tintColor,
+    required this.isDark,
+  });
+
+  @override
+  State<_PremiumReliefCard> createState() => _PremiumReliefCardState();
+}
+
+class _PremiumReliefCardState extends State<_PremiumReliefCard> {
+  bool _isPressed = false;
+
+  List<Color> _getGradientColors() {
+    if (widget.isDark) {
+      if (widget.routeName == '/anxietypanic') {
+        return [AppColors.darkSurface, const Color(0xFF102725)];
+      } else if (widget.routeName == '/depression') {
+        return [AppColors.darkSurface, const Color(0xFF151930)];
+      } else {
+        return [AppColors.darkSurface, const Color(0xFF2B1914)];
+      }
+    } else {
+      if (widget.routeName == '/anxietypanic') {
+        return [Colors.white, const Color(0xFFE8F6F4)];
+      } else if (widget.routeName == '/depression') {
+        return [Colors.white, const Color(0xFFEEF0FC)];
+      } else {
+        return [Colors.white, const Color(0xFFFFF2EE)];
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gradientColors = _getGradientColors();
     return GestureDetector(
-      onTap: () {
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
         HapticFeedback.lightImpact();
-        Navigator.pushNamed(context, routeName);
+        Navigator.pushNamed(context, widget.routeName);
       },
-      child: Container(
-        width: (screenWidth - 72) / 3, // Matches old design width perfectly
-        height: 130, // Increased height for center alignment
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.border,
-            width: 1.5,
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.94 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOutBack,
+        child: Container(
+          width: (widget.screenWidth - 72) / 3,
+          height: 135,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: gradientColors,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: widget.isDark
+                  ? widget.tintColor.withValues(alpha: 0.25)
+                  : widget.tintColor.withValues(alpha: 0.2),
+              width: 1.5,
+            ),
+            boxShadow: [
+              if (!widget.isDark)
+                BoxShadow(
+                  color: widget.tintColor.withValues(alpha: 0.1),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              if (widget.isDark)
+                BoxShadow(
+                  color: widget.tintColor.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+            ],
           ),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: tintColor.withValues(alpha: 0.08),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: widget.tintColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  widget.icon,
+                  size: 26,
+                  color: widget.tintColor,
+                ),
               ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: tintColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+              const SizedBox(height: 12),
+              Text(
+                widget.label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: widget.isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
+                  height: 1.25,
+                  letterSpacing: -0.3,
+                ),
               ),
-              child: Icon(icon, size: 28, color: tintColor),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: isDark
-                    ? AppColors.darkTextPrimary
-                    : AppColors.textPrimary,
-                height: 1.2,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1243,8 +1499,30 @@ class _InteractiveCard extends StatefulWidget {
 class _InteractiveCardState extends State<_InteractiveCard> {
   bool _isPressed = false;
 
+  List<Color> _getGradientColors() {
+    final isGoals = widget.title.contains("Goals");
+    if (widget.isDark) {
+      return isGoals
+          ? [AppColors.darkSurface, const Color(0xFF102724)]
+          : [AppColors.darkSurface, const Color(0xFF2C1914)];
+    } else {
+      return isGoals
+          ? [Colors.white, const Color(0xFFEAF7F5)]
+          : [Colors.white, const Color(0xFFFFF0EB)];
+    }
+  }
+
+  Color _getAccentColor() {
+    final isGoals = widget.title.contains("Goals");
+    return isGoals ? AppColors.primary : AppColors.accent;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final gradientColors = _getGradientColors();
+    final accentColor = _getAccentColor();
+    final isGoals = widget.title.contains("Goals");
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
@@ -1261,17 +1539,23 @@ class _InteractiveCardState extends State<_InteractiveCard> {
           padding: const EdgeInsets.all(24),
           margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           decoration: BoxDecoration(
-            color: widget.isDark ? AppColors.darkSurface : AppColors.surface,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: gradientColors,
+            ),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: widget.isDark ? AppColors.darkBorder : AppColors.border,
+              color: widget.isDark
+                  ? accentColor.withValues(alpha: 0.2)
+                  : AppColors.border,
               width: 1.5,
             ),
             boxShadow: [
               if (!widget.isDark)
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.06),
-                  blurRadius: 15,
+                  color: accentColor.withValues(alpha: 0.05),
+                  blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),
             ],
@@ -1282,41 +1566,86 @@ class _InteractiveCardState extends State<_InteractiveCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        isGoals ? "DAILY TRACKING" : "SELF REFLECTION",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: accentColor,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Text(
                       widget.title,
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
                         color: widget.isDark
                             ? AppColors.darkTextPrimary
                             : AppColors.textPrimary,
-                        letterSpacing: -0.5,
+                        letterSpacing: -0.6,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       widget.subtitle,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: widget.isDark
                             ? AppColors.darkTextSecondary
                             : AppColors.textSecondary,
-                        height: 1.4,
+                        height: 1.35,
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Text(
+                          isGoals ? "Open Goals" : "Start Writing",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: accentColor,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 11,
+                          color: accentColor,
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 16),
               Container(
-                padding: const EdgeInsets.all(16),
+                width: 68,
+                height: 68,
                 decoration: BoxDecoration(
                   color: widget.isDark
-                      ? AppColors.darkPrimaryLight
-                      : AppColors.primaryLight,
+                      ? accentColor.withValues(alpha: 0.15)
+                      : accentColor.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
-                child: SvgPicture.asset(widget.iconPath, width: 36, height: 36),
+                alignment: Alignment.center,
+                child: Icon(
+                  isGoals ? Icons.fact_check_rounded : Icons.create_rounded,
+                  size: 32,
+                  color: accentColor,
+                ),
               ),
             ],
           ),
@@ -1358,6 +1687,178 @@ class _FadeSlideEntryState extends State<_FadeSlideEntry> {
         curve: Curves.easeOutCubic,
         offset: _isVisible ? Offset.zero : const Offset(0, 0.2),
         child: widget.child,
+      ),
+    );
+  }
+}
+
+class _BreathingGuideDialog extends StatefulWidget {
+  final bool isDark;
+  const _BreathingGuideDialog({required this.isDark});
+
+  @override
+  State<_BreathingGuideDialog> createState() => _BreathingGuideDialogState();
+}
+
+class _BreathingGuideDialogState extends State<_BreathingGuideDialog> {
+  int _secondsRemaining = 4;
+  String _currentPhase = 'Inhale';
+  late Timer _timer;
+  int _phaseIndex = 0; // 0: Inhale, 1: Hold, 2: Exhale, 3: Hold
+
+  final List<String> _phases = ['Inhale', 'Hold', 'Exhale', 'Hold'];
+  final List<int> _durations = [4, 7, 8, 4];
+  final List<Color> _colors = [
+    AppColors.primary,
+    const Color(0xFFFFB300),
+    AppColors.accent,
+    const Color(0xFFFFB300)
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        if (_secondsRemaining > 1) {
+          _secondsRemaining--;
+        } else {
+          _phaseIndex = (_phaseIndex + 1) % 4;
+          _currentPhase = _phases[_phaseIndex];
+          _secondsRemaining = _durations[_phaseIndex];
+          HapticFeedback.lightImpact();
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentColor = _colors[_phaseIndex];
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: widget.isDark ? AppColors.darkSurface : AppColors.surface,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(
+            color: widget.isDark ? AppColors.darkBorder : AppColors.border,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: currentColor.withValues(alpha: 0.15),
+              blurRadius: 24,
+              spreadRadius: 4,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: widget.isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: widget.isDark ? AppColors.darkTextPrimary : AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Breathing Space',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: widget.isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Find your baseline calm',
+              style: TextStyle(
+                fontSize: 14,
+                color: widget.isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 200,
+              width: 200,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(seconds: 4),
+                    curve: Curves.easeInOut,
+                    width: _currentPhase == 'Inhale' ? 190 : (_currentPhase == 'Exhale' ? 140 : 170),
+                    height: _currentPhase == 'Inhale' ? 190 : (_currentPhase == 'Exhale' ? 140 : 170),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: currentColor.withValues(alpha: 0.08),
+                      border: Border.all(
+                        color: currentColor.withValues(alpha: 0.3),
+                        width: 4,
+                      ),
+                    ),
+                  ),
+                  Lottie.asset(
+                    'assets/lottie/Breathing.json',
+                    height: 150,
+                    width: 150,
+                    repeat: true,
+                    fit: BoxFit.contain,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 300),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                color: currentColor,
+                letterSpacing: -0.5,
+              ),
+              child: Text(_currentPhase),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$_secondsRemaining seconds remaining',
+              style: TextStyle(
+                fontSize: 14,
+                color: widget.isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }

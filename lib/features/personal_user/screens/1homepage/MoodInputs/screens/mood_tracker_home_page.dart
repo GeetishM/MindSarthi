@@ -87,17 +87,16 @@ class MoodTrackerHomePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 110,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: moods.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              return _buildMoodButton(context, moods[index], isDark);
-            },
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: moods.map((mood) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: _buildMoodButton(context, mood, isDark),
+              ),
+            )).toList(),
           ),
         ),
       ],
@@ -117,19 +116,19 @@ class MoodTrackerHomePage extends StatelessWidget {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 82,
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : Colors.white,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.border,
-            width: 1,
+            width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: (isDark ? Colors.black : AppColors.border).withOpacity(isDark ? 0.2 : 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: (isDark ? Colors.black : AppColors.border).withValues(alpha: isDark ? 0.2 : 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -137,24 +136,25 @@ class MoodTrackerHomePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: mood.color.withOpacity(0.1),
+                color: mood.color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 mood.icon,
-                size: 28,
+                size: 24,
                 color: mood.color,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               mood.name,
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
                 color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                letterSpacing: -0.3,
               ),
             ),
           ],
