@@ -117,6 +117,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          color: AppColors.textPrimary,
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: LayoutBuilder(
         builder: (_, constraints) {
           return SingleChildScrollView(

@@ -76,6 +76,24 @@ class AppColors {
   static const Color darkTextHint      = Color(0xFF4D7B78);
   static const Color darkShimmerBase      = Color(0xFF1A3030);
   static const Color darkShimmerHighlight = Color(0xFF234040);
+
+  // ── Professional — Slate Indigo ───────────────────────
+  /// Trustworthy, clinical, credible — used across professional dashboards.
+  static const Color professional         = Color(0xFF5C6BC0); // Indigo base
+  static const Color professionalLight    = Color(0xFFEEF0FB); // Soft tint for chips/bg
+  static const Color professionalDark     = Color(0xFF3949AB); // Pressed / bold
+  /// Dark-mode variants
+  static const Color darkProfessional     = Color(0xFF7986CB); // Lighter indigo for dark bg
+  static const Color darkProfessionalLight= Color(0xFF1A1F3A); // Dark surface tint
+
+  // ── Organizational — Warm Coral (extended) ────────────
+  /// Same as accent but aliased for the org role. Energetic, corporate.
+  static const Color org         = Color(0xFFF4845F); // Same as accent
+  static const Color orgLight    = Color(0xFFFFF0EB); // Same as accentLight
+  static const Color orgDark     = Color(0xFFD4623C); // Deeper coral for pressed/bold
+  /// Dark-mode variants
+  static const Color darkOrg      = Color(0xFFFF8A65); // Brighter coral on dark bg
+  static const Color darkOrgLight = Color(0xFF3A1E14); // Dark surface tint
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

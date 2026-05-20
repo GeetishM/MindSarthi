@@ -46,11 +46,11 @@ class _UserSelectionState extends State<UserSelection>
     }
     switch (selectedRole) {
       case 'personal':
-        Navigator.pushReplacementNamed(context, '/personalauth');
+        Navigator.pushNamed(context, '/personalauth');
       case 'professional':
-        Navigator.pushReplacementNamed(context, '/professionalauth');
+        Navigator.pushNamed(context, '/professionalauth');
       case 'organization':
-        Navigator.pushReplacementNamed(context, '/organizationalauth');
+        Navigator.pushNamed(context, '/organizationalauth');
     }
   }
 
@@ -154,7 +154,7 @@ class _UserSelectionState extends State<UserSelection>
                           'Offer support, manage clients & grow your practice',
                       roleKey: 'professional',
                       icon: Icons.health_and_safety_rounded,
-                      accentColor: const Color(0xFF00897B),
+                      accentColor: const Color(0xFF5C6BC0),
                       imagePath: 'assets/illustrations/curiosity-pana 1.svg',
                       isSelected: selectedRole == 'professional',
                       onTap: () => _selectRole('professional'),
@@ -246,6 +246,12 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // When selected: solid accent background + all text/icons go white
+    final textColor = isSelected ? Colors.white : AppColors.textPrimary;
+    final subTextColor = isSelected
+        ? Colors.white.withValues(alpha: 0.85)
+        : AppColors.textSecondary;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -253,9 +259,7 @@ class _RoleCard extends StatelessWidget {
         curve: Curves.easeOut,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected
-              ? accentColor.withValues(alpha: 0.07)
-              : AppColors.white,
+          color: isSelected ? accentColor : AppColors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? accentColor : AppColors.border,
@@ -264,9 +268,9 @@ class _RoleCard extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: accentColor.withValues(alpha: 0.12),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: accentColor.withValues(alpha: 0.30),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
                   )
                 ]
               : [],
@@ -279,13 +283,13 @@ class _RoleCard extends StatelessWidget {
               height: 48,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? accentColor.withValues(alpha: 0.15)
+                    ? Colors.white.withValues(alpha: 0.20)
                     : AppColors.background,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
                 icon,
-                color: isSelected ? accentColor : AppColors.textSecondary,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
                 size: 26,
               ),
             ),
@@ -299,27 +303,27 @@ class _RoleCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: textColor,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
+                      color: subTextColor,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: subTextColor,
                       height: 1.4,
                     ),
                   ),
@@ -336,10 +340,12 @@ class _RoleCard extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? accentColor : AppColors.border,
+                  color: isSelected ? Colors.white : AppColors.border,
                   width: 2,
                 ),
-                color: isSelected ? accentColor : Colors.transparent,
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : Colors.transparent,
               ),
               child: isSelected
                   ? const Icon(Icons.check_rounded,
