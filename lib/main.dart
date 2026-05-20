@@ -20,6 +20,7 @@ import 'package:mindsarthi/core/localization/locale_provider.dart';
 import 'package:mindsarthi/core/services/notification_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/insight_data.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/MoodInputs/models/mood_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +62,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => MoodProvider()),
       ],
       child: const MindSarthi(),
     ),
