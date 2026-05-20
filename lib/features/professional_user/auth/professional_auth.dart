@@ -8,7 +8,6 @@ import 'package:lottie/lottie.dart';
 import 'package:mindsarthi/features/professional_user/auth/professional_otp_verification.dart';
 import 'package:toastification/toastification.dart';
 
-
 class ProfessionalAuth extends StatefulWidget {
   const ProfessionalAuth({super.key});
 
@@ -55,7 +54,7 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Lottie.asset(
-                'assets/lottie/loading.json',
+                'assets/lottie/otp.json',
                 height: 120,
                 width: 120,
                 fit: BoxFit.contain,
@@ -150,7 +149,10 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                 ],
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -231,7 +233,11 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                     ),
                     const SizedBox(height: 10),
                     _buildSocialButton(
-                      icon: const Icon(Icons.apple, color: Colors.black, size: 25),
+                      icon: const Icon(
+                        Icons.apple,
+                        color: Colors.black,
+                        size: 25,
+                      ),
                       text: "Continue with Apple",
                       onPressed: () {},
                     ),
@@ -258,7 +264,9 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           side: const BorderSide(color: Colors.grey),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         child: Stack(
           alignment: Alignment.center,
@@ -287,8 +295,8 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
         color: _isPhoneValid
             ? Colors.green
             : focused
-                ? const Color(0xFFBDBDBD)
-                : const Color(0xFFBDBDBD),
+            ? const Color(0xFFBDBDBD)
+            : const Color(0xFFBDBDBD),
         width: focused ? 2 : 1.5,
       ),
     );

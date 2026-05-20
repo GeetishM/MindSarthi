@@ -44,7 +44,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         final snapshot = await doc.get();
 
         if (!snapshot.exists) {
-          await doc.set({'uid': user.uid, 'phoneNumber': widget.phoneNumber});
+          await doc.set({
+            'uid': user.uid,
+            'phoneNumber': widget.phoneNumber,
+            'userRole': 'personal',
+          });
           toastification.show(
             context: context,
             type: ToastificationType.success,

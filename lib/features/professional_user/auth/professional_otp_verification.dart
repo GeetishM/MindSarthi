@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
-import 'package:mindsarthi/features/personal_user/screens/nav.dart';
+import 'package:mindsarthi/core/widgets/role_router.dart';
 import 'package:pinput/pinput.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -56,6 +56,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             'isProfessional': widget.isProfessional,
           });
 
+          // Also write to unified users collection for RoleRouter
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({
+            'uid': user.uid,
+            'phoneNumber': widget.phoneNumber,
+            'userRole': 'professional',
+          }, SetOptions(merge: true));
+
           toastification.show(
             context: context,
             type: ToastificationType.success,
@@ -73,7 +83,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const NavBar()),
+            MaterialPageRoute(builder: (_) => const RoleRouter()),
           );
         }
       }

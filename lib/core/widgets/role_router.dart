@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/features/organizational_user/screens/org_nav.dart';
 import 'package:mindsarthi/features/personal_user/screens/nav.dart';
+import 'package:mindsarthi/features/professional_user/screens/professional_nav.dart';
 import 'package:shimmer/shimmer.dart';
 
 /// Routes the authenticated user to the correct Nav screen based on their
@@ -66,14 +68,12 @@ class _RoleRouterState extends State<RoleRouter> {
   Widget build(BuildContext context) {
     if (_loading) return const _RoleLoadingScreen();
 
-    // Route based on role — fallback to NavBar while other nav screens are built
+    // Route based on Firestore userRole
     switch (_role) {
       case 'professional':
-      // TODO: Replace with ProfessionalNavBar() when available
-        return const NavBar();
+        return const ProfessionalNav();
       case 'org':
-      // TODO: Replace with OrgNavBar() when available
-        return const NavBar();
+        return const OrgNav();
       case 'personal':
       default:
         return const NavBar();

@@ -70,38 +70,64 @@ class MindSarthi extends StatelessWidget {
     return ToastificationWrapper(
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        routes: AppRouter.routes,
         title: 'MindSarthi',
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeProvider.themeMode,
-        home: StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Scaffold(
-                backgroundColor: themeProvider.isDark
-                    ? AppColors.darkBackground
-                    : AppColors.background,
-                body: Center(
-                  child: CircularProgressIndicator(
-                    color: themeProvider.isDark
-                        ? AppColors.darkPrimary
-                        : AppColors.primary,
-                    strokeWidth: 2.5,
-                  ),
-                ),
-              );
-            }
-            if (snapshot.hasData) {
-              // ── Route by role instead of always NavBar ──────────────────
-              return const RoleRouter();
-            } else {
-              return const WelcomeScreen();
-            }
-          },
-        ),
+        // Use onGenerateRoute instead of home + routes to avoid
+        // Navigator history-empty assertion on theme rebuilds.
+        initialRoute: '/',
+        onGenerateRoute: (settings) {
+          // Named routes from AppRouter
+          final namedRoutes = AppRouter.routes;
+          if (namedRoutes.containsKey(settings.name)) {
+            return MaterialPageRoute(
+              builder: namedRoutes[settings.name]!,
+              settings: settings,
+            );
+          }
+
+          // Default '/' route — auth gate
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => const _AuthGate(),
+          );
+        },
       ),
+    );
+  }
+}
+
+/// Auth gate extracted as a standalone widget so it can be used
+/// with [onGenerateRoute] instead of [MaterialApp.home].
+class _AuthGate extends StatelessWidget {
+  const _AuthGate();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor:
+                isDark ? AppColors.darkBackground : AppColors.background,
+            body: Center(
+              child: CircularProgressIndicator(
+                color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                strokeWidth: 2.5,
+              ),
+            ),
+          );
+        }
+        if (snapshot.hasData) {
+          return const RoleRouter();
+        } else {
+          return const WelcomeScreen();
+        }
+      },
     );
   }
 }
