@@ -19,6 +19,14 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
   String? _phoneNumber;
   bool _isPhoneValid = false;
   final _orgNameController = TextEditingController();
+  bool _dialogOpen = false;
+
+  void _dismissDialog() {
+    if (_dialogOpen && mounted) {
+      _dialogOpen = false;
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
 
   @override
   void dispose() {
@@ -59,6 +67,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
       return;
     }
 
+    _dialogOpen = true;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -98,11 +107,12 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
       await _auth.verifyPhoneNumber(
         phoneNumber: _phoneNumber!,
         verificationCompleted: (cred) async {
+          _dismissDialog();
           await _auth.signInWithCredential(cred);
-          if (context.mounted) Navigator.pop(context);
         },
         verificationFailed: (e) {
-          Navigator.pop(context);
+          _dismissDialog();
+          if (!mounted) return;
           toastification.show(
             context: context,
             type: ToastificationType.error,
@@ -112,7 +122,8 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
           );
         },
         codeSent: (verificationId, resendToken) {
-          Navigator.pop(context);
+          _dismissDialog();
+          if (!mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -131,12 +142,12 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
             autoCloseDuration: const Duration(seconds: 4),
           );
         },
-        codeAutoRetrievalTimeout: (_) {
-          Navigator.pop(context);
-        },
+        // Do NOT pop here — dialog is already gone after codeSent
+        codeAutoRetrievalTimeout: (_) {},
       );
     } catch (e) {
-      Navigator.pop(context);
+      _dismissDialog();
+      if (!mounted) return;
       toastification.show(
         context: context,
         type: ToastificationType.error,

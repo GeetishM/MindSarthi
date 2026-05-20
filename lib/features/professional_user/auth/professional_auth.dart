@@ -19,6 +19,14 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
   final _auth = FirebaseAuth.instance;
   String? _phoneNumber;
   bool _isPhoneValid = false;
+  bool _dialogOpen = false;
+
+  void _dismissDialog() {
+    if (_dialogOpen && mounted) {
+      _dialogOpen = false;
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
 
   void _checkPhoneValidity(String? value) {
     if (value == null || value.isEmpty) {
@@ -42,6 +50,7 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
       return;
     }
 
+    _dialogOpen = true;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -74,11 +83,12 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
       await _auth.verifyPhoneNumber(
         phoneNumber: _phoneNumber!,
         verificationCompleted: (cred) async {
+          _dismissDialog();
           await _auth.signInWithCredential(cred);
-          if (context.mounted) Navigator.pop(context);
         },
         verificationFailed: (e) {
-          Navigator.pop(context);
+          _dismissDialog();
+          if (!mounted) return;
           toastification.show(
             context: context,
             type: ToastificationType.error,
@@ -88,14 +98,15 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
           );
         },
         codeSent: (verificationId, resendToken) {
-          Navigator.pop(context);
+          _dismissDialog();
+          if (!mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => OtpVerificationScreen(
                 phoneNumber: _phoneNumber!,
                 verificationId: verificationId,
-                isProfessional: true, // mark this as a professional user
+                isProfessional: true,
               ),
             ),
           );
@@ -107,12 +118,12 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
             autoCloseDuration: const Duration(seconds: 4),
           );
         },
-        codeAutoRetrievalTimeout: (_) {
-          Navigator.pop(context);
-        },
+        // Do NOT pop here — dialog is already gone after codeSent
+        codeAutoRetrievalTimeout: (_) {},
       );
     } catch (e) {
-      Navigator.pop(context);
+      _dismissDialog();
+      if (!mounted) return;
       toastification.show(
         context: context,
         type: ToastificationType.error,
