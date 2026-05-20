@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/Bookmarked_screen.dart';
+import 'package:shimmer/shimmer.dart';
 import 'bookmark_manager.dart';
 import 'insight_card.dart';
 import 'insight_data.dart';
@@ -17,6 +19,8 @@ class InsightPage extends StatefulWidget {
 class _InsightPageState extends State<InsightPage> {
   Set<String> bookmarkedIds = {};
   String selectedTag = 'ALL';
+
+  static const _tags = ['ALL', 'For You', 'Adult ADHD', 'Insomnia', 'Panic Attacks'];
 
   @override
   void initState() {
@@ -36,17 +40,18 @@ class _InsightPageState extends State<InsightPage> {
     _loadBookmarks();
   }
 
-  List<Insight> _filterInsights() {
-    if (selectedTag == 'ALL') return insightsList;
-
-    // Add your tag filtering logic here. For now, dummy filter:
-    return insightsList.where((insight) => insight.heading.contains(selectedTag)).toList();
+  List<Insight> _applyFilter(List<Insight> insights) {
+    if (selectedTag == 'ALL') return insights;
+    if (selectedTag == 'For You') return insights; // personalisation hook
+    return insights
+        .where((i) =>
+            i.category.toLowerCase() == selectedTag.toLowerCase() ||
+            i.heading.toLowerCase().contains(selectedTag.toLowerCase()))
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredInsights = _filterInsights();
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -82,39 +87,94 @@ class _InsightPageState extends State<InsightPage> {
       body: Column(
         children: [
           const SizedBox(height: 8),
+          // ── Tag filter chips ───────────────────────────────────────────
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
-              children: ['ALL', 'For You', 'Adult ADHD', 'Insomnia', 'Panic Attacks']
-                  .map((tag) => tagChip(tag))
-                  .toList(),
+              children: _tags.map((tag) => _tagChip(tag, isDark)).toList(),
             ),
           ),
           const SizedBox(height: 8),
+
+          // ── Firestore stream ───────────────────────────────────────────
           Expanded(
-            child: ListView.builder(
-              itemCount: filteredInsights.length,
-              itemBuilder: (context, index) {
-                final insight = filteredInsights[index];
-                return InsightCard(
-                  heading: insight.heading,
-                  content: insight.content,
-                  author: insight.author,
-                  date: insight.date,
-                  isBookmarked: bookmarkedIds.contains(insight.id),
-                  onBookmarkToggle: () => _toggleBookmark(insight.id),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => InsightDetailPage(
-                          heading: insight.heading,
-                          content: insight.content,
-                          author: insight.author,
-                          date: insight.date,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('insights')
+                  .orderBy('date', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                // Loading shimmer
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return _buildShimmerList(isDark);
+                }
+
+                // Build list from Firestore or fallback to static list
+                List<Insight> insights;
+                if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                  insights = snapshot.data!.docs
+                      .map((doc) => Insight.fromFirestore(doc))
+                      .toList();
+                } else {
+                  // Firestore collection empty → use static fallback
+                  insights = insightsList;
+                }
+
+                final filtered = _applyFilter(insights);
+
+                if (filtered.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.explore_off_rounded,
+                          size: 56,
+                          color: isDark
+                              ? AppColors.darkTextHint
+                              : AppColors.textHint,
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No insights for this topic yet.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.textSecondary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final insight = filtered[index];
+                    return InsightCard(
+                      heading: insight.heading,
+                      content: insight.content,
+                      author: insight.author,
+                      date: insight.date,
+                      isBookmarked: bookmarkedIds.contains(insight.id),
+                      onBookmarkToggle: () => _toggleBookmark(insight.id),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => InsightDetailPage(
+                              heading: insight.heading,
+                              content: insight.content,
+                              author: insight.author,
+                              date: insight.date,
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 );
@@ -126,10 +186,9 @@ class _InsightPageState extends State<InsightPage> {
     );
   }
 
-  Widget tagChip(String label) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _tagChip(String label, bool isDark) {
     final isSelected = selectedTag == label;
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: ChoiceChip(
@@ -139,16 +198,16 @@ class _InsightPageState extends State<InsightPage> {
         selectedColor: isDark ? AppColors.darkPrimary : AppColors.primary,
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
         side: BorderSide(
-          color: isSelected 
-              ? Colors.transparent 
+          color: isSelected
+              ? Colors.transparent
               : (isDark ? AppColors.darkBorder : AppColors.border),
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
         labelStyle: TextStyle(
-          color: isSelected 
-              ? AppColors.white 
+          color: isSelected
+              ? AppColors.white
               : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           fontSize: 14,
@@ -157,6 +216,96 @@ class _InsightPageState extends State<InsightPage> {
           setState(() => selectedTag = label);
         },
       ),
+    );
+  }
+
+  Widget _buildShimmerList(bool isDark) {
+    final shimmerBase =
+        isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase;
+    final shimmerHighlight =
+        isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight;
+
+    return ListView.builder(
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: shimmerBase,
+          highlightColor: shimmerHighlight,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Author row
+                Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurface2 : AppColors.border,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 100,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurface2 : AppColors.border,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                // Title
+                Container(
+                  width: double.infinity,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface2 : AppColors.border,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 180,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface2 : AppColors.border,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Content lines
+                Container(
+                  width: double.infinity,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface2 : AppColors.border,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 240,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface2 : AppColors.border,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

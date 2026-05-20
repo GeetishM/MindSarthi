@@ -385,18 +385,162 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   Widget _buildShimmerList() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final shimmerBase =
+        isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase;
+    final shimmerHighlight =
+        isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight;
+
     return ListView.builder(
-      itemCount: 5,
+      itemCount: 4,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
-          baseColor: Colors.grey.shade300,
-          highlightColor: Colors.grey.shade100,
-          child: Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          baseColor: shimmerBase,
+          highlightColor: shimmerHighlight,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(24),
             ),
-            child: const SizedBox(height: 120),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Top row: Avatar + name + options ─────────────────
+                Row(
+                  children: [
+                    // Avatar
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkSurface2
+                            : AppColors.border,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Username
+                    Container(
+                      width: 120,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkSurface2
+                            : AppColors.border,
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                    ),
+                    const Spacer(),
+                    // Options dots
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkSurface2
+                            : AppColors.border,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // ── Post content lines ────────────────────────────────
+                Container(
+                  width: double.infinity,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface2 : AppColors.border,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface2 : AppColors.border,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 200,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface2 : AppColors.border,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Action row: Heart + Comment + Share ───────────────
+                Row(
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkSurface2
+                            : AppColors.border,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 24,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkSurface2
+                            : AppColors.border,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkSurface2
+                            : AppColors.border,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 24,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkSurface2
+                            : AppColors.border,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkSurface2
+                            : AppColors.border,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },

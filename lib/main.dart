@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -5,16 +6,30 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mindsarthi/core/routes/app_routes.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/theme_provider.dart';
+import 'package:mindsarthi/core/widgets/error_boundary.dart';
+import 'package:mindsarthi/core/widgets/role_router.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Journal/journal_entry.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/chat_history.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
-import 'package:mindsarthi/features/personal_user/screens/nav.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ── Global Flutter error handler ─────────────────────────────────────────
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    // TODO: Forward to Crashlytics → FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+  };
+
+  // ── Global async / platform error handler ────────────────────────────────
+  PlatformDispatcher.instance.onError = (error, stack) {
+    // TODO: Forward to Crashlytics → FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    debugPrint('Unhandled async error: $error\n$stack');
+    return true; // Returning true marks the error as handled
+  };
 
   await Hive.initFlutter();
 
@@ -48,6 +63,10 @@ class MindSarthi extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
 
+    // ── Branded error widget instead of raw red screen ───────────────────
+    ErrorWidget.builder = (FlutterErrorDetails details) =>
+        AppErrorWidget(details: details);
+
     return ToastificationWrapper(
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -75,7 +94,8 @@ class MindSarthi extends StatelessWidget {
               );
             }
             if (snapshot.hasData) {
-              return const NavBar();
+              // ── Route by role instead of always NavBar ──────────────────
+              return const RoleRouter();
             } else {
               return const WelcomeScreen();
             }

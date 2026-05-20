@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/comment_input_screen.dart';
+import 'package:mindsarthi/features/personal_user/screens/4communitypage/report_dialog.dart';
 import 'comment_screen.dart';
 
 class PostCard extends StatefulWidget {
@@ -134,6 +136,163 @@ class _PostCardState extends State<PostCard>
     );
   }
 
+  /// Shows the post options bottom sheet (Report or Delete depending on ownership).
+  void _showPostOptions(BuildContext context, Map<String, dynamic> data, bool isDark) {
+    final isOwner = data['uid'] == currentUid;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            if (isOwner) ...[
+              // ── Delete option for post owner ────────────────────────
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.delete_outline_rounded,
+                      color: AppColors.error),
+                ),
+                title: Text(
+                  'Delete Post',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.error,
+                  ),
+                ),
+                subtitle: Text(
+                  'This action cannot be undone.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Delete Post?'),
+                      content: const Text(
+                          'Are you sure you want to delete this post?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.error),
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Delete',
+                              style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    await FirebaseFirestore.instance
+                        .collection('posts')
+                        .doc(widget.post.id)
+                        .delete();
+                    if (context.mounted) {
+                      AppToast.success(context, 'Post deleted');
+                    }
+                  }
+                },
+              ),
+            ] else ...[
+              // ── Report option for other users ───────────────────────
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.flag_rounded, color: AppColors.error),
+                ),
+                title: Text(
+                  'Report Post',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                  ),
+                ),
+                subtitle: Text(
+                  'Flag inappropriate or harmful content.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  showReportSheet(context, widget.post.id);
+                },
+              ),
+            ],
+
+            // ── Cancel ───────────────────────────────────────────────
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface2 : AppColors.background,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.close_rounded,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary),
+              ),
+              title: Text(
+                'Cancel',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
+                ),
+              ),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = widget.post.data() as Map<String, dynamic>;
@@ -251,7 +410,7 @@ class _PostCardState extends State<PostCard>
                   Icons.more_horiz_rounded,
                   color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                 ),
-                onPressed: () {},
+                onPressed: () => _showPostOptions(context, data, isDark),
               ),
             ],
           ),

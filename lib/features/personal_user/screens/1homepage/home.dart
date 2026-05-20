@@ -120,15 +120,36 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
+  /// Sends a pre-composed distress SMS to [number] using the native SMS app.
+  /// The user still has to tap Send — this provides consent.
+  Future<void> _sendDistressSms(String number) async {
+    const message =
+        'I need help right now. Please contact me — sent via MindSarthi SOS.';
+    final Uri smsUri = Uri(
+      scheme: 'sms',
+      path: number,
+      queryParameters: {'body': message},
+    );
+    if (await canLaunchUrl(smsUri)) {
+      await launchUrl(smsUri);
+    } else {
+      if (mounted) {
+        _showErrorToast('Could not open SMS app.');
+      }
+    }
+  }
+
   Future<void> _callSavedNumber() async {
     HapticFeedback.heavyImpact();
     try {
       if (savedPreference == "helpline" && savedContactOrState != null) {
-        String? helplineNumber = await HelplineService.getStateHelpline(savedContactOrState!);
+        String? helplineNumber =
+            await HelplineService.getStateHelpline(savedContactOrState!);
         if (helplineNumber != null && helplineNumber.isNotEmpty) {
           await _makePhoneCall(helplineNumber);
         } else {
-          _showErrorToast("We couldn't find a helpline for \"$savedContactOrState\".");
+          _showErrorToast(
+              "We couldn't find a helpline for \"$savedContactOrState\".");
         }
       } else if (savedPreference == "friend" && savedContactOrState != null) {
         await _makePhoneCall(savedContactOrState!);
@@ -138,6 +159,153 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     } catch (e) {
       _showErrorToast("Error: $e");
     }
+  }
+
+  /// Shows an action sheet with Call & SMS options (for friend contacts),
+  /// or directly calls the helpline.
+  void _showSosActionSheet() {
+    HapticFeedback.heavyImpact();
+
+    // If no contact set up yet, show setup dialog
+    if (savedPreference == null || savedContactOrState == null) {
+      _showChoiceDialog();
+      return;
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isFriend = savedPreference == 'friend';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkBorder : AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.emergency_share_rounded,
+                  color: AppColors.error, size: 36),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Panic Assist',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isFriend
+                  ? 'How do you want to reach ${savedContactOrState!}?'
+                  : 'Calling $savedContactOrState helpline now…',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // ── Call button (always shown) ─────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.phone_rounded),
+                label: Text(
+                  isFriend ? 'Call Now' : 'Call Helpline',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _callSavedNumber();
+                },
+              ),
+            ),
+
+            // ── SMS button (only for friend contacts) ─────────────────
+            if (isFriend) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.message_rounded),
+                  label: const Text(
+                    'Send SOS Message',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: BorderSide(color: AppColors.error, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _sendDistressSms(savedContactOrState!);
+                  },
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 12),
+
+            // ── Change contact ─────────────────────────────────────────
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _showChoiceDialog();
+              },
+              child: Text(
+                'Change SOS Contact',
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showErrorToast(String message) {
@@ -558,7 +726,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: GestureDetector(
-        onLongPress: _showChoiceDialog,
+        onLongPress: _showSosActionSheet,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 90), // Lift above the custom navigation bar
           child: AnimatedContainer(
