@@ -207,7 +207,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: Text(
+                            child: Text( 
                               "Continue",
                               style: TextStyle(
                                 color: Colors.white,
