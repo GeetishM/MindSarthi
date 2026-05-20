@@ -395,6 +395,9 @@ class AppTheme {
           color: AppColors.textHint, letterSpacing: 0.5,
         ),
       ),
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (BuildContext context) => const Icon(Icons.arrow_back_ios_new_rounded),
+      ),
     );
   }
 
@@ -632,6 +635,9 @@ class AppTheme {
           fontSize: 11, fontWeight: FontWeight.w500,
           color: AppColors.darkTextHint, letterSpacing: 0.5,
         ),
+      ),
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (BuildContext context) => const Icon(Icons.arrow_back_ios_new_rounded),
       ),
     );
   }

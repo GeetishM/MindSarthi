@@ -36,10 +36,12 @@ class _RoleRouterState extends State<RoleRouter> {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) {
-        setState(() {
-          _role = 'personal';
-          _loading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _role = 'personal';
+            _loading = false;
+          });
+        }
         return;
       }
 
@@ -47,6 +49,8 @@ class _RoleRouterState extends State<RoleRouter> {
           .collection('users')
           .doc(uid)
           .get();
+
+      if (!mounted) return;
 
       final data = doc.data();
       final role = data?['userRole'] as String?;
@@ -56,10 +60,12 @@ class _RoleRouterState extends State<RoleRouter> {
         _loading = false;
       });
     } catch (e) {
-      setState(() {
-        _role = 'personal';
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _role = 'personal';
+          _loading = false;
+        });
+      }
       debugPrint('RoleRouter: Failed to fetch user role — $e');
     }
   }
