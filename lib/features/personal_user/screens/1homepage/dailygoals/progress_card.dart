@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 
 class ProgressCard extends StatelessWidget {
   final int completed;
@@ -14,78 +16,125 @@ class ProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double progress = total == 0 ? 0 : completed / total;
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.emoji_events, color: Colors.amber[700]),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+    final double progress = total == 0 ? 0 : completed / total;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Theme colors
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final borderCol = isDark ? AppColors.darkBorder : AppColors.border;
+
+    // Progress color determination
+    Color progressColor = primaryColor;
+    if (progress == 1.0) {
+      progressColor = AppColors.success;
+    } else if (progress > 0.5) {
+      progressColor = Colors.teal;
+    } else if (progress > 0.0) {
+      progressColor = Colors.orangeAccent;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: borderCol, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.15 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row with Title and Percentage
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: progressColor.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      progress == 1.0 ? CupertinoIcons.star_fill : CupertinoIcons.chart_bar_fill,
+                      color: progress == 1.0 ? Colors.amber[700] : progressColor,
+                      size: 20,
+                    ),
                   ),
+                  const SizedBox(width: 10),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                "${(progress * 100).toInt()}%",
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  color: progressColor,
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            LinearProgressIndicator(
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
               value: progress,
-              minHeight: 7,
-              backgroundColor: const Color.fromARGB(255, 94, 92, 92),
-              color: Colors.cyan,
-              borderRadius: BorderRadius.circular(8),
+              minHeight: 8,
+              backgroundColor: isDark ? AppColors.darkPrimaryLight : Colors.grey.shade200,
+              valueColor: AlwaysStoppedAnimation<Color>(progressColor),
             ),
-            const SizedBox(height: 12),
-            // Display the progress text
-            Text(
-              total == 0
-                  ? "No goals for today! Add a task to get started."
-                  : "$completed of $total goals completed",
-              style: TextStyle(
-                color: total == 0
-                    ? const Color.fromARGB(255, 251, 49, 201)
-                    : completed == 0
-                    ? Colors.red
+          ),
+          
+          const SizedBox(height: 14),
+          
+          // Dynamic motivational text
+          Text(
+            total == 0
+                ? "No goals set for this day."
+                : "$completed of $total goals completed",
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            total == 0
+                ? "Tap the '+' button below to add your first goal!"
+                : completed == 0
+                    ? "Every journey begins with a single step. Start today!"
                     : completed < total
-                    ? const Color.fromARGB(255, 247, 113, 56)
-                    : const Color.fromARGB(255, 10, 145, 14),
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
+                        ? "You're making great progress! Keep going."
+                        : "Amazing! You completed all your goals today! 🎉",
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
             ),
-            // Add motivational message below the progress text
-            const SizedBox(height: 10),
-            Text(
-              total == 0
-                  ? "Tap + to add your first goal for today!"
-                  : completed == 0
-                  ? "Every journey begins with a single step!"
-                  : completed < total
-                  ? "You're making great progress—one step at a time!"
-                  : "You did it! Celebrate your wins! 🎉",
-              style: TextStyle(
-                color: total == 0
-                    ? const Color.fromARGB(255, 185, 49, 244)
-                    : completed == 0
-                    ? Colors.red
-                    : completed < total
-                    ? const Color.fromARGB(255, 247, 113, 56)
-                    : const Color.fromARGB(255, 10, 145, 14),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

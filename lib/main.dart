@@ -11,6 +11,7 @@ import 'package:mindsarthi/core/widgets/role_router.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Journal/journal_entry.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/chat_history.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/task.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
@@ -41,6 +42,8 @@ void main() async {
   await Hive.openBox<ChatHistory>('chat_history');
   await ChatProvider.initHive();
 
+  Hive.registerAdapter(TaskAdapter());
+  await Hive.openBox<Task>('tasksBox');
   await Hive.openBox('mybox');
 
   await Firebase.initializeApp();

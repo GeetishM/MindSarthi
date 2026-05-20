@@ -31,13 +31,7 @@ class AppRouter {
       '/professionalnav': (context) => const ProfessionalNav(),
       '/orgnav': (context) => const OrgNav(),
 
-      '/todaysgoals': (context) {
-        // Ensure the box is opened before accessing it
-        final box = Hive.box('mybox');
-        return TodaysGoals(box: box);
-
-        
-      },
+      '/todaysgoals': (context) => const TodaysGoals(),
     };
   }
 }
