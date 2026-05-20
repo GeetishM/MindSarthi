@@ -262,6 +262,16 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
                   height: 52,
                   child: ElevatedButton(
                     onPressed: _isVerifying ? null : () => _verifyOtp(_enteredOtp),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          isDark ? AppColors.darkPrimary : AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
                     child: _isVerifying
                         ? const SizedBox(
                             width: 20,
@@ -274,7 +284,10 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
                         : const Text(
                             'Continue',
                             style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w700),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
                   ),
                 ),

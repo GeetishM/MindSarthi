@@ -3,6 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/core/theme/theme_provider.dart';
+import 'package:mindsarthi/core/widgets/theme_toggle.dart';
+import 'package:mindsarthi/features/welcome.dart';
+import 'package:provider/provider.dart';
 
 class ProfessionalProfile extends StatefulWidget {
   const ProfessionalProfile({super.key});
@@ -90,6 +94,23 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
         _specializations.add(text);
         _specCtrl.clear();
       });
+    }
+  }
+
+  Future<void> _logout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, 'Logout failed', description: e.toString());
+      }
     }
   }
 
@@ -251,6 +272,95 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                         ),
                       );
                     }).toList(),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // ── Account section ───────────────────────────────────
+                  Text(
+                    'ACCOUNT',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Theme toggle tile
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                      ),
+                    ),
+                    child: ListTile(
+                      leading: Icon(
+                        isDark ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        size: 22,
+                      ),
+                      title: Text(
+                        isDark ? 'Dark Mode' : 'Light Mode',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Toggle app theme',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
+                      ),
+                      trailing: const ThemeToggleSwitch(),
+                      onTap: () => context.read<ThemeProvider>().toggle(),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Logout tile
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                      ),
+                    ),
+                    child: ListTile(
+                      onTap: _logout,
+                      leading: const Icon(
+                        Icons.logout_rounded,
+                        color: AppColors.error,
+                        size: 22,
+                      ),
+                      title: const Text(
+                        'Log Out',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.error,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Sign out of your account',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        ),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                   ),
                 ],
               ),

@@ -288,7 +288,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               isDark ? AppColors.darkPrimary : AppColors.primary,
-                          foregroundColor: AppColors.white,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
                           elevation: 0,
@@ -299,10 +299,17 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                             Text(
                               'Send OTP',
                               style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w700),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
                             ),
                             SizedBox(width: 8),
-                            Icon(Icons.arrow_forward_rounded, size: 20),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
                           ],
                         ),
                       ),
