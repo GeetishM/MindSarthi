@@ -18,11 +18,27 @@ class JournalEntry extends HiveObject {
   @HiveField(4)
   List<String> tag;
 
+  @HiveField(5)
+  double? sentimentScore;
+
+  @HiveField(6)
+  List<String>? sentimentEmotions;
+
+  @HiveField(7)
+  String? sentimentRecommendation;
+
+  @HiveField(8)
+  bool? crisisFlag;
+
   JournalEntry({
     required this.title,
     required this.content,
     required this.createdAt,
     required this.lastEdited,
     required this.tag,
+    this.sentimentScore,
+    this.sentimentEmotions,
+    this.sentimentRecommendation,
+    this.crisisFlag,
   });
 }

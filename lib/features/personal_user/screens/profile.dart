@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/core/localization/app_localizations.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -103,7 +104,7 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     if (mounted) {
-      AppToast.success(context, 'Profile saved!');
+      AppToast.success(context, context.tr('prof_saved'));
     }
   }
 
@@ -112,7 +113,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(context.tr('prof_title')),
         centerTitle: true,
       ),
       body: _isLoading
@@ -176,21 +177,21 @@ class _ProfilePageState extends State<ProfilePage> {
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        _buildInput('Username', _usernameController, Icons.person_outline_rounded),
+                        _buildInput(context.tr('prof_username'), _usernameController, Icons.person_outline_rounded),
                         const SizedBox(height: 14),
-                        _buildInput('Nickname', _nicknameController, Icons.tag_rounded),
+                        _buildInput(context.tr('prof_nickname'), _nicknameController, Icons.tag_rounded),
                         const SizedBox(height: 14),
                         _buildInput(
-                          'Phone Number',
+                          context.tr('prof_phone'),
                           TextEditingController(text: _phoneNumber),
                           Icons.phone_outlined,
                           readOnly: true,
                         ),
                         const SizedBox(height: 14),
-                        _buildDropdown(),
+                        _buildDropdown(context),
                         const SizedBox(height: 14),
                         _buildInput(
-                          'Age',
+                          context.tr('prof_age'),
                           _ageController,
                           Icons.cake_outlined,
                           keyboardType: TextInputType.number,
@@ -209,7 +210,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Text('Save Profile'),
+                                : Text(context.tr('prof_save')),
                           ),
                         ),
                       ],
@@ -245,13 +246,13 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildDropdown() {
+  Widget _buildDropdown(BuildContext context) {
     return DropdownButtonFormField<String>(
       initialValue: _selectedGender,
       style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-      decoration: const InputDecoration(
-        labelText: 'Gender',
-        prefixIcon: Icon(Icons.person_pin_outlined, size: 20, color: AppColors.textSecondary),
+      decoration: InputDecoration(
+        labelText: context.tr('prof_gender'),
+        prefixIcon: const Icon(Icons.person_pin_outlined, size: 20, color: AppColors.textSecondary),
         filled: true,
         fillColor: AppColors.white,
       ),

@@ -22,13 +22,17 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       createdAt: fields[2] as DateTime,
       lastEdited: fields[3] as DateTime,
       tag: (fields[4] as List).cast<String>(),
+      sentimentScore: fields[5] as double?,
+      sentimentEmotions: (fields[6] as List?)?.cast<String>(),
+      sentimentRecommendation: fields[7] as String?,
+      crisisFlag: fields[8] as bool?,
     );
   }
 
   @override
   void write(BinaryWriter writer, JournalEntry obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.title)
       ..writeByte(1)
@@ -38,7 +42,15 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       ..writeByte(3)
       ..write(obj.lastEdited)
       ..writeByte(4)
-      ..write(obj.tag);
+      ..write(obj.tag)
+      ..writeByte(5)
+      ..write(obj.sentimentScore)
+      ..writeByte(6)
+      ..write(obj.sentimentEmotions)
+      ..writeByte(7)
+      ..write(obj.sentimentRecommendation)
+      ..writeByte(8)
+      ..write(obj.crisisFlag);
   }
 
   @override

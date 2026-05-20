@@ -1,6 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class Insight {
+  static Future<void> seedInsights() async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final snapshot = await firestore.collection('insights').limit(1).get();
+      if (snapshot.docs.isEmpty) {
+        final batch = firestore.batch();
+        for (var insight in insightsList) {
+          final docRef = firestore.collection('insights').doc(insight.id);
+          batch.set(docRef, {
+            'heading': insight.heading,
+            'content': insight.content,
+            'author': insight.author,
+            'date': insight.date,
+            'category': insight.category,
+          });
+        }
+        await batch.commit();
+        debugPrint("Insights successfully seeded to Firestore!");
+      }
+    } catch (e) {
+      debugPrint("Error seeding insights: $e");
+    }
+  }
   final String id;
   final String heading;
   final String content;

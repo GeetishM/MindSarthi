@@ -419,7 +419,26 @@ class _JournalNewState extends State<JournalNew> {
       createdAt: DateTime.now(),
       lastEdited: DateTime.now(),
     );
-    Hive.box<JournalEntry>('journalBox').add(newEntry);
+    
+    final box = Hive.box<JournalEntry>('journalBox');
+    box.add(newEntry).then((index) {
+      if (content.isNotEmpty) {
+        JournalAIService.analyzeSentiment(content).then((sentimentData) {
+          if (sentimentData != null) {
+            final entryToUpdate = box.get(index);
+            if (entryToUpdate != null) {
+              entryToUpdate.sentimentScore = (sentimentData['score'] as num?)?.toDouble();
+              final emotionsList = sentimentData['emotions'];
+              entryToUpdate.sentimentEmotions = emotionsList is List ? List<String>.from(emotionsList) : null;
+              entryToUpdate.sentimentRecommendation = sentimentData['recommendation'] as String?;
+              entryToUpdate.crisisFlag = sentimentData['crisis_flag'] as bool?;
+              entryToUpdate.save();
+            }
+          }
+        });
+      }
+    });
+
     Navigator.pop(context);
   }
 

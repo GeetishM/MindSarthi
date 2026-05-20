@@ -60,11 +60,26 @@ class _JournalEditState extends State<JournalEdit> {
   }
 
   void _save() {
+    final newContent = _contentController.text.trim();
     widget.entry.title = _titleController.text.trim();
-    widget.entry.content = _contentController.text.trim();
+    widget.entry.content = newContent;
     widget.entry.tag = _tags;
     widget.entry.lastEdited = DateTime.now();
     widget.entry.save();
+
+    if (newContent.isNotEmpty) {
+      JournalAIService.analyzeSentiment(newContent).then((sentimentData) {
+        if (sentimentData != null) {
+          widget.entry.sentimentScore = (sentimentData['score'] as num?)?.toDouble();
+          final emotionsList = sentimentData['emotions'];
+          widget.entry.sentimentEmotions = emotionsList is List ? List<String>.from(emotionsList) : null;
+          widget.entry.sentimentRecommendation = sentimentData['recommendation'] as String?;
+          widget.entry.crisisFlag = sentimentData['crisis_flag'] as bool?;
+          widget.entry.save();
+        }
+      });
+    }
+
     _hasUnsavedChanges = false;
     Navigator.pop(context);
   }

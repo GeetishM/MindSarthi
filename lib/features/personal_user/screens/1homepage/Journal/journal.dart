@@ -7,6 +7,8 @@ import 'journal_edit.dart';
 import 'journal_new.dart';
 import 'entry_dates.dart';
 import 'ai_service.dart';
+import 'journal_insights.dart';
+import 'package:mindsarthi/core/localization/app_localizations.dart';
 
 class Journal extends StatefulWidget {
   const Journal({super.key});
@@ -110,14 +112,22 @@ class _JournalState extends State<Journal> {
     return Scaffold(
       backgroundColor: scaffoldBg,
       appBar: AppBar(
-        title: const Text(
-          "My Journal",
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: -0.5),
+        title: Text(
+          context.tr('jr_title'),
+          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: -0.5),
         ),
         backgroundColor: surfaceColor,
         elevation: 0,
         scrolledUnderElevation: 1,
         actions: [
+          IconButton(
+            icon: Icon(CupertinoIcons.chart_bar_square, color: primaryColor, size: 20),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const JournalInsightsScreen()),
+            ),
+            tooltip: context.tr('jr_sentiment'),
+          ),
           IconButton(
             icon: Icon(CupertinoIcons.settings, color: primaryColor, size: 20),
             onPressed: _showApiKeyDialog,

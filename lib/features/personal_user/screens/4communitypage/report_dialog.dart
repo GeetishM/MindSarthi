@@ -49,17 +49,29 @@ class _ReportSheetState extends State<_ReportSheet> {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) throw Exception('Not signed in');
 
-      await FirebaseFirestore.instance
+      final firestore = FirebaseFirestore.instance;
+      final batch = firestore.batch();
+
+      final reportRef = firestore
           .collection('reports')
           .doc(widget.postId)
           .collection('reporters')
-          .doc(uid)
-          .set({
+          .doc(uid);
+
+      batch.set(reportRef, {
         'uid': uid,
         'reason': _selectedReason,
         'postId': widget.postId,
         'timestamp': FieldValue.serverTimestamp(),
       });
+
+      final postRef = firestore.collection('posts').doc(widget.postId);
+      batch.update(postRef, {
+        'reportsCount': FieldValue.increment(1),
+        'reportedBy': FieldValue.arrayUnion([uid]),
+      });
+
+      await batch.commit();
 
       if (mounted) {
         Navigator.pop(context);

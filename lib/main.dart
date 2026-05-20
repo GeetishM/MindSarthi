@@ -14,7 +14,12 @@ import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/task.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:mindsarthi/core/localization/app_localizations.dart';
+import 'package:mindsarthi/core/localization/locale_provider.dart';
+import 'package:mindsarthi/core/services/notification_service.dart';
 import 'package:toastification/toastification.dart';
+import 'package:mindsarthi/features/personal_user/screens/3insightpage/insight_data.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,11 +52,14 @@ void main() async {
   await Hive.openBox('mybox');
 
   await Firebase.initializeApp();
+  await NotificationService.initialize();
+  Insight.seedInsights();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: const MindSarthi(),
@@ -65,6 +73,7 @@ class MindSarthi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
+    final localeProvider = context.watch<LocaleProvider>();
 
     // ── Branded error widget instead of raw red screen ───────────────────
     ErrorWidget.builder = (FlutterErrorDetails details) =>
@@ -77,6 +86,18 @@ class MindSarthi extends StatelessWidget {
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         themeMode: themeProvider.themeMode,
+        locale: localeProvider.locale,
+        supportedLocales: const [
+          Locale('en'),
+          Locale('hi'),
+          Locale('bn'),
+        ],
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         // Use onGenerateRoute instead of home + routes to avoid
         // Navigator history-empty assertion on theme rebuilds.
         initialRoute: '/',

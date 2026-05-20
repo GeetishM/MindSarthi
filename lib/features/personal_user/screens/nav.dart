@@ -7,6 +7,7 @@ import 'package:mindsarthi/features/personal_user/screens/2consultpage/consult.d
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/insight.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/community.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/screen/chat_screen.dart';
+import 'package:mindsarthi/core/localization/app_localizations.dart';
 
 class NavBar extends StatefulWidget {
   const NavBar({super.key});
@@ -113,6 +114,27 @@ class _NavBarState extends State<NavBar> {
     final item = _navItems[index];
     final isSelected = _currentIndex == index;
 
+    String translatedLabel;
+    switch (item.label) {
+      case 'Home':
+        translatedLabel = context.tr('nav_home');
+        break;
+      case 'Experts':
+        translatedLabel = context.tr('nav_experts');
+        break;
+      case 'Discover':
+        translatedLabel = context.tr('nav_discover');
+        break;
+      case 'Connect':
+        translatedLabel = context.tr('nav_connect');
+        break;
+      case 'Sarthi AI':
+        translatedLabel = context.tr('nav_sarthi');
+        break;
+      default:
+        translatedLabel = item.label;
+    }
+
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
@@ -154,7 +176,7 @@ class _NavBarState extends State<NavBar> {
                 child: Padding(
                   padding: const EdgeInsets.only(left: 6.0),
                   child: Text(
-                    item.label,
+                    translatedLabel,
                     style: TextStyle(
                       color: isDark ? AppColors.darkPrimary : AppColors.primary,
                       fontWeight: FontWeight.w700,

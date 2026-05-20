@@ -227,7 +227,23 @@ class _CommunityPageState extends State<CommunityPage> {
                     return _buildShimmerList();
                   }
 
-                  final posts = snapshot.data?.docs ?? [];
+                  final rawPosts = snapshot.data?.docs ?? [];
+                  final posts = rawPosts.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>?;
+                    if (data == null) return true;
+
+                    // Filter out posts with 5 or more reports
+                    final reportsCount = data['reportsCount'] ?? 0;
+                    if (reportsCount >= 5) return false;
+
+                    // Filter out posts reported by the current user
+                    final reportedBy = data['reportedBy'];
+                    if (reportedBy is List && reportedBy.contains(uid)) {
+                      return false;
+                    }
+
+                    return true;
+                  }).toList();
 
                   if (selectedFilter == 'Popular') {
                     posts.sort((a, b) {

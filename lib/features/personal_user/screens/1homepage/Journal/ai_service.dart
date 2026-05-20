@@ -65,4 +65,41 @@ class JournalAIService {
     }
     return null;
   }
+
+  static Future<Map<String, dynamic>?> analyzeSentiment(String contentText) async {
+    final apiKey = getApiKey();
+    if (apiKey.isEmpty) {
+      return null;
+    }
+
+    try {
+      final model = GenerativeModel(
+        model: 'gemini-2.0-flash',
+        apiKey: apiKey,
+        generationConfig: GenerationConfig(
+          responseMimeType: 'application/json',
+        ),
+      );
+
+      final response = await model.generateContent([
+        Content.text(
+          "Analyze the sentiment of this journal entry. "
+          "Return a JSON object with: "
+          "1. 'score': (a number from 1 to 10, representing overall mood where 1 is extremely distressed and 10 is extremely happy/peaceful). "
+          "2. 'emotions': (a list of 1-3 primary emotional tags detected, e.g. ['Anxious', 'Joyful', 'Reflective']). "
+          "3. 'recommendation': (a supportive self-care advice, max 2 sentences). "
+          "4. 'crisis_flag': (a boolean, true if content indicates self-harm, suicide, or severe psychiatric emergency, else false). "
+          "Return only the raw JSON. Here is the entry content:\n$contentText"
+        )
+      ]);
+
+      final jsonText = response.text;
+      if (jsonText != null && jsonText.isNotEmpty) {
+        return json.decode(jsonText) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint("Sentiment analysis error: $e");
+    }
+    return null;
+  }
 }

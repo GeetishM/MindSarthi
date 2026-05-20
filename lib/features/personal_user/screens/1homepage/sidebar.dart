@@ -10,6 +10,8 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/profile.dart';
+import 'package:mindsarthi/core/localization/locale_provider.dart';
+import 'package:mindsarthi/core/localization/app_localizations.dart';
 
 class Sidebar extends StatefulWidget {
   const Sidebar({super.key});
@@ -115,7 +117,7 @@ class _SidebarState extends State<Sidebar> with SingleTickerProviderStateMixin {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Namaste,\n$name 👋',
+                                      '${context.tr('sb_namaste')}\n$name 👋',
                                       style: TextStyle(
                                         fontSize: 22,
                                         fontWeight: FontWeight.w800,
@@ -150,7 +152,7 @@ class _SidebarState extends State<Sidebar> with SingleTickerProviderStateMixin {
                       _buildAnimatedItem(
                         index: 1,
                         icon: Icons.shield_rounded,
-                        title: 'App Lock',
+                        title: context.tr('sb_app_lock'),
                         isDark: isDark,
                         onTap: (ctx) => Navigator.push(
                           ctx,
@@ -158,14 +160,15 @@ class _SidebarState extends State<Sidebar> with SingleTickerProviderStateMixin {
                         ),
                       ),
                       _buildAnimatedThemeToggleRow(context, isDark, index: 2),
+                      _buildAnimatedLanguageSelector(context, isDark, index: 3),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         child: Divider(thickness: 1, height: 1),
                       ),
                       _buildAnimatedItem(
-                        index: 3,
+                        index: 4,
                         icon: Icons.logout_rounded,
-                        title: 'Log Out',
+                        title: context.tr('sb_logout'),
                         isDark: isDark,
                         textColor: AppColors.error,
                         iconColor: AppColors.error,
@@ -292,6 +295,68 @@ class _SidebarState extends State<Sidebar> with SingleTickerProviderStateMixin {
             trailing: const ThemeToggleSwitch(),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             onTap: () => context.read<ThemeProvider>().toggle(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Animated Language selector list tile ────────────────────────
+  Widget _buildAnimatedLanguageSelector(BuildContext context, bool isDark, {required int index}) {
+    final slideAnimation = Tween<Offset>(begin: const Offset(-0.2, 0), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Interval(index * 0.1, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Interval(index * 0.1, 1.0, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    final localeProvider = context.watch<LocaleProvider>();
+    final currentLanguage = localeProvider.locale.languageCode;
+
+    return FadeTransition(
+      opacity: fadeAnimation,
+      child: SlideTransition(
+        position: slideAnimation,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: Icon(
+              Icons.translate_rounded,
+              color: isDark ? AppColors.darkPrimary : AppColors.primary,
+              size: 24,
+            ),
+            title: Text(
+              context.tr('sb_language'),
+              style: TextStyle(
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            trailing: DropdownButton<String>(
+              value: currentLanguage,
+              dropdownColor: isDark ? AppColors.darkSurface : AppColors.surface,
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(fontSize: 14))),
+                DropdownMenuItem(value: 'hi', child: Text('हिन्दी', style: TextStyle(fontSize: 14))),
+                DropdownMenuItem(value: 'bn', child: Text('বাংলা', style: TextStyle(fontSize: 14))),
+              ],
+              onChanged: (val) {
+                if (val != null) {
+                  localeProvider.setLocale(Locale(val));
+                }
+              },
+            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
         ),
       ),

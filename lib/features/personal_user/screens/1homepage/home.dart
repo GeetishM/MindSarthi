@@ -13,6 +13,7 @@ import 'package:mindsarthi/features/personal_user/screens/1homepage/panic_sos/so
 import 'package:mindsarthi/features/personal_user/screens/1homepage/sidebar.dart';
 import 'package:toastification/toastification.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -120,11 +121,40 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
+  Future<Position?> _getCurrentLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return null;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return null;
+      }
+      if (permission == LocationPermission.deniedForever) return null;
+
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error getting location: $e');
+      return null;
+    }
+  }
+
   /// Sends a pre-composed distress SMS to [number] using the native SMS app.
   /// The user still has to tap Send — this provides consent.
   Future<void> _sendDistressSms(String number) async {
-    const message =
-        'I need help right now. Please contact me — sent via MindSarthi SOS.';
+    String message = 'I need help right now. Please contact me — sent via MindSarthi SOS.';
+    
+    final position = await _getCurrentLocation();
+    if (position != null) {
+      message = 'I need help right now. My current location is: https://maps.google.com/?q=${position.latitude},${position.longitude} — sent via MindSarthi SOS.';
+    }
+
     final Uri smsUri = Uri(
       scheme: 'sms',
       path: number,
@@ -747,7 +777,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: _callSavedNumber,
+              onTap: _showSosActionSheet,
               borderRadius: BorderRadius.circular(28),
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: _isScrolled ? 16 : 24),
