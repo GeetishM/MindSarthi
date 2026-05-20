@@ -196,19 +196,61 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                     ),
                     const SizedBox(height: 15),
                     IntlPhoneField(
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      dropdownTextStyle: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                      ),
+                      dropdownIconPosition: IconPosition.trailing,
+                      dropdownIcon: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Phone Number',
                         filled: true,
                         fillColor: const Color(0xFFF2F2F2),
+                        counterText: '',
                         border: _buildBorder(),
                         enabledBorder: _buildBorder(),
                         focusedBorder: _buildBorder(focused: true),
+                        errorBorder: _buildBorder(hasError: true),
+                        focusedErrorBorder: _buildBorder(focused: true, hasError: true),
                       ),
                       initialCountryCode: 'IN',
                       onChanged: (phone) {
                         _phoneNumber = phone.completeNumber;
                         _checkPhoneValidity(phone.number);
                       },
+                      validator: (_) => null,
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 200),
+                      child: _isPhoneValid
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 6, left: 4),
+                              child: Row(
+                                children: const [
+                                  Icon(Icons.check_circle_rounded,
+                                      color: AppColors.success, size: 16),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Valid number',
+                                    style: TextStyle(
+                                      color: AppColors.success,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : const SizedBox.shrink(),
                     ),
                     const SizedBox(height: 15),
                     SizedBox(
@@ -217,7 +259,7 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                       child: ElevatedButton(
                         onPressed: _sendOtp,
                         style: ElevatedButton.styleFrom(
-                          
+                          backgroundColor: AppColors.professional,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -310,15 +352,17 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
     );
   }
 
-  OutlineInputBorder _buildBorder({bool focused = false}) {
+  OutlineInputBorder _buildBorder({bool focused = false, bool hasError = false}) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(
         color: _isPhoneValid
-            ? Colors.green
-            : focused
-            ? const Color(0xFFBDBDBD)
-            : const Color(0xFFBDBDBD),
+            ? AppColors.success
+            : hasError
+                ? AppColors.error
+                : focused
+                    ? AppColors.professional
+                    : const Color(0xFFBDBDBD),
         width: focused ? 2 : 1.5,
       ),
     );

@@ -256,6 +256,13 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                               ? AppColors.darkTextHint
                               : AppColors.textHint,
                         ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: isDark ? AppColors.darkOrg : AppColors.org,
+                            width: 1.8,
+                          ),
+                        ),
                       ),
                       style: TextStyle(
                         color: isDark
@@ -265,17 +272,60 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Phone field
                     IntlPhoneField(
+                      style: TextStyle(
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      dropdownTextStyle: TextStyle(
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        fontSize: 15,
+                      ),
+                      dropdownIconPosition: IconPosition.trailing,
+                      dropdownIcon: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        size: 20,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Admin Phone Number',
-                        prefixIcon: null,
+                        counterText: '',
+                        border: _buildBorder(isDark: isDark),
+                        enabledBorder: _buildBorder(isDark: isDark),
+                        focusedBorder: _buildBorder(focused: true, isDark: isDark),
+                        errorBorder: _buildBorder(hasError: true, isDark: isDark),
+                        focusedErrorBorder: _buildBorder(focused: true, hasError: true, isDark: isDark),
                       ),
                       initialCountryCode: 'IN',
                       onChanged: (phone) {
                         _phoneNumber = phone.completeNumber;
                         _checkPhoneValidity(phone.number);
                       },
+                      validator: (_) => null,
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 200),
+                      child: _isPhoneValid
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 6, left: 4),
+                              child: Row(
+                                children: const [
+                                  Icon(Icons.check_circle_rounded,
+                                      color: AppColors.success, size: 16),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Valid number',
+                                    style: TextStyle(
+                                      color: AppColors.success,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : const SizedBox.shrink(),
                     ),
                     const SizedBox(height: 20),
 
@@ -287,7 +337,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                         onPressed: _sendOtp,
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
-                              isDark ? AppColors.darkPrimary : AppColors.primary,
+                              isDark ? AppColors.darkOrg : AppColors.org,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
@@ -321,6 +371,22 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  OutlineInputBorder _buildBorder({bool focused = false, bool hasError = false, required bool isDark}) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(
+        color: _isPhoneValid
+            ? AppColors.success
+            : hasError
+                ? AppColors.error
+                : focused
+                    ? (isDark ? AppColors.darkOrg : AppColors.org)
+                    : (isDark ? AppColors.darkBorder : AppColors.border),
+        width: focused ? 1.8 : 1.0,
       ),
     );
   }

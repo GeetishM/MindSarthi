@@ -39,6 +39,16 @@ class _UserSelectionState extends State<UserSelection>
 
   void _selectRole(String role) => setState(() => selectedRole = role);
 
+  /// Returns the accent color that matches the currently selected role.
+  Color get _roleColor {
+    switch (selectedRole) {
+      case 'personal':     return AppColors.primary;
+      case 'professional': return AppColors.professional;
+      case 'organization': return AppColors.org;
+      default:             return AppColors.border;
+    }
+  }
+
   void _continue() {
     if (selectedRole == null) {
       AppToast.warning(context, 'Please select a role to continue');
@@ -177,21 +187,27 @@ class _UserSelectionState extends State<UserSelection>
                 ),
               ),
 
-              // ── Continue button ─────────────────────────────
+              // ── Continue button — color tracks selected role ──
               SizedBox(
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
                   onPressed: _continue,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedRole != null
-                        ? AppColors.primary
-                        : AppColors.border,
-                    foregroundColor: AppColors.white,
+                    backgroundColor: _roleColor,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppColors.border,
+                    shadowColor: Colors.transparent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                     elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                  ).copyWith(
+                    // Keeps ripple white regardless of role color
+                    overlayColor: WidgetStateProperty.all(
+                      Colors.white.withValues(alpha: 0.15),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -201,11 +217,16 @@ class _UserSelectionState extends State<UserSelection>
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                       ),
                       if (selectedRole != null) ...[
                         const SizedBox(width: 8),
-                        const Icon(Icons.arrow_forward_rounded, size: 20),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 20,
+                          color: Colors.white,
+                        ),
                       ],
                     ],
                   ),
