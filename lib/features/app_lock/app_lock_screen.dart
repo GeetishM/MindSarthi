@@ -26,17 +26,17 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+    final pinEnabled = await AppLockStorage.isPinEnabled();
+    final bioEnabled = await AppLockStorage.isBiometricEnabled();
     setState(() {
-      isPasscodeEnabled = prefs.getBool('passcode_enabled') ?? false;
-      isBiometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+      isPasscodeEnabled = pinEnabled;
+      isBiometricEnabled = bioEnabled;
     });
   }
 
   Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('passcode_enabled', isPasscodeEnabled);
-    await prefs.setBool('biometric_enabled', isBiometricEnabled);
+    await AppLockStorage.setPinEnabled(isPasscodeEnabled);
+    await AppLockStorage.setBiometricEnabled(isBiometricEnabled);
   }
 
   Future<void> _setPasscode() async {
@@ -62,9 +62,10 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
             TextButton(
               onPressed: () async {
                 if (passcode != null && passcode!.length == 4) {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setString('user_passcode', passcode!);
+                  await AppLockStorage.setPin(passcode!);
+                  await AppLockStorage.setPinEnabled(true);
                   Navigator.pop(context);
+                  _loadSettings();
                 }
               },
               child: const Text('Save'),
@@ -204,8 +205,7 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
               value: isBiometricEnabled,
               activeColor: Colors.pink,
               onChanged: (value) async {
-                await AppLockStorage.setBiometricEnabled(value);
-                setState(() => isBiometricEnabled = value);
+                await _toggleBiometric(value);
               },
             ),
           ],

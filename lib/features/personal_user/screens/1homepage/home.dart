@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  
+
   String? savedPreference;
   String? savedContactOrState;
   bool _isDrawerOpen = false;
@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _scrollController.addListener(() {
       setState(() => _isScrolled = _scrollController.offset > 0);
     });
-    
+
     _heroBreathController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
@@ -148,11 +148,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   /// Sends a pre-composed distress SMS to [number] using the native SMS app.
   /// The user still has to tap Send — this provides consent.
   Future<void> _sendDistressSms(String number) async {
-    String message = 'I need help right now. Please contact me — sent via MindSarthi SOS.';
-    
+    String message =
+        'I need help right now. Please contact me — sent via MindSarthi SOS.';
+
     final position = await _getCurrentLocation();
     if (position != null) {
-      message = 'I need help right now. My current location is: https://maps.google.com/?q=${position.latitude},${position.longitude} — sent via MindSarthi SOS.';
+      message =
+          'I need help right now. My current location is: https://maps.google.com/?q=${position.latitude},${position.longitude} — sent via MindSarthi SOS.';
     }
 
     final Uri smsUri = Uri(
@@ -173,13 +175,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     HapticFeedback.heavyImpact();
     try {
       if (savedPreference == "helpline" && savedContactOrState != null) {
-        String? helplineNumber =
-            await HelplineService.getStateHelpline(savedContactOrState!);
+        String? helplineNumber = await HelplineService.getStateHelpline(
+          savedContactOrState!,
+        );
         if (helplineNumber != null && helplineNumber.isNotEmpty) {
           await _makePhoneCall(helplineNumber);
         } else {
           _showErrorToast(
-              "We couldn't find a helpline for \"$savedContactOrState\".");
+            "We couldn't find a helpline for \"$savedContactOrState\".",
+          );
         }
       } else if (savedPreference == "friend" && savedContactOrState != null) {
         await _makePhoneCall(savedContactOrState!);
@@ -232,8 +236,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 color: AppColors.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.emergency_share_rounded,
-                  color: AppColors.error, size: 36),
+              child: const Icon(
+                Icons.emergency_share_rounded,
+                color: AppColors.error,
+                size: 36,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -271,14 +278,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 label: Text(
                   isFriend ? 'Call Now' : 'Call Helpline',
                   style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w700),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.error,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
                 onPressed: () {
                   Navigator.pop(ctx);
@@ -297,14 +307,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   icon: const Icon(Icons.message_rounded),
                   label: const Text(
                     'Send SOS Message',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
                     side: BorderSide(color: AppColors.error, width: 1.5),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   onPressed: () {
                     Navigator.pop(ctx);
@@ -386,7 +396,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -395,7 +407,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 "Choose a reliable contact method we can alert instantly when you’re in distress.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  color: isDark
+                      ? AppColors.darkTextSecondary
+                      : AppColors.textSecondary,
                   fontSize: 15,
                   height: 1.4,
                 ),
@@ -406,11 +420,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 height: 56,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.map_outlined),
-                  label: const Text('Use State Helpline', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  label: const Text(
+                    'Use State Helpline',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 0,
                   ),
                   onPressed: () {
@@ -425,11 +444,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 height: 56,
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.contact_phone_rounded),
-                  label: const Text('Use Friend/Family Contact', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  label: const Text(
+                    'Use Friend/Family Contact',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border, width: 2),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    foregroundColor: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                    side: BorderSide(
+                      color: isDark ? AppColors.darkBorder : AppColors.border,
+                      width: 2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   onPressed: () {
                     Navigator.pop(context);
@@ -447,11 +476,34 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   void _askForState() {
     final List<String> states = [
-      "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-      "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
-      "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-      "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
-      "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+      "Andhra Pradesh",
+      "Arunachal Pradesh",
+      "Assam",
+      "Bihar",
+      "Chhattisgarh",
+      "Goa",
+      "Gujarat",
+      "Haryana",
+      "Himachal Pradesh",
+      "Jharkhand",
+      "Karnataka",
+      "Kerala",
+      "Madhya Pradesh",
+      "Maharashtra",
+      "Manipur",
+      "Meghalaya",
+      "Mizoram",
+      "Nagaland",
+      "Odisha",
+      "Punjab",
+      "Rajasthan",
+      "Sikkim",
+      "Tamil Nadu",
+      "Telangana",
+      "Tripura",
+      "Uttar Pradesh",
+      "Uttarakhand",
+      "West Bengal",
     ];
 
     String? selectedState;
@@ -465,11 +517,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         return AnimatedPadding(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Container(
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkSurface : AppColors.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
+              ),
             ),
             padding: const EdgeInsets.all(32),
             child: Column(
@@ -481,28 +537,52 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 24),
                 DropdownButtonFormField<String>(
                   decoration: InputDecoration(
                     labelText: "State",
-                    labelStyle: TextStyle(color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    labelStyle: TextStyle(
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.textSecondary,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+                      borderSide: BorderSide(
+                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
                     ),
                   ),
-                  dropdownColor: isDark ? AppColors.darkSurface : AppColors.surface,
-                  style: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                  dropdownColor: isDark
+                      ? AppColors.darkSurface
+                      : AppColors.surface,
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                  ),
                   isExpanded: true,
-                  items: states.map((state) => DropdownMenuItem(value: state, child: Text(state))).toList(),
+                  items: states
+                      .map(
+                        (state) =>
+                            DropdownMenuItem(value: state, child: Text(state)),
+                      )
+                      .toList(),
                   onChanged: (value) => selectedState = value,
                 ),
                 const SizedBox(height: 32),
@@ -512,11 +592,25 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          side: BorderSide(
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.border,
+                          ),
                         ),
                         onPressed: () => Navigator.pop(context),
-                        child: Text("Cancel", style: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                        child: Text(
+                          "Cancel",
+                          style: TextStyle(
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -526,18 +620,26 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           elevation: 0,
                         ),
                         onPressed: () async {
                           if (selectedState != null) {
-                            await _saveUserPreference("helpline", selectedState!);
+                            await _saveUserPreference(
+                              "helpline",
+                              selectedState!,
+                            );
                             if (context.mounted) Navigator.pop(context);
                           } else {
                             AppToast.error(context, "Please select a state");
                           }
                         },
-                        child: const Text("Save", style: TextStyle(fontWeight: FontWeight.w600)),
+                        child: const Text(
+                          "Save",
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ),
                   ],
@@ -563,11 +665,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         return AnimatedPadding(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Container(
             decoration: BoxDecoration(
               color: isDark ? AppColors.darkSurface : AppColors.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
+              ),
             ),
             padding: const EdgeInsets.all(32),
             child: Column(
@@ -579,24 +685,45 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 24),
                 IntlPhoneField(
-                  style: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
-                  dropdownTextStyle: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                  ),
+                  dropdownTextStyle: TextStyle(
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Phone Number',
-                    labelStyle: TextStyle(color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    labelStyle: TextStyle(
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.textSecondary,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+                      borderSide: BorderSide(
+                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
                     ),
                   ),
                   initialCountryCode: 'IN',
@@ -609,11 +736,25 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.border),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          side: BorderSide(
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.border,
+                          ),
                         ),
                         onPressed: () => Navigator.pop(context),
-                        child: Text("Cancel", style: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                        child: Text(
+                          "Cancel",
+                          style: TextStyle(
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -623,18 +764,27 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           elevation: 0,
                         ),
                         onPressed: () async {
-                          if (phoneNumber != null && phoneNumber!.length >= 10) {
+                          if (phoneNumber != null &&
+                              phoneNumber!.length >= 10) {
                             await _saveUserPreference("friend", phoneNumber!);
                             if (context.mounted) Navigator.pop(context);
                           } else {
-                            AppToast.error(context, "Enter a valid phone number");
+                            AppToast.error(
+                              context,
+                              "Enter a valid phone number",
+                            );
                           }
                         },
-                        child: const Text("Save", style: TextStyle(fontWeight: FontWeight.w600)),
+                        child: const Text(
+                          "Save",
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
                       ),
                     ),
                   ],
@@ -668,13 +818,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           SliverSafeArea(
             bottom: false,
             sliver: SliverToBoxAdapter(
-              child: _FadeSlideEntry(
-                delay: 0,
-                child: _buildHeader(isDark),
-              ),
+              child: _FadeSlideEntry(delay: 0, child: _buildHeader(isDark)),
             ),
           ),
-          
+
           // Hero Animation
           SliverToBoxAdapter(
             child: _FadeSlideEntry(
@@ -682,7 +829,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               child: _buildAnimatedHeroCard(isDark),
             ),
           ),
-          
+
           // Mood Tracker
           SliverToBoxAdapter(
             child: _FadeSlideEntry(
@@ -693,7 +840,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
           ),
-          
+
           // Relief Resources
           SliverToBoxAdapter(
             child: _FadeSlideEntry(
@@ -710,7 +857,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.textPrimary,
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -722,7 +871,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
           ),
-          
+
           // Interactive Cards (Goals & Journal)
           SliverToBoxAdapter(
             child: _FadeSlideEntry(
@@ -733,14 +882,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   children: [
                     _InteractiveCard(
                       title: "Today's Goals",
-                      subtitle: "Set and track your daily goals to stay motivated.",
+                      subtitle:
+                          "Set and track your daily goals to stay motivated.",
                       iconPath: 'assets/illustrations/Handholdingpen.svg',
                       route: '/todaysgoals',
                       isDark: isDark,
                     ),
                     _InteractiveCard(
                       title: "Journal",
-                      subtitle: "Your safe space for reflection, growth, and self-discovery.",
+                      subtitle:
+                          "Your safe space for reflection, growth, and self-discovery.",
                       iconPath: 'assets/illustrations/Handholdingpen.svg',
                       route: '/journal',
                       isDark: isDark,
@@ -753,62 +904,69 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ],
       ),
-      
+
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: GestureDetector(
         onLongPress: _showSosActionSheet,
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 90), // Lift above the custom navigation bar
+          padding: const EdgeInsets.only(
+            bottom: 90,
+          ), // Lift above the custom navigation bar
           child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
-          height: 56,
-          decoration: BoxDecoration(
-            color: AppColors.accent,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _showSosActionSheet,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.accent,
               borderRadius: BorderRadius.circular(28),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: _isScrolled ? 16 : 24),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.emergency_share_rounded, color: Colors.white),
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
-                      child: SizedBox(
-                        width: _isScrolled ? 0 : null,
-                        child: const Padding(
-                          padding: EdgeInsets.only(left: 8.0),
-                          child: Text(
-                            'Panic Assist',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _showSosActionSheet,
+                borderRadius: BorderRadius.circular(28),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: _isScrolled ? 16 : 24,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.emergency_share_rounded,
+                        color: Colors.white,
+                      ),
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        child: SizedBox(
+                          width: _isScrolled ? 0 : null,
+                          child: const Padding(
+                            padding: EdgeInsets.only(left: 8.0),
+                            child: Text(
+                              'Panic Assist',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -847,7 +1005,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
               child: Icon(
                 _isDrawerOpen ? Icons.close_rounded : Icons.menu_rounded,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
               ),
             ),
           ),
@@ -858,8 +1018,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Shimmer.fromColors(
-                    baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
-                    highlightColor: isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight,
+                    baseColor: isDark
+                        ? AppColors.darkShimmerBase
+                        : AppColors.shimmerBase,
+                    highlightColor: isDark
+                        ? AppColors.darkShimmerHighlight
+                        : AppColors.shimmerHighlight,
                     child: Container(
                       width: 160,
                       height: 48,
@@ -879,7 +1043,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       _getTimeGreeting(),
                       style: TextStyle(
                         fontSize: 15,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -888,7 +1054,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -919,13 +1087,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: isDark 
-                    ? [AppColors.darkPrimaryLight, AppColors.darkSurface2]
-                    : [AppColors.primaryLight, AppColors.surface],
+                  colors: isDark
+                      ? [AppColors.darkPrimaryLight, AppColors.darkSurface2]
+                      : [AppColors.primaryLight, AppColors.surface],
                 ),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: isDark ? AppColors.darkPrimary.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.2),
+                  color: isDark
+                      ? AppColors.darkPrimary.withValues(alpha: 0.2)
+                      : AppColors.primary.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),
@@ -984,7 +1154,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildPremiumReliefCard(IconData icon, String label, String routeName, double screenWidth, Color tintColor, bool isDark) {
+  Widget _buildPremiumReliefCard(
+    IconData icon,
+    String label,
+    String routeName,
+    double screenWidth,
+    Color tintColor,
+    bool isDark,
+  ) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -1029,7 +1206,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                color: isDark
+                    ? AppColors.darkTextPrimary
+                    : AppColors.textPrimary,
                 height: 1.2,
               ),
             ),
@@ -1108,7 +1287,9 @@ class _InteractiveCardState extends State<_InteractiveCard> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: widget.isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: widget.isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -1117,7 +1298,9 @@ class _InteractiveCardState extends State<_InteractiveCard> {
                       widget.subtitle,
                       style: TextStyle(
                         fontSize: 14,
-                        color: widget.isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        color: widget.isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.textSecondary,
                         height: 1.4,
                       ),
                     ),
@@ -1128,14 +1311,12 @@ class _InteractiveCardState extends State<_InteractiveCard> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: widget.isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
+                  color: widget.isDark
+                      ? AppColors.darkPrimaryLight
+                      : AppColors.primaryLight,
                   shape: BoxShape.circle,
                 ),
-                child: SvgPicture.asset(
-                  widget.iconPath,
-                  width: 36,
-                  height: 36,
-                ),
+                child: SvgPicture.asset(widget.iconPath, width: 36, height: 36),
               ),
             ],
           ),

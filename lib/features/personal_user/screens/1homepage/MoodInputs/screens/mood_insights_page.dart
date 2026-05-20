@@ -444,22 +444,22 @@ class MoodInsightsPage extends StatelessWidget {
 
         // Get mood configuration colors
         Color moodColor = AppColors.primary;
-        IconData moodIcon = CupertinoIcons.minus_circle;
+        IconData moodIcon = Icons.sentiment_neutral_rounded;
         if (entry.mood == 'Awesome') {
           moodColor = const Color(0xFFFFB300);
-          moodIcon = CupertinoIcons.smiley_fill;
+          moodIcon = Icons.sentiment_very_satisfied_rounded;
         } else if (entry.mood == 'Good') {
           moodColor = AppColors.success;
-          moodIcon = CupertinoIcons.smiley;
+          moodIcon = Icons.sentiment_satisfied_rounded;
         } else if (entry.mood == 'Okay') {
           moodColor = AppColors.primary;
-          moodIcon = CupertinoIcons.minus_circle;
+          moodIcon = Icons.sentiment_neutral_rounded;
         } else if (entry.mood == 'Bad') {
           moodColor = AppColors.accent;
-          moodIcon = CupertinoIcons.xmark_circle;
+          moodIcon = Icons.sentiment_dissatisfied_rounded;
         } else if (entry.mood == 'Terrible') {
           moodColor = AppColors.error;
-          moodIcon = CupertinoIcons.xmark_circle_fill;
+          moodIcon = Icons.sentiment_very_dissatisfied_rounded;
         }
 
         return Container(

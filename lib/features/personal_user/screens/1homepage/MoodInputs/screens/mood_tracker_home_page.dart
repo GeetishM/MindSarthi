@@ -10,11 +10,11 @@ class MoodTrackerHomePage extends StatelessWidget {
   const MoodTrackerHomePage({super.key});
 
   final List<Mood> moods = const [
-    Mood('Awesome', CupertinoIcons.smiley_fill, Color(0xFFFFB300)), // Soft Gold
-    Mood('Good', CupertinoIcons.smiley, AppColors.success), // Soft Green
-    Mood('Okay', CupertinoIcons.minus_circle, AppColors.primary), // Healing Teal
-    Mood('Bad', CupertinoIcons.xmark_circle, AppColors.accent), // Warm Coral
-    Mood('Terrible', CupertinoIcons.xmark_circle_fill, AppColors.error), // Soft Red
+    Mood('Awesome', Icons.sentiment_very_satisfied_rounded, Color(0xFFFFB300)), // Soft Gold
+    Mood('Good', Icons.sentiment_satisfied_rounded, AppColors.success), // Soft Green
+    Mood('Okay', Icons.sentiment_neutral_rounded, AppColors.primary), // Healing Teal
+    Mood('Bad', Icons.sentiment_dissatisfied_rounded, AppColors.accent), // Warm Coral
+    Mood('Terrible', Icons.sentiment_very_dissatisfied_rounded, AppColors.error), // Soft Red
   ];
 
   @override
