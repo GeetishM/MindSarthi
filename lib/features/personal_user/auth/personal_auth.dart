@@ -288,7 +288,7 @@ class _PersonalAuthState extends State<PersonalAuth>
 
                         const SizedBox(height: 20),
 
-                        // ── Send OTP button ──────────────────────
+                        // ── Send OTP button ────────────────────── 
                         SizedBox(
                           width: double.infinity,
                           height: 52,

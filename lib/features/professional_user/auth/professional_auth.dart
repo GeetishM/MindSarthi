@@ -203,10 +203,11 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                     const SizedBox(height: 15),
                     SizedBox(
                       width: double.infinity,
+                      height: 52,
                       child: ElevatedButton(
                         onPressed: _sendOtp,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryLight,
+                          
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -217,7 +218,7 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
