@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
-import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/spotify_screen.dart';
 
 class Anxity extends StatefulWidget {
   const Anxity({super.key});
@@ -137,25 +136,6 @@ class _AnxityState extends State<Anxity> {
                 color: Colors.teal.shade700,
                 isDark: isDark,
                 onTap: () => _showGroundingSheet(context, isDark),
-              ),
-
-              // Relaxation Music
-              _buildIOSCard(
-                icon: CupertinoIcons.music_note_list,
-                title: 'Relaxation Music',
-                subtitle: 'Continuous soothing ambient streams',
-                color: Colors.indigo,
-                isDark: isDark,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SpotifyPlayerScreen(
-                        playlistId: '0eU3ubPAnqeSMi9K3YKVpC',
-                      ),
-                    ),
-                  );
-                },
               ),
 
               const SizedBox(height: 24),

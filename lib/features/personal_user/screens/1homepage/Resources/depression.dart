@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
-import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/spotify_screen.dart';
 
 class Depression extends StatefulWidget {
   const Depression({super.key});
@@ -285,24 +284,7 @@ class _DepressionState extends State<Depression> {
                 },
               ),
 
-              // Music Player
-              _buildIOSResourceCard(
-                icon: CupertinoIcons.music_note_list,
-                title: 'Relaxation Music',
-                subtitle: 'Uninterrupted music tracks for depression relief',
-                color: Colors.indigo,
-                isDark: isDark,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SpotifyPlayerScreen(
-                        playlistId: '48HRfQBhsPP0Wm07AUpfHA',
-                      ),
-                    ),
-                  );
-                },
-              ),
+
             ],
           ),
         ),

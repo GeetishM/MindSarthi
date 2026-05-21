@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
-import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/spotify_screen.dart';
 
 class SelfHarm extends StatefulWidget {
   const SelfHarm({super.key});
@@ -420,26 +419,7 @@ class _SelfHarmState extends State<SelfHarm> {
                 ],
               ),
               
-              const SizedBox(height: 12),
 
-              // Music Link
-              _buildIOSResourceCard(
-                icon: CupertinoIcons.music_note_list,
-                title: 'Relaxation Music',
-                subtitle: 'Soothing instrumental tracks to calm the nervous system',
-                color: Colors.indigo,
-                isDark: isDark,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SpotifyPlayerScreen(
-                        playlistId: '3n9e5pXW7kb3SDgvaxgvnL',
-                      ),
-                    ),
-                  );
-                },
-              ),
             ],
           ),
         ),
@@ -492,76 +472,6 @@ class _SelfHarmState extends State<SelfHarm> {
     );
   }
 
-  Widget _buildIOSResourceCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required bool isDark,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : AppColors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isDark ? AppColors.darkBorder : AppColors.border,
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 22),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                CupertinoIcons.chevron_forward,
-                color: isDark ? AppColors.darkTextHint : AppColors.textHint,
-                size: 16,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   void _callCrisisLine() async {
     final Uri url = Uri.parse('tel:988');
