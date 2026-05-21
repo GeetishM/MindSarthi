@@ -1,5 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/Bookmarked_screen.dart';
 import 'package:shimmer/shimmer.dart';
@@ -7,7 +7,7 @@ import 'bookmark_manager.dart';
 import 'insight_card.dart';
 import 'insight_data.dart';
 import 'insight_details_page.dart';
-
+import 'insight_cms.dart';
 
 class InsightPage extends StatefulWidget {
   const InsightPage({super.key});
@@ -19,13 +19,19 @@ class InsightPage extends StatefulWidget {
 class _InsightPageState extends State<InsightPage> {
   Set<String> bookmarkedIds = {};
   String selectedTag = 'ALL';
-
-  static const _tags = ['ALL', 'For You', 'Adult ADHD', 'Insomnia', 'Panic Attacks'];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadBookmarks();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadBookmarks() async {
@@ -41,13 +47,27 @@ class _InsightPageState extends State<InsightPage> {
   }
 
   List<Insight> _applyFilter(List<Insight> insights) {
-    if (selectedTag == 'ALL') return insights;
-    if (selectedTag == 'For You') return insights; // personalisation hook
-    return insights
-        .where((i) =>
-            i.category.toLowerCase() == selectedTag.toLowerCase() ||
-            i.heading.toLowerCase().contains(selectedTag.toLowerCase()))
-        .toList();
+    List<Insight> results = insights;
+
+    // Apply tag/category filter
+    if (selectedTag != 'ALL' && selectedTag != 'For You') {
+      results = results
+          .where((i) => i.category.toLowerCase() == selectedTag.toLowerCase())
+          .toList();
+    }
+
+    // Apply search query filter
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      results = results
+          .where((i) =>
+              i.heading.toLowerCase().contains(query) ||
+              i.category.toLowerCase().contains(query) ||
+              i.content.toLowerCase().contains(query))
+          .toList();
+    }
+
+    return results;
   }
 
   @override
@@ -58,7 +78,7 @@ class _InsightPageState extends State<InsightPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          'Discover',
+          'DISCOVER',
           style: TextStyle(
             fontWeight: FontWeight.w800,
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
@@ -70,15 +90,31 @@ class _InsightPageState extends State<InsightPage> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
+            key: const ValueKey('cms_nav_button'),
             icon: Icon(
-              Icons.bookmark_border_rounded,
+              CupertinoIcons.pencil_ellipsis_rectangle,
               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
             ),
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const BookmarkedPage()),
+                CupertinoPageRoute(builder: (_) => const InsightCmsPage()),
               );
+              _loadBookmarks(); // reload in case updates happen
+            },
+          ),
+          IconButton(
+            key: const ValueKey('bookmarks_nav_button'),
+            icon: Icon(
+              CupertinoIcons.bookmark,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            ),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                CupertinoPageRoute(builder: (_) => const BookmarkedPage()),
+              );
+              _loadBookmarks();
             },
           ),
           const SizedBox(width: 8),
@@ -87,96 +123,132 @@ class _InsightPageState extends State<InsightPage> {
       body: Column(
         children: [
           const SizedBox(height: 8),
-          // ── Tag filter chips ───────────────────────────────────────────
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: _tags.map((tag) => _tagChip(tag, isDark)).toList(),
+          // Cupertino Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: CupertinoSearchTextField(
+              controller: _searchController,
+              placeholder: 'Search topics, categories, articles...',
+              backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
+              style: TextStyle(
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+              placeholderStyle: TextStyle(
+                color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+              ),
+              itemColor: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              itemSize: 20,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
             ),
           ),
           const SizedBox(height: 8),
 
-          // ── Firestore stream ───────────────────────────────────────────
+          // StreamBuilder for real-time Firestore feed + dynamic categories
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('insights')
-                  .orderBy('date', descending: true)
-                  .snapshots(),
+            child: StreamBuilder<List<Insight>>(
+              stream: Insight.insightsStream(),
               builder: (context, snapshot) {
-                // Loading shimmer
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return _buildShimmerList(isDark);
                 }
 
-                // Build list from Firestore or fallback to static list
-                List<Insight> insights;
-                if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                  insights = snapshot.data!.docs
-                      .map((doc) => Insight.fromFirestore(doc))
+                // Determine active tags dynamically
+                final List<String> tags = ['ALL', 'For You'];
+                List<Insight> insights = [];
+
+                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                  insights = snapshot.data!;
+                  
+                  final dbTags = insights
+                      .map((i) => i.category.trim())
+                      .where((c) => c.isNotEmpty)
+                      .toSet()
                       .toList();
+                  dbTags.sort();
+                  tags.addAll(dbTags);
                 } else {
-                  // Firestore collection empty → use static fallback
                   insights = insightsList;
+                  tags.addAll(['Adult ADHD', 'Insomnia', 'Panic Attacks']);
                 }
 
                 final filtered = _applyFilter(insights);
 
-                if (filtered.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.explore_off_rounded,
-                          size: 56,
-                          color: isDark
-                              ? AppColors.darkTextHint
-                              : AppColors.textHint,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No insights for this topic yet.',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.textSecondary,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
+                return Column(
+                  children: [
+                    // Premium category tag pills
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: tags.map((tag) => _tagChip(tag, isDark)).toList(),
+                      ),
                     ),
-                  );
-                }
-
-                return ListView.builder(
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final insight = filtered[index];
-                    return InsightCard(
-                      heading: insight.heading,
-                      content: insight.content,
-                      author: insight.author,
-                      date: insight.date,
-                      isBookmarked: bookmarkedIds.contains(insight.id),
-                      onBookmarkToggle: () => _toggleBookmark(insight.id),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => InsightDetailPage(
-                              heading: insight.heading,
-                              content: insight.content,
-                              author: insight.author,
-                              date: insight.date,
+                    const SizedBox(height: 8),
+                    
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    CupertinoIcons.search,
+                                    size: 56,
+                                    color: isDark
+                                        ? AppColors.darkTextHint
+                                        : AppColors.textHint,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No matching insights found.',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.textSecondary,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.only(bottom: 24),
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) {
+                                final insight = filtered[index];
+                                return InsightCard(
+                                  heading: insight.heading,
+                                  content: insight.content,
+                                  author: insight.author,
+                                  date: insight.date,
+                                  category: insight.category,
+                                  isBookmarked: bookmarkedIds.contains(insight.id),
+                                  onBookmarkToggle: () => _toggleBookmark(insight.id),
+                                  onTap: () async {
+                                    await Navigator.push(
+                                      context,
+                                      CupertinoPageRoute(
+                                        builder: (_) => InsightDetailPage(
+                                          heading: insight.heading,
+                                          content: insight.content,
+                                          author: insight.author,
+                                          date: insight.date,
+                                          category: insight.category,
+                                        ),
+                                      ),
+                                    );
+                                    _loadBookmarks();
+                                  },
+                                );
+                              },
                             ),
-                          ),
-                        );
-                      },
-                    );
-                  },
+                    ),
+                  ],
                 );
               },
             ),
@@ -189,32 +261,36 @@ class _InsightPageState extends State<InsightPage> {
   Widget _tagChip(String label, bool isDark) {
     final isSelected = selectedTag == label;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: isSelected,
-        showCheckmark: false,
-        selectedColor: isDark ? AppColors.darkPrimary : AppColors.primary,
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
-        side: BorderSide(
-          color: isSelected
-              ? Colors.transparent
-              : (isDark ? AppColors.darkBorder : AppColors.border),
-        ),
-        shape: RoundedRectangleBorder(
+    return GestureDetector(
+      key: ValueKey('tag_$label'),
+      onTap: () {
+        setState(() => selectedTag = label);
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+              : (isDark ? AppColors.darkSurface : AppColors.surface),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+                ? Colors.transparent 
+                : (isDark ? AppColors.darkBorder : AppColors.border),
+            width: 1.2,
+          ),
         ),
-        labelStyle: TextStyle(
-          color: isSelected
-              ? AppColors.white
-              : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
-          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-          fontSize: 14,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected 
+                ? Colors.white 
+                : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            fontSize: 13,
+          ),
         ),
-        onSelected: (_) {
-          setState(() => selectedTag = label);
-        },
       ),
     );
   }

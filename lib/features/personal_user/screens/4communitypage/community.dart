@@ -140,7 +140,7 @@ class _CommunityPageState extends State<CommunityPage> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         title: Text(
-          'Connect',
+          'CONNECT',
           style: TextStyle(
             fontWeight: FontWeight.w800,
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,

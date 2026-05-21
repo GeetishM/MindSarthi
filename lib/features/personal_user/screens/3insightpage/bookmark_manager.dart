@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'insight_data.dart';
 
 class BookmarkManager {
   static const _key = 'bookmarked_insights';

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 
 class InsightCard extends StatefulWidget {
@@ -6,6 +7,7 @@ class InsightCard extends StatefulWidget {
   final String content;
   final String author;
   final String date;
+  final String category;
   final VoidCallback onTap;
   final bool isBookmarked;
   final VoidCallback onBookmarkToggle;
@@ -16,6 +18,7 @@ class InsightCard extends StatefulWidget {
     required this.content,
     required this.author,
     required this.date,
+    this.category = '',
     required this.onTap,
     required this.isBookmarked,
     required this.onBookmarkToggle,
@@ -30,10 +33,14 @@ class _InsightCardState extends State<InsightCard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Calculate dynamic reading time based on content length
+    final wordCount = widget.content.split(RegExp(r'\s+')).length;
+    final readTime = (wordCount / 180).ceil().clamp(1, 15);
+
     return GestureDetector(
       onTap: widget.onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.surface,
@@ -46,23 +53,61 @@ class _InsightCardState extends State<InsightCard> {
             if (!isDark)
               BoxShadow(
                 color: AppColors.primary.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Category & Reading Time Header Row
             Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isDark 
+                        ? (widget.category.isNotEmpty ? AppColors.darkPrimaryLight : AppColors.darkSurface2) 
+                        : (widget.category.isNotEmpty ? AppColors.primaryLight : AppColors.divider),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    widget.category.isNotEmpty ? widget.category.toUpperCase() : 'INSIGHT',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: widget.category.isNotEmpty 
+                          ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+                          : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '•  $readTime min read',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Author and Heading Info
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
                   backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
-                  radius: 20,
+                  radius: 18,
                   child: Icon(
-                    Icons.person_rounded, 
+                    CupertinoIcons.person_fill, 
                     color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                    size: 20,
+                    size: 16,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -78,14 +123,14 @@ class _InsightCardState extends State<InsightCard> {
                           color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                           letterSpacing: -0.3,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
                         widget.author, 
                         style: TextStyle(
-                          fontSize: 13, 
+                          fontSize: 12, 
                           fontWeight: FontWeight.w600,
                           color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                         ),
@@ -95,7 +140,7 @@ class _InsightCardState extends State<InsightCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               widget.content,
               style: TextStyle(
@@ -103,7 +148,7 @@ class _InsightCardState extends State<InsightCard> {
                 color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                 height: 1.5,
               ),
-              maxLines: 2,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 16),
@@ -118,28 +163,30 @@ class _InsightCardState extends State<InsightCard> {
                     color: isDark ? AppColors.darkTextHint : AppColors.textHint,
                   ),
                 ),
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: widget.onBookmarkToggle,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: widget.isBookmarked 
-                              ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight) 
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          widget.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                          color: widget.isBookmarked 
-                              ? (isDark ? AppColors.darkPrimary : AppColors.primary) 
-                              : (isDark ? AppColors.darkTextHint : AppColors.textHint),
-                          size: 20,
-                        ),
+                GestureDetector(
+                  onTap: widget.onBookmarkToggle,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: widget.isBookmarked 
+                          ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight) 
+                          : Colors.transparent,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: widget.isBookmarked
+                            ? Colors.transparent
+                            : (isDark ? AppColors.darkBorder : AppColors.border),
+                        width: 1.2,
                       ),
                     ),
-                  ],
+                    child: Icon(
+                      widget.isBookmarked ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark,
+                      color: widget.isBookmarked 
+                          ? (isDark ? AppColors.darkPrimary : AppColors.primary) 
+                          : (isDark ? AppColors.darkTextHint : AppColors.textHint),
+                      size: 18,
+                    ),
+                  ),
                 ),
               ],
             ),

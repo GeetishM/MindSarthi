@@ -2,7 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 class Insight {
+  static bool isTestingMode = false;
+  static List<Insight> testInsightsList = [];
+
   static Future<void> seedInsights() async {
+    if (isTestingMode) {
+      testInsightsList = List.from(insightsList);
+      return;
+    }
     try {
       final firestore = FirebaseFirestore.instance;
       final snapshot = await firestore.collection('insights').limit(1).get();
@@ -25,6 +32,20 @@ class Insight {
       debugPrint("Error seeding insights: $e");
     }
   }
+
+  static Stream<List<Insight>> insightsStream() {
+    if (isTestingMode) {
+      // In testing mode, return a Stream that emits the current state of testInsightsList
+      return Stream.periodic(const Duration(milliseconds: 100), (_) => List<Insight>.from(testInsightsList)).distinct();
+    }
+    return FirebaseFirestore.instance
+        .collection('insights')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => Insight.fromFirestore(doc)).toList();
+    });
+  }
+
   final String id;
   final String heading;
   final String content;
@@ -74,6 +95,51 @@ class Insight {
       date: data['date'] ?? '',
       category: data['category'] ?? '',
     );
+  }
+
+  static Future<void> addInsight(Insight insight) async {
+    if (isTestingMode) {
+      testInsightsList.insert(0, insight);
+      return;
+    }
+    final firestore = FirebaseFirestore.instance;
+    final docRef = insight.id.isEmpty 
+        ? firestore.collection('insights').doc() 
+        : firestore.collection('insights').doc(insight.id);
+    await docRef.set({
+      'heading': insight.heading,
+      'content': insight.content,
+      'author': insight.author,
+      'date': insight.date,
+      'category': insight.category,
+    });
+  }
+
+  static Future<void> updateInsight(Insight insight) async {
+    if (isTestingMode) {
+      final index = testInsightsList.indexWhere((i) => i.id == insight.id);
+      if (index != -1) {
+        testInsightsList[index] = insight;
+      }
+      return;
+    }
+    final firestore = FirebaseFirestore.instance;
+    await firestore.collection('insights').doc(insight.id).update({
+      'heading': insight.heading,
+      'content': insight.content,
+      'author': insight.author,
+      'date': insight.date,
+      'category': insight.category,
+    });
+  }
+
+  static Future<void> deleteInsight(String id) async {
+    if (isTestingMode) {
+      testInsightsList.removeWhere((i) => i.id == id);
+      return;
+    }
+    final firestore = FirebaseFirestore.instance;
+    await firestore.collection('insights').doc(id).delete();
   }
 }
 
