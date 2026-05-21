@@ -1,7 +1,8 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/chat_history.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
-import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/utility/utilites.dart';
 import 'package:provider/provider.dart';
 
 class ChatHistoryWidget extends StatelessWidget {
@@ -9,47 +10,93 @@ class ChatHistoryWidget extends StatelessWidget {
 
   final ChatHistory chat;
 
+  String _getRelativeTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inSeconds < 60) {
+      return 'just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${dateTime.day}/${dateTime.month}';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.only(left: 10.0, right: 10.0),
-        leading: const CircleAvatar(radius: 30, child: Icon(Icons.chat)),
-        title: Text(chat.prompt, maxLines: 1),
-        subtitle: Text(chat.response, maxLines: 2),
-        trailing: const Icon(Icons.arrow_forward_ios),
-        onTap: () async {
-          // navigate to chat screen
-          final chatProvider = context.read<ChatProvider>();
-          // prepare chat room
-          await chatProvider.prepareChatRoom(
-            isNewChat: false,
-            chatID: chat.chatId,
-          );
-          chatProvider.setCurrentIndex(newIndex: 1);
-          chatProvider.pageController.jumpToPage(1);
-        },
-        onLongPress: () {
-          // show my animated dialog to delete the chat
-          showMyAnimatedDialog(
-            context: context,
-            title: 'Delete Chat',
-            content: 'Are you sure you want to delete this chat?',
-            actionText: 'Delete',
-            onActionPressed: (value) async {
-              if (value) {
-                // delete the chat
-                await context.read<ChatProvider>().deletChatMessages(
-                  chatId: chat.chatId,
-                );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-                // delete the chat history
-                await chat.delete();
-              }
-            },
-          );
-        },
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          CupertinoIcons.chat_bubble_2,
+          color: isDark ? AppColors.darkPrimary : AppColors.primary,
+          size: 20,
+        ),
       ),
+      title: Text(
+        chat.prompt,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+        ),
+      ),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 4.0),
+        child: Text(
+          chat.response,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 13,
+            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+          ),
+        ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _getRelativeTime(chat.timestamp),
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Icon(
+            CupertinoIcons.chevron_forward,
+            color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+            size: 16,
+          ),
+        ],
+      ),
+      onTap: () async {
+        final chatProvider = context.read<ChatProvider>();
+        await chatProvider.prepareChatRoom(
+          isNewChat: false,
+          chatID: chat.chatId,
+        );
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      },
     );
   }
 }
+
+

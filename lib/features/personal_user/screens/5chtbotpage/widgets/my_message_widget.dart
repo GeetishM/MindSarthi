@@ -20,18 +20,32 @@ class MyMessageWidget extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkPrimary : AppColors.primary,
+          gradient: LinearGradient(
+            colors: isDark
+                ? [AppColors.darkPrimary, AppColors.primaryDark]
+                : [AppColors.primary, AppColors.primaryDark],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-            bottomLeft: Radius.circular(20),
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomLeft: Radius.circular(18),
             bottomRight: Radius.circular(4),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         margin: const EdgeInsets.only(bottom: 12, right: 8),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             if (message.imagesUrls.isNotEmpty)
               Padding(
@@ -39,13 +53,24 @@ class MyMessageWidget extends StatelessWidget {
                 child: PreviewImagesWidget(message: message),
               ),
             MarkdownBody(
-              selectable: true, 
+              selectable: true,
               data: message.message.toString(),
               styleSheet: MarkdownStyleSheet(
                 p: const TextStyle(
                   color: Colors.white,
                   fontSize: 15,
-                  height: 1.4,
+                  height: 1.45,
+                ),
+                strong: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+                em: const TextStyle(
+                  color: Color(0xE6FFFFFF),
+                  fontStyle: FontStyle.italic,
+                ),
+                listBullet: const TextStyle(
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -55,3 +80,4 @@ class MyMessageWidget extends StatelessWidget {
     );
   }
 }
+
