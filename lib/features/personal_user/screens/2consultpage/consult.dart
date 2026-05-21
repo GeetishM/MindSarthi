@@ -313,6 +313,7 @@ class _ConsultPageState extends State<ConsultPage> {
                     ),
                   ),
                   FilterButton(
+                    
                     isDark: isDark,
                     selectedSort: _selectedSort,
                     onSelected: (val) {
@@ -483,31 +484,69 @@ class FilterButton extends StatelessWidget {
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      child: PopupMenuButton<String>(
-        padding: EdgeInsets.zero,
-        icon: Row(
-          mainAxisSize: MainAxisSize.min,
+    return PopupMenuButton<String>(
+      padding: EdgeInsets.zero,
+      color: isDark ? AppColors.darkSurface2 : AppColors.surface,
+      onSelected: onSelected,
+      itemBuilder: (BuildContext context) {
+        return {'Rating', 'Experience', 'Price'}.map((String choice) {
+          final isSelected = choice == selectedSort;
+          return PopupMenuItem<String>(
+            value: choice,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  choice,
+                  style: TextStyle(
+                    color: isSelected
+                        ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+                        : textPrimary,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    CupertinoIcons.checkmark_alt,
+                    size: 16,
+                    color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                  ),
+              ],
+            ),
+          );
+        }).toList();
+      },
+      child: Container(
+        width: 160,
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.surface,
+          border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Icon(
               CupertinoIcons.slider_horizontal_3,
-              size: 16,
+              size: 15,
               color: isDark ? AppColors.darkPrimary : AppColors.primary,
             ),
-            const SizedBox(width: 6),
-            Text(
-              'Sort: $selectedSort',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-                color: textPrimary,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Sort: $selectedSort',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12.5,
+                  color: textPrimary,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             Icon(
               CupertinoIcons.chevron_down,
               size: 12,
@@ -515,36 +554,6 @@ class FilterButton extends StatelessWidget {
             ),
           ],
         ),
-        color: isDark ? AppColors.darkSurface2 : AppColors.surface,
-        onSelected: onSelected,
-        itemBuilder: (BuildContext context) {
-          return {'Rating', 'Experience', 'Price'}.map((String choice) {
-            final isSelected = choice == selectedSort;
-            return PopupMenuItem<String>(
-              value: choice,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    choice,
-                    style: TextStyle(
-                      color: isSelected
-                          ? (isDark ? AppColors.darkPrimary : AppColors.primary)
-                          : textPrimary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                  if (isSelected)
-                    Icon(
-                      CupertinoIcons.checkmark_alt,
-                      size: 16,
-                      color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                    ),
-                ],
-              ),
-            );
-          }).toList();
-        },
       ),
     );
   }
