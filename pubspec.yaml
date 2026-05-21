@@ -75,6 +75,7 @@ dependencies:
   timezone: ^0.10.1
   webview_flutter: ^4.13.0
   webview_flutter_android: ^4.7.0
+  rive: ^0.13.0
   
 
 dev_dependencies:
@@ -111,6 +112,7 @@ flutter:
     - assets/lottie/
     - assets/illustrations/
     - assets/json/
+    - assets/rive/
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

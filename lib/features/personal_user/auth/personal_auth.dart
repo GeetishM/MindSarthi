@@ -1,10 +1,13 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/core/widgets/rive_teddy_widget.dart';
 import 'otp_verification.dart';
 
 class PersonalAuth extends StatefulWidget {
@@ -21,23 +24,48 @@ class _PersonalAuthState extends State<PersonalAuth>
   bool _isPhoneValid = false;
   bool _isSending = false;
 
+  // Rive controller
+  RiveTeddyController? _teddyCtrl;
+
+  // Focus node to track phone field focus
+  final FocusNode _phoneFocusNode = FocusNode();
+
+  // Fade animation for card entrance
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
 
   @override
   void initState() {
     super.initState();
     _fadeCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 800),
     )..forward();
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut));
+
+    // Listen to phone field focus changes
+    _phoneFocusNode.addListener(_onPhoneFocusChanged);
   }
 
   @override
   void dispose() {
+    _phoneFocusNode.removeListener(_onPhoneFocusChanged);
+    _phoneFocusNode.dispose();
     _fadeCtrl.dispose();
     super.dispose();
+  }
+
+  void _onPhoneFocusChanged() {
+    if (_phoneFocusNode.hasFocus) {
+      _teddyCtrl?.isChecking = true;
+    } else {
+      _teddyCtrl?.isChecking = false;
+    }
   }
 
   void _checkPhoneValidity(String? value) {
@@ -50,8 +78,16 @@ class _PersonalAuthState extends State<PersonalAuth>
     setState(() {});
   }
 
+  void _onPhoneChanged(String number) {
+    // Update bear's eye tracking based on phone number length
+    // Maps 0-10 digits to 0-50 range for smooth left-to-right eye movement
+    final length = number.replaceAll(RegExp(r'\D'), '').length;
+    _teddyCtrl?.look = length * 5.0;
+  }
+
   Future<void> _sendOtp() async {
     if (_phoneNumber == null || !_isPhoneValid) {
+      _teddyCtrl?.triggerFail();
       AppToast.warning(
         context,
         'Enter a valid phone number',
@@ -59,6 +95,10 @@ class _PersonalAuthState extends State<PersonalAuth>
       );
       return;
     }
+
+    // Unfocus to reset bear
+    _phoneFocusNode.unfocus();
+    _teddyCtrl?.isChecking = false;
 
     setState(() => _isSending = true);
 
@@ -104,6 +144,7 @@ class _PersonalAuthState extends State<PersonalAuth>
         verificationFailed: (e) {
           if (mounted) {
             Navigator.pop(context);
+            _teddyCtrl?.triggerFail();
             AppToast.error(context, 'OTP Error',
                 description: e.message ?? 'Unknown error');
           }
@@ -111,17 +152,24 @@ class _PersonalAuthState extends State<PersonalAuth>
         codeSent: (verificationId, _) {
           if (mounted) {
             Navigator.pop(context);
+            _teddyCtrl?.triggerSuccess();
             AppToast.info(context, 'OTP Sent',
                 description: 'Check your SMS inbox.');
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => OtpVerificationScreen(
-                  phoneNumber: _phoneNumber!,
-                  verificationId: verificationId,
-                ),
-              ),
-            );
+
+            // Small delay so user sees the bear celebrate, then navigate
+            Future.delayed(const Duration(milliseconds: 800), () {
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (_) => OtpVerificationScreen(
+                      phoneNumber: _phoneNumber!,
+                      verificationId: verificationId,
+                    ),
+                  ),
+                );
+              }
+            });
           }
         },
         codeAutoRetrievalTimeout: (_) {
@@ -131,6 +179,7 @@ class _PersonalAuthState extends State<PersonalAuth>
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
+        _teddyCtrl?.triggerFail();
         AppToast.error(context, 'Verification Failed',
             description: e.toString());
       }
@@ -142,16 +191,17 @@ class _PersonalAuthState extends State<PersonalAuth>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF0F4F8),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          color: AppColors.textPrimary,
+          icon: const Icon(CupertinoIcons.back, size: 22),
+          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -160,235 +210,296 @@ class _PersonalAuthState extends State<PersonalAuth>
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(
               horizontal: size.width * 0.05,
-              vertical: 24,
             ),
             child: FadeTransition(
               opacity: _fadeAnim,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // ── Card ─────────────────────────────────────
-                  Container(
-                    width: size.width > 420 ? 400.0 : double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppColors.border),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.06),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+              child: SlideTransition(
+                position: _slideAnim,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // ── Rive Teddy Bear ──────────────────────────
+                    RiveTeddyWidget(
+                      height: size.height * 0.28,
+                      onControllerReady: (ctrl) {
+                        _teddyCtrl = ctrl;
+                      },
                     ),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 28),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // ── Header ──────────────────────────────
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'Log In or Sign Up',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
 
-                        const SizedBox(height: 20),
-
-                        // ── Title ────────────────────────────────
-                        const Text(
-                          'Welcome to MindSarthi',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                            letterSpacing: -0.4,
+                    // Overlap the card slightly with the bear
+                    Transform.translate(
+                      offset: const Offset(0, -30),
+                      child: Container(
+                        width: size.width > 420 ? 400.0 : double.infinity,
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkSurface : AppColors.white,
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                            color: isDark ? AppColors.darkBorder : AppColors.border,
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'Enter your phone number to continue',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // ── Phone field ──────────────────────────
-                        IntlPhoneField(
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          dropdownTextStyle: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 15,
-                          ),
-                          dropdownIconPosition: IconPosition.trailing,
-                          dropdownIcon: const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: AppColors.textSecondary,
-                            size: 20,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: 'Phone Number',
-                            labelStyle: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                            ),
-                            filled: true,
-                            fillColor: AppColors.background,
-                            counterText: '',
-                            border: _buildBorder(AppColors.border),
-                            enabledBorder: _buildBorder(AppColors.border),
-                            focusedBorder: _buildBorder(AppColors.primary,
-                                width: 1.8),
-                          ),
-                          initialCountryCode: 'IN',
-                          onChanged: (phone) {
-                            _phoneNumber = phone.completeNumber;
-                            _checkPhoneValidity(phone.number);
-                          },
-                          // Valid tick indicator
-                          validator: (_) => null,
-                        ),
-
-                        // ── Validity indicator ───────────────────
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 200),
-                          child: _isPhoneValid
-                              ? Padding(
-                                  padding:
-                                      const EdgeInsets.only(top: 6, left: 4),
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.check_circle_rounded,
-                                          color: AppColors.success, size: 16),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        'Valid number',
-                                        style: TextStyle(
-                                          color: AppColors.success,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // ── Send OTP button ────────────────────── 
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: _isSending ? null : _sendOtp,
-                            child: _isSending
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      color: AppColors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Text(
-                                    'Send OTP',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 22),
-
-                        // ── Divider ──────────────────────────────
-                        Row(
-                          children: [
-                            const Expanded(
-                              child: Divider(color: AppColors.border),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              child: Text(
-                                'or',
-                                style: TextStyle(
-                                  color: AppColors.textHint,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            const Expanded(
-                              child: Divider(color: AppColors.border),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              blurRadius: 30,
+                              offset: const Offset(0, 12),
                             ),
                           ],
                         ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 28),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // ── Header badge ────────────────────────
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.darkPrimary.withValues(alpha: 0.15)
+                                    : AppColors.primaryLight,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'Step 2 of 2',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? AppColors.darkPrimary
+                                      : AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
 
-                        const SizedBox(height: 22),
+                            const SizedBox(height: 18),
 
-                        // ── Social buttons ───────────────────────
-                        _SocialButton(
-                          icon: SvgPicture.asset(
-                            'assets/icons/google.svg',
-                            height: 22,
-                          ),
-                          label: 'Continue with Google',
-                          onPressed: () {},
+                            // ── Title ────────────────────────────────
+                            Text(
+                              'Welcome to MindSarthi',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.textPrimary,
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Enter your phone number to continue',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // ── Phone field ──────────────────────────
+                            IntlPhoneField(
+                              focusNode: _phoneFocusNode,
+                              style: TextStyle(
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              dropdownTextStyle: TextStyle(
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.textPrimary,
+                                fontSize: 15,
+                              ),
+                              dropdownIconPosition: IconPosition.trailing,
+                              dropdownIcon: Icon(
+                                CupertinoIcons.chevron_down,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.textSecondary,
+                                size: 16,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Phone Number',
+                                labelStyle: TextStyle(
+                                  color: isDark
+                                      ? AppColors.darkTextHint
+                                      : AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
+                                filled: true,
+                                fillColor: isDark
+                                    ? AppColors.darkBackground
+                                    : AppColors.background,
+                                counterText: '',
+                                border: _buildBorder(
+                                    isDark ? AppColors.darkBorder : AppColors.border),
+                                enabledBorder: _buildBorder(
+                                    isDark ? AppColors.darkBorder : AppColors.border),
+                                focusedBorder:
+                                    _buildBorder(AppColors.primary, width: 1.8),
+                              ),
+                              initialCountryCode: 'IN',
+                              onChanged: (phone) {
+                                _phoneNumber = phone.completeNumber;
+                                _checkPhoneValidity(phone.number);
+                                _onPhoneChanged(phone.number);
+                              },
+                              validator: (_) => null,
+                            ),
+
+                            // ── Validity indicator ───────────────────
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 200),
+                              child: _isPhoneValid
+                                  ? Padding(
+                                      padding:
+                                          const EdgeInsets.only(top: 6, left: 4),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                              CupertinoIcons.checkmark_circle_fill,
+                                              color: AppColors.success,
+                                              size: 16),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Valid number',
+                                            style: TextStyle(
+                                              color: AppColors.success,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // ── Send OTP button ──────────────────────
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton(
+                                onPressed: _isSending ? null : _sendOtp,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: _isSending
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          color: AppColors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Send OTP',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 22),
+
+                            // ── Divider ──────────────────────────────
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Divider(
+                                      color: isDark
+                                          ? AppColors.darkBorder
+                                          : AppColors.border),
+                                ),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 12),
+                                  child: Text(
+                                    'or',
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? AppColors.darkTextHint
+                                          : AppColors.textHint,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Divider(
+                                      color: isDark
+                                          ? AppColors.darkBorder
+                                          : AppColors.border),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 22),
+
+                            // ── Social buttons ───────────────────────
+                            _SocialButton(
+                              icon: SvgPicture.asset(
+                                'assets/icons/google.svg',
+                                height: 22,
+                              ),
+                              label: 'Continue with Google',
+                              isDark: isDark,
+                              onPressed: () {},
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            _SocialButton(
+                              icon: Icon(
+                                Icons.apple,
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.textPrimary,
+                                size: 24,
+                              ),
+                              label: 'Continue with Apple',
+                              isDark: isDark,
+                              onPressed: () {},
+                            ),
+
+                            const SizedBox(height: 4),
+                          ],
                         ),
+                      ),
+                    ),
 
-                        const SizedBox(height: 10),
-
-                        _SocialButton(
-                          icon: const Icon(
-                            Icons.apple,
-                            color: AppColors.textPrimary,
-                            size: 26,
-                          ),
-                          label: 'Continue with Apple',
-                          onPressed: () {},
+                    // ── Privacy note ─────────────────────────────
+                    Transform.translate(
+                      offset: const Offset(0, -20),
+                      child: Text(
+                        'Your data is private & encrypted 🔒',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? AppColors.darkTextHint
+                              : AppColors.textHint,
                         ),
-
-                        const SizedBox(height: 4),
-                      ],
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // ── Privacy note ─────────────────────────────
-                  Text(
-                    'Your data is private & encrypted 🔒',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textHint,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -399,7 +510,7 @@ class _PersonalAuthState extends State<PersonalAuth>
 
   OutlineInputBorder _buildBorder(Color color, {double width = 1.2}) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       borderSide: BorderSide(color: color, width: width),
     );
   }
@@ -409,11 +520,13 @@ class _PersonalAuthState extends State<PersonalAuth>
 class _SocialButton extends StatelessWidget {
   final Widget icon;
   final String label;
+  final bool isDark;
   final VoidCallback onPressed;
 
   const _SocialButton({
     required this.icon,
     required this.label,
+    required this.isDark,
     required this.onPressed,
   });
 
@@ -426,11 +539,16 @@ class _SocialButton extends StatelessWidget {
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          side: const BorderSide(color: AppColors.border, width: 1.2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isDark ? AppColors.darkBorder : AppColors.border,
+            width: 1.2,
           ),
-          foregroundColor: AppColors.textPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          foregroundColor: isDark
+              ? AppColors.darkTextPrimary
+              : AppColors.textPrimary,
         ),
         child: Stack(
           alignment: Alignment.center,
@@ -439,8 +557,10 @@ class _SocialButton extends StatelessWidget {
             Center(
               child: Text(
                 label,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
