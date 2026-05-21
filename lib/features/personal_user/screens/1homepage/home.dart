@@ -663,10 +663,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             color: isDark ? AppColors.darkSurface : AppColors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.fromLTRB(32, 12, 32, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Drag Handle
+              Container(
+                width: 36,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -816,11 +826,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 top: Radius.circular(32),
               ),
             ),
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.fromLTRB(32, 12, 32, 32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkBorder : AppColors.border,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 Text(
                   "Select Your State",
                   style: TextStyle(
@@ -964,11 +985,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 top: Radius.circular(32),
               ),
             ),
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.fromLTRB(32, 12, 32, 32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkBorder : AppColors.border,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 Text(
                   "Emergency Contact",
                   style: TextStyle(
