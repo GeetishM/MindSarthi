@@ -82,7 +82,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Lottie.asset(
-                'assets/lottie/otp.json',
+                'assets/lottie/otp_org.json',
                 height: 120,
                 width: 120,
                 fit: BoxFit.contain,

@@ -63,7 +63,7 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Lottie.asset(
-                'assets/lottie/otp.json',
+                'assets/lottie/otp_pro.json',
                 height: 120,
                 width: 120,
                 fit: BoxFit.contain,

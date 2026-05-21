@@ -115,7 +115,7 @@ class _PersonalAuthState extends State<PersonalAuth>
             mainAxisSize: MainAxisSize.min,
             children: [
               Lottie.asset(
-                'assets/lottie/otp.json',
+                'assets/lottie/otp_p.json',
                 height: 100,
                 width: 100,
               ),
