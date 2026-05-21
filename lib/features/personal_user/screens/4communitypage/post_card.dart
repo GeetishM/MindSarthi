@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/comment_input_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/report_dialog.dart';
+import 'package:mindsarthi/features/personal_user/screens/4communitypage/hidden_posts_manager.dart';
 import 'comment_screen.dart';
 
 class PostCard extends StatefulWidget {
@@ -12,7 +14,9 @@ class PostCard extends StatefulWidget {
   final bool showCommentIcon;
   final bool isProfileComplete;
   final bool expandComments;
+  final bool isModerator;
   final VoidCallback? onCommentTap;
+  final VoidCallback? onPostHidden;
 
   const PostCard({
     super.key,
@@ -20,7 +24,9 @@ class PostCard extends StatefulWidget {
     this.showCommentIcon = true,
     required this.isProfileComplete,
     this.expandComments = false,
+    this.isModerator = false,
     this.onCommentTap,
+    this.onPostHidden,
   });
 
   @override
@@ -83,18 +89,19 @@ class _PostCardState extends State<PostCard>
         'likedBy': FieldValue.arrayUnion([currentUid]),
       });
     } else {
-      final confirm = await showDialog<bool>(
+      final confirm = await showCupertinoDialog<bool>(
         context: context,
         builder:
-            (_) => AlertDialog(
+            (context) => CupertinoAlertDialog(
               title: const Text("Unlike post?"),
               content: const Text("Are you sure you want to unlike this post?"),
               actions: [
-                TextButton(
+                CupertinoDialogAction(
                   onPressed: () => Navigator.pop(context, false),
                   child: const Text("Cancel"),
                 ),
-                ElevatedButton(
+                CupertinoDialogAction(
+                  isDestructiveAction: true,
                   onPressed: () => Navigator.pop(context, true),
                   child: const Text("Unlike"),
                 ),
@@ -136,158 +143,121 @@ class _PostCardState extends State<PostCard>
     );
   }
 
-  /// Shows the post options bottom sheet (Report or Delete depending on ownership).
-  void _showPostOptions(BuildContext context, Map<String, dynamic> data, bool isDark) {
+  /// Shows the Cupertino Action Sheet for post options (Report, Hide, Delete).
+  void _showPostOptions(BuildContext context, Map<String, dynamic> data) {
     final isOwner = data['uid'] == currentUid;
+    final isAnonymous = data['isAnonymous'] == true;
 
-    showModalBottomSheet(
+    showCupertinoModalPopup(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkBorder : AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            if (isOwner) ...[
-              // ── Delete option for post owner ────────────────────────
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+      builder: (BuildContext context) => CupertinoActionSheet(
+        title: const Text('Post Options'),
+        message: isAnonymous ? const Text('Anonymous Friendly Space') : null,
+        actions: <CupertinoActionSheetAction>[
+          // Owner delete option
+          if (isOwner)
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () async {
+                Navigator.pop(context);
+                final confirm = await showCupertinoDialog<bool>(
+                  context: context,
+                  builder: (context) => CupertinoAlertDialog(
+                    title: const Text('Delete Post?'),
+                    content: const Text('Are you sure you want to delete this post? This action cannot be undone.'),
+                    actions: [
+                      CupertinoDialogAction(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      CupertinoDialogAction(
+                        isDestructiveAction: true,
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.delete_outline_rounded,
-                      color: AppColors.error),
-                ),
-                title: Text(
-                  'Delete Post',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.error,
-                  ),
-                ),
-                subtitle: Text(
-                  'This action cannot be undone.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary,
-                  ),
-                ),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text('Delete Post?'),
-                      content: const Text(
-                          'Are you sure you want to delete this post?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.error),
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Delete',
-                              style: TextStyle(color: Colors.white)),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirm == true) {
-                    await FirebaseFirestore.instance
-                        .collection('posts')
-                        .doc(widget.post.id)
-                        .delete();
-                    if (context.mounted) {
-                      AppToast.success(context, 'Post deleted');
-                    }
+                );
+                if (confirm == true) {
+                  await FirebaseFirestore.instance
+                      .collection('posts')
+                      .doc(widget.post.id)
+                      .delete();
+                  if (context.mounted) {
+                    AppToast.success(context, 'Post deleted');
                   }
-                },
-              ),
-            ] else ...[
-              // ── Report option for other users ───────────────────────
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.flag_rounded, color: AppColors.error),
-                ),
-                title: Text(
-                  'Report Post',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
-                  ),
-                ),
-                subtitle: Text(
-                  'Flag inappropriate or harmful content.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  showReportSheet(context, widget.post.id);
-                },
-              ),
-            ],
-
-            // ── Cancel ───────────────────────────────────────────────
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface2 : AppColors.background,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.close_rounded,
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary),
-              ),
-              title: Text(
-                'Cancel',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.textSecondary,
-                ),
-              ),
-              onTap: () => Navigator.pop(context),
+                }
+              },
+              child: const Text('Delete Post'),
             ),
-          ],
+
+          // Moderator delete option
+          if (!isOwner && widget.isModerator)
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () async {
+                Navigator.pop(context);
+                final confirm = await showCupertinoDialog<bool>(
+                  context: context,
+                  builder: (context) => CupertinoAlertDialog(
+                    title: const Text('Delete Post (Moderator)?'),
+                    content: const Text('Are you sure you want to delete this post as a moderator? This action cannot be undone.'),
+                    actions: [
+                      CupertinoDialogAction(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      CupertinoDialogAction(
+                        isDestructiveAction: true,
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await FirebaseFirestore.instance
+                      .collection('posts')
+                      .doc(widget.post.id)
+                      .delete();
+                  if (context.mounted) {
+                    AppToast.success(context, 'Post deleted by moderator');
+                  }
+                }
+              },
+              child: const Text('Delete Post (Moderator)'),
+            ),
+
+          // Hide post option (only for public posts)
+          if (!isAnonymous)
+            CupertinoActionSheetAction(
+              onPressed: () async {
+                Navigator.pop(context);
+                await HiddenPostsManager.hidePost(widget.post.id);
+                if (context.mounted) {
+                  AppToast.success(context, 'Post hidden');
+                  if (widget.onPostHidden != null) {
+                    widget.onPostHidden!();
+                  }
+                }
+              },
+              child: const Text('Hide Post'),
+            ),
+
+          // Report post option (only for public posts, and not owner)
+          if (!isAnonymous && !isOwner)
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                showReportSheet(context, widget.post.id);
+              },
+              child: const Text('Report Post'),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
         ),
       ),
     );
@@ -297,6 +267,8 @@ class _PostCardState extends State<PostCard>
   Widget build(BuildContext context) {
     final data = widget.post.data() as Map<String, dynamic>;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isAnonymous = data['isAnonymous'] == true;
+    final isOwner = data['uid'] == currentUid;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -323,38 +295,89 @@ class _PostCardState extends State<PostCard>
           // Top Row: Avatar + Username + Options
           Row(
             children: [
-              FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(data['uid'])
-                    .get(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+              if (isAnonymous) ...[
+                // Anonymous Avatar & User Details
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.background,
+                  child: Icon(
+                    CupertinoIcons.person_crop_circle_fill,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Anonymous Mind',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  ),
+                ),
+              ] else ...[
+                // Standard Public User
+                FutureBuilder<DocumentSnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(data['uid'])
+                      .get(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.border,
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 80,
+                            height: 14,
+                            color: isDark ? AppColors.darkSurface2 : AppColors.border,
+                          ),
+                        ],
+                      );
+                    }
+
+                    final userData = snapshot.data?.data() as Map<String, dynamic>?;
+
+                    if (userData == null || userData['username'] == null) {
+                      return Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+                            child: Text(
+                              '?',
+                              style: TextStyle(
+                                color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Unknown',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    final profileInitial = userData['profileInitial'] ?? '';
+                    final username = userData['username'];
+
                     return Row(
                       children: [
                         CircleAvatar(
-                          radius: 20,
-                          backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.border,
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          width: 80,
-                          height: 14,
-                          color: isDark ? AppColors.darkSurface2 : AppColors.border,
-                        ),
-                      ],
-                    );
-                  }
-
-                  final userData = snapshot.data?.data() as Map<String, dynamic>?;
-
-                  if (userData == null || userData['username'] == null) {
-                    return Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+                          backgroundColor: isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
                           child: Text(
-                            '?',
+                            profileInitial.isNotEmpty
+                                ? profileInitial
+                                : username[0].toUpperCase(),
                             style: TextStyle(
                               color: isDark ? AppColors.darkPrimary : AppColors.primary,
                               fontWeight: FontWeight.w800,
@@ -363,55 +386,34 @@ class _PostCardState extends State<PostCard>
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Unknown',
+                          username,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
+                            fontSize: 15,
                             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                           ),
                         ),
                       ],
                     );
-                  }
-
-                  final profileInitial = userData['profileInitial'] ?? '';
-                  final username = userData['username'];
-
-                  return Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
-                        child: Text(
-                          profileInitial.isNotEmpty
-                              ? profileInitial
-                              : username[0].toUpperCase(),
-                          style: TextStyle(
-                            color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        username,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
+                  },
+                ),
+              ],
 
               const Spacer(),
-              IconButton(
-                icon: Icon(
-                  Icons.more_horiz_rounded,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              // Show options button only for:
+              // 1. Non-anonymous posts (which use the moderation system)
+              // 2. Owner of anonymous posts (to let them delete it)
+              // 3. Moderators (to moderate public posts, note: anonymous posts are unmoderated)
+              if (!isAnonymous || isOwner)
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  onPressed: () => _showPostOptions(context, data),
+                  child: Icon(
+                    CupertinoIcons.ellipsis,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  ),
                 ),
-                onPressed: () => _showPostOptions(context, data, isDark),
-              ),
             ],
           ),
 
@@ -437,7 +439,7 @@ class _PostCardState extends State<PostCard>
                 child: ScaleTransition(
                   scale: _scaleAnimation,
                   child: Icon(
-                    isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    isLiked ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
                     color: isLiked ? AppColors.accent : (isDark ? AppColors.darkTextHint : AppColors.textHint),
                     size: 24,
                   ),
@@ -458,7 +460,7 @@ class _PostCardState extends State<PostCard>
                 GestureDetector(
                   onTap: widget.onCommentTap ?? openComments,
                   child: Icon(
-                    Icons.chat_bubble_outline_rounded,
+                    CupertinoIcons.bubble_left,
                     color: isDark ? AppColors.darkTextHint : AppColors.textHint,
                     size: 22,
                   ),
@@ -485,7 +487,7 @@ class _PostCardState extends State<PostCard>
 
               const Spacer(),
               Icon(
-                Icons.ios_share_rounded,
+                CupertinoIcons.share,
                 color: isDark ? AppColors.darkTextHint : AppColors.textHint,
                 size: 22,
               ),
@@ -528,7 +530,7 @@ class _PostCardState extends State<PostCard>
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: CupertinoActivityIndicator());
                 }
                 if (snapshot.data!.docs.isEmpty) {
                   return Padding(
@@ -573,7 +575,7 @@ class _PostCardState extends State<PostCard>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.favorite_border_rounded, 
+                                CupertinoIcons.heart, 
                                 size: 14,
                                 color: isDark ? AppColors.darkTextHint : AppColors.textHint,
                               ),

@@ -22,7 +22,6 @@ class _CommentScreenState extends State<CommentScreen> {
   final TextEditingController _commentController = TextEditingController();
   String selectedTab = 'Top';
   bool _isProfileComplete = false;
-  bool _isCheckingProfile = true;
 
   @override
   void initState() {
@@ -35,7 +34,6 @@ class _CommentScreenState extends State<CommentScreen> {
     if (!mounted) return;
     setState(() {
       _isProfileComplete = result;
-      _isCheckingProfile = false;
     });
   }
 
@@ -141,7 +139,9 @@ class _CommentScreenState extends State<CommentScreen> {
                     'text': replyController.text.trim(),
                     'timestamp': FieldValue.serverTimestamp(),
                   });
-                  Navigator.pop(context);
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
                 }
               },
               child: const Text("Reply"),

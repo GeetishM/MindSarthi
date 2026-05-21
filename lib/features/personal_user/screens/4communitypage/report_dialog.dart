@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 
@@ -93,6 +94,9 @@ class _ReportSheetState extends State<_ReportSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final secondaryTextColor = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final borderCol = isDark ? AppColors.darkBorder : AppColors.border;
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 250),
@@ -131,8 +135,11 @@ class _ReportSheetState extends State<_ReportSheet> {
                     color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.flag_rounded,
-                      color: AppColors.error, size: 22),
+                  child: const Icon(
+                    CupertinoIcons.flag_fill,
+                    color: AppColors.error, 
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -141,9 +148,7 @@ class _ReportSheetState extends State<_ReportSheet> {
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.3,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
+                    color: textColor,
                   ),
                 ),
               ],
@@ -153,8 +158,7 @@ class _ReportSheetState extends State<_ReportSheet> {
               'Why are you reporting this post?',
               style: TextStyle(
                 fontSize: 14,
-                color:
-                    isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                color: secondaryTextColor,
               ),
             ),
             const SizedBox(height: 20),
@@ -181,9 +185,7 @@ class _ReportSheetState extends State<_ReportSheet> {
                       border: Border.all(
                         color: isSelected
                             ? AppColors.error
-                            : (isDark
-                                ? AppColors.darkBorder
-                                : AppColors.border),
+                            : borderCol,
                         width: isSelected ? 1.5 : 1,
                       ),
                     ),
@@ -196,9 +198,7 @@ class _ReportSheetState extends State<_ReportSheet> {
                             : FontWeight.w500,
                         color: isSelected
                             ? AppColors.error
-                            : (isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.textPrimary),
+                            : textColor,
                       ),
                     ),
                   ),
@@ -212,45 +212,33 @@ class _ReportSheetState extends State<_ReportSheet> {
             SizedBox(
               width: double.infinity,
               height: 52,
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                ),
-                child: _isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text(
+              child: _isSubmitting
+                  ? const Center(child: CupertinoActivityIndicator())
+                  : CupertinoButton(
+                      color: AppColors.error,
+                      borderRadius: BorderRadius.circular(16),
+                      onPressed: _submit,
+                      child: const Text(
                         'Submit Report',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                       ),
-              ),
+                    ),
             ),
 
             const SizedBox(height: 8),
             Center(
-              child: TextButton(
+              child: CupertinoButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Cancel',
                   style: TextStyle(
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary,
+                    color: secondaryTextColor,
                     fontWeight: FontWeight.w600,
+                    fontSize: 15,
                   ),
                 ),
               ),

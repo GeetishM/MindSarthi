@@ -44,7 +44,9 @@ class _CommentInputScreenState extends State<CommentInputScreen> {
       _isPosting = false;
     });
 
-    Navigator.pop(context); // Close comment input screen
+    if (mounted) {
+      Navigator.pop(context); // Close comment input screen
+    }
   }
 
   @override
