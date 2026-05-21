@@ -23,6 +23,7 @@ class _PersonalAuthState extends State<PersonalAuth>
   String? _phoneNumber;
   bool _isPhoneValid = false;
   bool _isSending = false;
+  int _enteredLength = 0;
 
   // Rive controller
   RiveTeddyController? _teddyCtrl;
@@ -71,9 +72,11 @@ class _PersonalAuthState extends State<PersonalAuth>
   void _checkPhoneValidity(String? value) {
     if (value == null || value.isEmpty) {
       _isPhoneValid = false;
+      _enteredLength = 0;
     } else {
       final digits = value.replaceAll(RegExp(r'\D'), '');
       _isPhoneValid = digits.length == 10;
+      _enteredLength = digits.length;
     }
     setState(() {});
   }
@@ -304,6 +307,9 @@ class _PersonalAuthState extends State<PersonalAuth>
                             // ── Phone field ──────────────────────────
                             IntlPhoneField(
                               focusNode: _phoneFocusNode,
+                              invalidNumberMessage: _enteredLength > 0
+                                  ? 'Invalid Mobile Number                                   $_enteredLength/10'
+                                  : 'Invalid Mobile Number',
                               style: TextStyle(
                                 color: isDark
                                     ? AppColors.darkTextPrimary

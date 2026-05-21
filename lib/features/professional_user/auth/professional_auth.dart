@@ -20,6 +20,7 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
   String? _phoneNumber;
   bool _isPhoneValid = false;
   bool _dialogOpen = false;
+  int _enteredLength = 0;
 
   void _dismissDialog() {
     if (_dialogOpen && mounted) {
@@ -31,9 +32,11 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
   void _checkPhoneValidity(String? value) {
     if (value == null || value.isEmpty) {
       _isPhoneValid = false;
+      _enteredLength = 0;
     } else {
       final digits = value.replaceAll(RegExp(r'\D'), '');
       _isPhoneValid = digits.length == 10;
+      _enteredLength = digits.length;
     }
     setState(() {});
   }
@@ -196,6 +199,9 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                     ),
                     const SizedBox(height: 15),
                     IntlPhoneField(
+                      invalidNumberMessage: _enteredLength > 0
+                          ? 'Invalid Mobile Number                                   $_enteredLength/10'
+                          : 'Invalid Mobile Number',
                       style: const TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 16,
