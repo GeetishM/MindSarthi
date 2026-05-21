@@ -5,6 +5,7 @@ import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'journal_entry.dart';
 import 'journal_edit.dart';
 import 'journal_new.dart';
+import 'shadow_journal_screen.dart';
 import 'entry_dates.dart';
 import 'ai_service.dart';
 import 'journal_insights.dart';
@@ -498,6 +499,19 @@ class _JournalState extends State<Journal> {
                 MaterialPageRoute(builder: (_) => const JournalNew()),
               ),
               tooltip: 'Write Entry',
+            ),
+            Container(width: 1, height: 24, color: Colors.white24),
+            IconButton(
+              icon: const Icon(
+                CupertinoIcons.sparkles,
+                color: Colors.white,
+                size: 22,
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ShadowJournalScreen()),
+              ),
+              tooltip: 'Shadow Journaling',
             ),
             Container(width: 1, height: 24, color: Colors.white24),
             IconButton(

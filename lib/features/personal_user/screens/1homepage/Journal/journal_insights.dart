@@ -1,10 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'journal_entry.dart';
+import 'ai_service.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 
-class JournalInsightsScreen extends StatelessWidget {
+class JournalInsightsScreen extends StatefulWidget {
   const JournalInsightsScreen({super.key});
+
+  @override
+  State<JournalInsightsScreen> createState() => _JournalInsightsScreenState();
+}
+
+class _JournalInsightsScreenState extends State<JournalInsightsScreen> {
+  bool _isLoadingAnalysis = false;
+
+  Future<void> _generatePatternAnalysis(List<JournalEntry> entries) async {
+    setState(() {
+      _isLoadingAnalysis = true;
+    });
+
+    try {
+      final analysis = await JournalAIService.performRecursivePatternAnalysis(entries);
+      if (analysis != null) {
+        final box = Hive.box('journalSettings');
+        await box.put('pattern_analysis_text', analysis);
+        await box.put('pattern_analysis_timestamp', DateTime.now().toIso8601String());
+      }
+    } catch (e) {
+      debugPrint("Pattern analysis failed: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingAnalysis = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -287,11 +319,295 @@ class JournalInsightsScreen extends StatelessWidget {
                     );
                   },
                 ),
+
+                // ── Recursive Pattern Analysis ─────────────────────
+                _buildPatternAnalysisSection(
+                  context,
+                  analyzedEntries,
+                  primaryColor,
+                  surfaceColor,
+                  textPrimary,
+                  textSecondary,
+                  borderCol,
+                ),
               ],
             ),
           );
         },
       ),
     );
+  }
+
+  Widget _buildPatternAnalysisSection(
+    BuildContext context,
+    List<JournalEntry> entries,
+    Color primaryColor,
+    Color surfaceColor,
+    Color textPrimary,
+    Color textSecondary,
+    Color borderCol,
+  ) {
+    final settingsBox = Hive.box('journalSettings');
+    final cachedText = settingsBox.get('pattern_analysis_text') as String?;
+    final cachedTimestampStr = settingsBox.get('pattern_analysis_timestamp') as String?;
+    
+    DateTime? lastUpdated;
+    if (cachedTimestampStr != null) {
+      lastUpdated = DateTime.tryParse(cachedTimestampStr);
+    }
+
+    final hasEnoughEntries = entries.length >= 3;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Text(
+          "Recursive Pattern Analysis",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: surfaceColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderCol, width: 0.8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(CupertinoIcons.sparkles, color: primaryColor, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "MindSarthi Pattern Analyst",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                        ),
+                        if (lastUpdated != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2.0),
+                            child: Text(
+                              "Last updated: ${lastUpdated.day}/${lastUpdated.month}/${lastUpdated.year} ${lastUpdated.hour}:${lastUpdated.minute.toString().padLeft(2, '0')}",
+                              style: TextStyle(fontSize: 11, color: textSecondary),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (!hasEnoughEntries)
+                Text(
+                  "Not enough entries for pattern analysis yet. Write or reflect at least 3 journal entries so MindSarthi can analyze your weekly emotional and behavioral trends.",
+                  style: TextStyle(fontSize: 13.5, color: textSecondary, height: 1.4),
+                )
+              else if (_isLoadingAnalysis)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24.0),
+                    child: Column(
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 12),
+                        Text(
+                          "Analyzing historical journal patterns...",
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else if (cachedText != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MarkdownText(text: cachedText),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _generatePatternAnalysis(entries),
+                        icon: const Icon(CupertinoIcons.refresh, size: 16),
+                        label: const Text("Refresh Patterns Analysis"),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Reveal behavioral, emotional, and cognitive patterns across your past entries.",
+                      style: TextStyle(fontSize: 13.5, color: textSecondary, height: 1.4),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _generatePatternAnalysis(entries),
+                        icon: const Icon(CupertinoIcons.sparkles, size: 16),
+                        label: const Text("Run Patterns Analysis"),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class MarkdownText extends StatelessWidget {
+  final String text;
+
+  const MarkdownText({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = text.split('\n');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    final children = <Widget>[];
+
+    for (var line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) {
+        children.add(const SizedBox(height: 6));
+        continue;
+      }
+
+      if (trimmed.startsWith('### ')) {
+        children.add(Padding(
+          padding: const EdgeInsets.only(top: 14, bottom: 6),
+          child: Text(
+            trimmed.substring(4),
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.bold,
+              color: primaryColor,
+              letterSpacing: -0.2,
+            ),
+          ),
+        ));
+      } else if (trimmed.startsWith('## ')) {
+        children.add(Padding(
+          padding: const EdgeInsets.only(top: 18, bottom: 8),
+          child: Text(
+            trimmed.substring(3),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: primaryColor,
+              letterSpacing: -0.3,
+            ),
+          ),
+        ));
+      } else if (trimmed.startsWith('# ')) {
+        children.add(Padding(
+          padding: const EdgeInsets.only(top: 22, bottom: 10),
+          child: Text(
+            trimmed.substring(2),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: primaryColor,
+              letterSpacing: -0.4,
+            ),
+          ),
+        ));
+      } else if (trimmed.startsWith('- ')) {
+        children.add(Padding(
+          padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("• ", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+              Expanded(
+                child: RichText(
+                  text: _parseInlineStyles(trimmed.substring(2), textPrimary),
+                ),
+              ),
+            ],
+          ),
+        ));
+      } else {
+        children.add(Padding(
+          padding: const EdgeInsets.only(bottom: 6.0),
+          child: RichText(
+            text: _parseInlineStyles(trimmed, textPrimary),
+          ),
+        ));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    );
+  }
+
+  TextSpan _parseInlineStyles(String text, Color baseColor) {
+    final spans = <TextSpan>[];
+    final regExp = RegExp(r'\*\*(.*?)\*\*');
+    int start = 0;
+
+    for (var match in regExp.allMatches(text)) {
+      if (match.start > start) {
+        spans.add(TextSpan(
+          text: text.substring(start, match.start),
+          style: TextStyle(color: baseColor, fontSize: 13.5, height: 1.4),
+        ));
+      }
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: baseColor,
+          fontSize: 13.5,
+          height: 1.4,
+        ),
+      ));
+      start = match.end;
+    }
+
+    if (start < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(start),
+        style: TextStyle(color: baseColor, fontSize: 13.5, height: 1.4),
+      ));
+    }
+
+    return TextSpan(children: spans);
   }
 }
