@@ -51,6 +51,7 @@ void main() async {
   Hive.registerAdapter(TaskAdapter());
   await Hive.openBox<Task>('tasksBox');
   await Hive.openBox('mybox');
+  await Hive.openBox('notificationsBox');
 
   await Firebase.initializeApp();
   await NotificationService.initialize();

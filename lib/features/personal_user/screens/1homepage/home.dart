@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -63,6 +65,292 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     if (hour < 12) return 'Good Morning,';
     if (hour < 17) return 'Good Afternoon,';
     return 'Good Evening,';
+  }
+
+  String _formatTimeLabel(DateTime dt) {
+    final now = DateTime.now();
+    final difference = now.difference(dt);
+    
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else {
+      return '${dt.day}/${dt.month}';
+    }
+  }
+
+  void _showNotificationsBottomSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? AppColors.darkSurface2 : AppColors.white;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final borderCol = isDark ? AppColors.darkBorder : AppColors.border;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return ValueListenableBuilder(
+          valueListenable: Hive.box('notificationsBox').listenable(),
+          builder: (context, Box box, _) {
+            final list = box.values.toList().reversed.toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: BoxDecoration(
+                color: surfaceColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                border: Border.all(color: borderCol, width: 0.8),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  // Drag Handle
+                  Container(
+                    width: 36,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: borderCol,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Notifications',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: textPrimary,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        if (list.isNotEmpty)
+                          TextButton(
+                            onPressed: () async {
+                              for (var key in box.keys) {
+                                final item = Map<String, dynamic>.from(box.get(key));
+                                item['isRead'] = true;
+                                await box.put(key, item);
+                              }
+                            },
+                            child: const Text(
+                              'Mark all as read',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Divider(color: borderCol, height: 1),
+                  
+                  // List
+                  Expanded(
+                    child: list.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  CupertinoIcons.bell_slash,
+                                  size: 64,
+                                  color: textSecondary.withOpacity(0.3),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'All caught up!',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: textPrimary,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'You have no new notifications.',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(24),
+                            itemCount: list.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final item = Map<String, dynamic>.from(list[index] as Map);
+                              final bool isRead = item['isRead'] ?? false;
+                              final String id = item['id'] ?? '';
+                              final String title = item['title'] ?? '';
+                              final String body = item['body'] ?? '';
+                              final String timestampStr = item['timestamp'] ?? '';
+                              
+                              String timeLabel = '';
+                              if (timestampStr.isNotEmpty) {
+                                try {
+                                  final dt = DateTime.parse(timestampStr);
+                                  timeLabel = _formatTimeLabel(dt);
+                                } catch (_) {}
+                              }
+
+                              return Dismissible(
+                                key: Key(id),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 20),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: const Icon(
+                                    CupertinoIcons.trash,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                                onDismissed: (direction) async {
+                                  await box.delete(id);
+                                  AppToast.success(context, 'Notification dismissed');
+                                },
+                                child: GestureDetector(
+                                  onTap: () async {
+                                    if (!isRead) {
+                                      item['isRead'] = true;
+                                      await box.put(id, item);
+                                    }
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 150),
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: isRead 
+                                          ? (isDark ? AppColors.darkBackground : Colors.grey.shade50)
+                                          : (isDark ? AppColors.darkSurface : Colors.teal.shade50.withOpacity(0.3)),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: isRead 
+                                            ? borderCol 
+                                            : AppColors.primary.withOpacity(0.3),
+                                        width: isRead ? 0.8 : 1.2,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        if (!isRead)
+                                          Container(
+                                            margin: const EdgeInsets.only(top: 4, right: 8),
+                                            width: 8,
+                                            height: 8,
+                                            decoration: const BoxDecoration(
+                                              color: AppColors.primary,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      title,
+                                                      style: TextStyle(
+                                                        fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
+                                                        fontSize: 14,
+                                                        color: textPrimary,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    timeLabel,
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: textSecondary.withOpacity(0.7),
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                body,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: isRead ? textSecondary : textPrimary.withOpacity(0.9),
+                                                  height: 1.3,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  
+                  if (list.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(24, 8, 24, MediaQuery.of(context).padding.bottom + 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              side: BorderSide(color: AppColors.error.withOpacity(0.2)),
+                            ),
+                          ),
+                          onPressed: () async {
+                            await box.clear();
+                            AppToast.success(context, 'All notifications cleared');
+                          },
+                          icon: const Icon(CupertinoIcons.trash, size: 16),
+                          label: const Text(
+                            'Clear All',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _loadUserPreference() async {
@@ -1089,36 +1377,75 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
               const SizedBox(width: 16),
               hasData
-                  ? Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: isDark
-                              ? [AppColors.darkPrimary, AppColors.accent]
-                              : [AppColors.primary, AppColors.accent],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isDark ? AppColors.darkPrimary : AppColors.primary)
-                                .withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                  ? ValueListenableBuilder(
+                      valueListenable: Hive.box('notificationsBox').listenable(),
+                      builder: (context, Box box, _) {
+                        final int unreadCount = box.values
+                            .where((item) => (item as Map)['isRead'] == false)
+                            .length;
+
+                        return GestureDetector(
+                          onTap: () => _showNotificationsBottomSheet(),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDark ? AppColors.darkSurface2 : AppColors.surface,
+                                  border: Border.all(
+                                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    if (!isDark)
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(alpha: 0.05),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                  ],
+                                ),
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  CupertinoIcons.bell,
+                                  size: 22,
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                              if (unreadCount > 0)
+                                Positioned(
+                                  right: -2,
+                                  top: -2,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.error,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 18,
+                                      minHeight: 18,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '$unreadCount',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        firstLetter,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                        ),
-                      ),
+                        );
+                      },
                     )
                   : Shimmer.fromColors(
                       baseColor: isDark

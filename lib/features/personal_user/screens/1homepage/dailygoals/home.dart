@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/services/notification_service.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/analytics_helper.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/database.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/progress_card.dart';
@@ -44,10 +45,24 @@ class _TodaysGoalsState extends State<TodaysGoals> {
 
   // Checkbox tapped
   void _checkboxChanged(Task task) {
+    final bool wasCompleted = task.isCompleted;
     setState(() {
       task.isCompleted = !task.isCompleted;
     });
     db.updateDataBase();
+
+    // Check if the task was newly marked as completed
+    if (!wasCompleted && task.isCompleted) {
+      final todayTasks = db.toDoList.where((t) => AnalyticsHelper.isSameDay(t.date, DateTime.now())).toList();
+      if (todayTasks.isNotEmpty && todayTasks.every((t) => t.isCompleted)) {
+        final completedDays = _getCompletedDays();
+        final streakModel = StreakModel(completedDays: completedDays);
+        final streakVal = streakModel.currentStreak;
+        if (streakVal > 0) {
+          NotificationService.showStreakCelebration(streakVal);
+        }
+      }
+    }
   }
 
   // Delete task
