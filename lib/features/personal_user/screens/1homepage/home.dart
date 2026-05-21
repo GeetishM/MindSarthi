@@ -1670,10 +1670,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildReliefSection(double screenWidth, bool isDark) {
-    return Padding(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _PremiumReliefCard(
             icon: Icons.water_drop_rounded,
@@ -1683,6 +1683,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             tintColor: AppColors.primary,
             isDark: isDark,
           ),
+          const SizedBox(width: 12),
           _PremiumReliefCard(
             icon: Icons.nights_stay_rounded,
             label: 'Depression\nSupport',
@@ -1691,12 +1692,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             tintColor: Colors.indigoAccent,
             isDark: isDark,
           ),
+          const SizedBox(width: 12),
           _PremiumReliefCard(
             icon: Icons.healing_rounded,
             label: 'Self Harm\nIdeation',
             routeName: '/selfharm',
             screenWidth: screenWidth,
             tintColor: Colors.teal,
+            isDark: isDark,
+          ),
+          const SizedBox(width: 12),
+          _PremiumReliefCard(
+            icon: CupertinoIcons.infinite,
+            label: 'Autism\n& ADHD',
+            routeName: '/autismadhd',
+            screenWidth: screenWidth,
+            tintColor: Colors.blueAccent,
             isDark: isDark,
           ),
         ],
@@ -1735,6 +1746,8 @@ class _PremiumReliefCardState extends State<_PremiumReliefCard> {
         return [AppColors.darkSurface, const Color(0xFF102725)];
       } else if (widget.routeName == '/depression') {
         return [AppColors.darkSurface, const Color(0xFF151930)];
+      } else if (widget.routeName == '/autismadhd') {
+        return [AppColors.darkSurface, const Color(0xFF102130)];
       } else {
         return [AppColors.darkSurface, const Color(0xFF2B1914)];
       }
@@ -1743,6 +1756,8 @@ class _PremiumReliefCardState extends State<_PremiumReliefCard> {
         return [Colors.white, const Color(0xFFE8F6F4)];
       } else if (widget.routeName == '/depression') {
         return [Colors.white, const Color(0xFFEEF0FC)];
+      } else if (widget.routeName == '/autismadhd') {
+        return [Colors.white, const Color(0xFFEBF3FC)];
       } else {
         return [Colors.white, const Color(0xFFFFF2EE)];
       }
@@ -1765,7 +1780,7 @@ class _PremiumReliefCardState extends State<_PremiumReliefCard> {
         duration: const Duration(milliseconds: 150),
         curve: Curves.easeOutBack,
         child: Container(
-          width: (widget.screenWidth - 72) / 3,
+          width: (widget.screenWidth - 60) / 3.3,
           height: 135,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(

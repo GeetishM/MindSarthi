@@ -5,6 +5,7 @@ import 'package:mindsarthi/features/organizational_user/screens/org_nav.dart';
 import 'package:mindsarthi/features/personal_user/auth/personal_auth.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Journal/journal.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/anxity_panic.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/autism_adhd.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/depression.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Resources/selfharm.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/home.dart';
@@ -23,6 +24,7 @@ class AppRouter {
       '/organizationalauth': (context) => const OrganizationalAuth(),
 
       '/anxietypanic': (context) => const Anxity(),
+      '/autismadhd': (context) => const AutismAdhdScreen(),
       '/depression': (context) => const Depression(),
       '/selfharm': (context) => const SelfHarm(),
       '/journal': (context) => const Journal(),

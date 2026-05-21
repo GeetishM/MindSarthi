@@ -75,6 +75,7 @@ dependencies:
   timezone: ^0.10.1
   webview_flutter: ^4.13.0
   webview_flutter_android: ^4.7.0
+  webview_flutter_wkwebview: ^3.22.0
   rive: ^0.13.0
   flutter_local_notifications: ^18.0.1
   
