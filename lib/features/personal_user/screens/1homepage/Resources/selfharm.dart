@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/widgets/app_dialog.dart';
+
 
 class SelfHarm extends StatefulWidget {
   const SelfHarm({super.key});
@@ -89,21 +91,12 @@ class _SelfHarmState extends State<SelfHarm> {
   }
 
   void _showSafetySuccessDialog() {
-    showDialog(
+    MindSarthiDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Wonderful Job ❤️'),
-        content: const Text(
-          'You completed the 15-minute challenge. By pausing and delaying, you have taken a powerful step in keeping yourself safe. Be proud of yourself.'
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+      title: 'Wonderful Job ❤️',
+      content: 'You completed the 15-minute challenge. By pausing and delaying, you have taken a powerful step in keeping yourself safe. Be proud of yourself.',
+      confirmText: 'Close',
+      cancelText: 'Cancel',
     );
   }
 

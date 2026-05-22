@@ -7,6 +7,7 @@ import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/screen/cha
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/widgets/bottom_chat_field.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/widgets/chat_messages.dart';
 import 'package:provider/provider.dart';
+import 'package:mindsarthi/core/widgets/app_dialog.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -104,34 +105,22 @@ class _ChatScreenState extends State<ChatScreen> {
             actions: [
               CupertinoButton(
                 padding: EdgeInsets.zero,
-                onPressed: () {
-                  showCupertinoDialog(
+                onPressed: () async {
+                  final confirm = await MindSarthiDialog.show(
                     context: context,
-                    builder: (context) => CupertinoAlertDialog(
-                      title: const Text('Start New Chat'),
-                      content: const Text('Are you sure you want to start a new chat?'),
-                      actions: [
-                        CupertinoDialogAction(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                        CupertinoDialogAction(
-                          isDestructiveAction: true,
-                          onPressed: () async {
-                            final chatProvider = context.read<ChatProvider>();
-                            await chatProvider.prepareChatRoom(
-                              isNewChat: true,
-                              chatID: '',
-                            );
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                            }
-                          },
-                          child: const Text('Start'),
-                        ),
-                      ],
-                    ),
+                    title: 'Start New Chat?',
+                    content: 'Are you sure you want to start a new chat?',
+                    confirmText: 'Yes, Start',
+                    cancelText: 'Cancel',
+                    isDestructive: false,
                   );
+                  if (confirm == true) {
+                    final chatProvider = context.read<ChatProvider>();
+                    await chatProvider.prepareChatRoom(
+                      isNewChat: true,
+                      chatID: '',
+                    );
+                  }
                 },
                 child: Icon(
                   CupertinoIcons.plus,

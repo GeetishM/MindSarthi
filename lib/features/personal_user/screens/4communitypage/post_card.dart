@@ -7,6 +7,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
+import 'package:mindsarthi/core/widgets/app_dialog.dart';
+import 'package:mindsarthi/core/widgets/animated_action_menu.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/comment_input_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/report_dialog.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/hidden_posts_manager.dart';
@@ -92,24 +94,13 @@ class _PostCardState extends State<PostCard>
         'likedBy': FieldValue.arrayUnion([currentUid]),
       });
     } else {
-      final confirm = await showCupertinoDialog<bool>(
+      final confirm = await MindSarthiDialog.show(
         context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text("Unlike post?"),
-              content: const Text("Are you sure you want to unlike this post?"),
-              actions: [
-                CupertinoDialogAction(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text("Cancel"),
-                ),
-                CupertinoDialogAction(
-                  isDestructiveAction: true,
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text("Unlike"),
-                ),
-              ],
-            ),
+        title: "Unlike post?",
+        content: "Are you sure you want to unlike this post?",
+        confirmText: "Yes, Unlike",
+        cancelText: "Cancel",
+        isDestructive: true,
       );
 
       if (confirm ?? false) {
@@ -163,23 +154,13 @@ class _PostCardState extends State<PostCard>
               isDestructiveAction: true,
               onPressed: () async {
                 Navigator.pop(context);
-                final confirm = await showCupertinoDialog<bool>(
+                final confirm = await MindSarthiDialog.show(
                   context: context,
-                  builder: (context) => CupertinoAlertDialog(
-                    title: const Text('Delete Post?'),
-                    content: const Text('Are you sure you want to delete this post? This action cannot be undone.'),
-                    actions: [
-                      CupertinoDialogAction(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      CupertinoDialogAction(
-                        isDestructiveAction: true,
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
+                  title: 'Delete Post?',
+                  content: 'Are you sure you want to delete this post? This action cannot be undone.',
+                  confirmText: 'Yes, Delete',
+                  cancelText: 'Cancel',
+                  isDestructive: true,
                 );
                 if (confirm == true) {
                   final postData = Map<String, dynamic>.from(data);
@@ -211,23 +192,13 @@ class _PostCardState extends State<PostCard>
               isDestructiveAction: true,
               onPressed: () async {
                 Navigator.pop(context);
-                final confirm = await showCupertinoDialog<bool>(
+                final confirm = await MindSarthiDialog.show(
                   context: context,
-                  builder: (context) => CupertinoAlertDialog(
-                    title: const Text('Delete Post (Moderator)?'),
-                    content: const Text('Are you sure you want to delete this post as a moderator? This action cannot be undone.'),
-                    actions: [
-                      CupertinoDialogAction(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      CupertinoDialogAction(
-                        isDestructiveAction: true,
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
+                  title: 'Delete Post (Moderator)?',
+                  content: 'Are you sure you want to delete this post as a moderator? This action cannot be undone.',
+                  confirmText: 'Yes, Delete',
+                  cancelText: 'Cancel',
+                  isDestructive: true,
                 );
                 if (confirm == true) {
                   final postData = Map<String, dynamic>.from(data);
@@ -604,76 +575,106 @@ class _PostCardState extends State<PostCard>
                 ),
               ],
 
-              // Save/Bookmark button (only for non-anonymous posts)
-              if (!isAnonymous) ...[
-                const SizedBox(width: 20),
-                StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(currentUid)
-                      .collection('saved_posts')
-                      .doc(widget.post.id)
-                      .snapshots(),
-                  builder: (context, savedSnapshot) {
-                    final isSaved = savedSnapshot.data?.exists ?? false;
-                    return GestureDetector(
+              // Save/Bookmark and Share actions
+              if (isAnonymous) ...[
+                const Spacer(),
+                GestureDetector(
+                  onTap: () async {
+                    final textToShare = 'Anonymous Post: "${data['content']}"\nShared via MindSarthi';
+                    try {
+                      await Share.share(textToShare);
+                    } catch (e) {
+                      await Clipboard.setData(ClipboardData(text: textToShare));
+                      if (context.mounted) {
+                        AppToast.success(
+                          context,
+                          'Link copied to clipboard!',
+                          description: 'Sharing fallback: Copied description to clipboard.',
+                        );
+                      }
+                    }
+                  },
+                  child: Icon(
+                    CupertinoIcons.share,
+                    color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                    size: 22,
+                  ),
+                ),
+              ] else ...[
+                const Spacer(),
+                AnimatedActionMenu(
+                  children: [
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(currentUid)
+                          .collection('saved_posts')
+                          .doc(widget.post.id)
+                          .snapshots(),
+                      builder: (context, savedSnapshot) {
+                        final isSaved = savedSnapshot.data?.exists ?? false;
+                        return GestureDetector(
+                          onTap: () async {
+                            final savedRef = FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(currentUid)
+                                .collection('saved_posts')
+                                .doc(widget.post.id);
+                            if (isSaved) {
+                              await savedRef.delete();
+                              if (context.mounted) {
+                                AppToast.success(context, 'Removed from Saved');
+                              }
+                            } else {
+                              await savedRef.set({
+                                'savedAt': FieldValue.serverTimestamp(),
+                              });
+                              if (context.mounted) {
+                                AppToast.success(context, 'Saved post');
+                              }
+                            }
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Icon(
+                              isSaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark,
+                              color: isSaved 
+                                  ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+                                  : (isDark ? AppColors.darkTextHint : AppColors.textHint),
+                              size: 22,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    GestureDetector(
                       onTap: () async {
-                        final savedRef = FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(currentUid)
-                            .collection('saved_posts')
-                            .doc(widget.post.id);
-                        if (isSaved) {
-                          await savedRef.delete();
+                        final textToShare = 'Post by @${data['username'] ?? 'User'}: "${data['content']}"\nShared via MindSarthi';
+                        try {
+                          await Share.share(textToShare);
+                        } catch (e) {
+                          await Clipboard.setData(ClipboardData(text: textToShare));
                           if (context.mounted) {
-                            AppToast.success(context, 'Removed from Saved');
-                          }
-                        } else {
-                          await savedRef.set({
-                            'savedAt': FieldValue.serverTimestamp(),
-                          });
-                          if (context.mounted) {
-                            AppToast.success(context, 'Saved post');
+                            AppToast.success(
+                              context,
+                              'Link copied to clipboard!',
+                              description: 'Sharing fallback: Copied description to clipboard.',
+                            );
                           }
                         }
                       },
-                      child: Icon(
-                        isSaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark,
-                        color: isSaved 
-                            ? (isDark ? AppColors.darkPrimary : AppColors.primary)
-                            : (isDark ? AppColors.darkTextHint : AppColors.textHint),
-                        size: 22,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Icon(
+                          CupertinoIcons.share,
+                          color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                          size: 22,
+                        ),
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ],
-
-              const Spacer(),
-              GestureDetector(
-                onTap: () async {
-                  final textToShare = isAnonymous
-                      ? 'Anonymous Post: "${data['content']}"\nShared via MindSarthi'
-                      : 'Post by @${data['username'] ?? 'User'}: "${data['content']}"\nShared via MindSarthi';
-                  try {
-                    await Share.share(textToShare);
-                  } catch (e) {
-                    await Clipboard.setData(ClipboardData(text: textToShare));
-                    if (context.mounted) {
-                      AppToast.success(
-                        context,
-                        'Link copied to clipboard!',
-                        description: 'Sharing fallback: Copied description to clipboard.',
-                      );
-                    }
-                  }
-                },
-                child: Icon(
-                  CupertinoIcons.share,
-                  color: isDark ? AppColors.darkTextHint : AppColors.textHint,
-                  size: 22,
-                ),
-              ),
             ],
           ),
 

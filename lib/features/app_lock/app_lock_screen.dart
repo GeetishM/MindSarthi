@@ -10,6 +10,8 @@ import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_storage.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:mindsarthi/core/widgets/app_dialog.dart';
+
 
 class AppLockScreen extends StatefulWidget {
   final VoidCallback onSuccess;
@@ -178,43 +180,33 @@ class _AppLockScreenState extends State<AppLockScreen> with TickerProviderStateM
     }
   }
 
-  void _handleForgotPasscode() {
-    showCupertinoDialog(
+  void _handleForgotPasscode() async {
+    final result = await MindSarthiDialog.show(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Reset Passcode?'),
-        content: const Text(
-            'To reset your passcode, you must sign out of your current session and log in again with your password.'),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () async {
-              Navigator.pop(context); // Pop dialog
-              try {
-                await FirebaseAuth.instance.signOut();
-                await AppLockStorage.clearAll();
-                if (mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                    (route) => false,
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  AppToast.error(context, 'Sign out failed', description: e.toString());
-                }
-              }
-            },
-            child: const Text('Sign Out & Reset'),
-          ),
-        ],
-      ),
+      title: 'Reset Passcode?',
+      content: 'To reset your passcode, you must sign out of your current session and log in again with your password.',
+      confirmText: 'Sign Out & Reset',
+      cancelText: 'Cancel',
+      isDestructive: true,
     );
+
+    if (result == true && mounted) {
+      try {
+        await FirebaseAuth.instance.signOut();
+        await AppLockStorage.clearAll();
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          AppToast.error(context, 'Sign out failed', description: e.toString());
+        }
+      }
+    }
   }
 
   @override

@@ -8,6 +8,7 @@ import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/widgets/chat_history_widget.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/widgets/empty_history_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:mindsarthi/core/widgets/app_dialog.dart';
 
 class ChatHistoryScreen extends StatefulWidget {
   const ChatHistoryScreen({super.key});
@@ -67,24 +68,13 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
                 key: Key(chat.chatId),
                 direction: DismissDirection.endToStart,
                 confirmDismiss: (direction) async {
-                  return await showCupertinoDialog<bool>(
+                  return await MindSarthiDialog.show(
                     context: context,
-                    builder: (context) => CupertinoAlertDialog(
-                      title: const Text('Delete Chat'),
-                      content: const Text(
-                          'Are you sure you want to permanently delete this chat history?'),
-                      actions: [
-                        CupertinoDialogAction(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        CupertinoDialogAction(
-                          isDestructiveAction: true,
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Delete'),
-                        ),
-                      ],
-                    ),
+                    title: 'Delete Chat?',
+                    content: 'Are you sure you want to permanently delete this chat history?',
+                    confirmText: 'Yes, Delete',
+                    cancelText: 'Cancel',
+                    isDestructive: true,
                   );
                 },
                 onDismissed: (direction) async {

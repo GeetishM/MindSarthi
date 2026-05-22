@@ -5,6 +5,8 @@ import 'package:hive/hive.dart';
 import 'journal_entry.dart';
 import 'ai_service.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/widgets/app_dialog.dart';
+
 
 class ShadowJournalScreen extends StatefulWidget {
   const ShadowJournalScreen({super.key});
@@ -240,25 +242,15 @@ class _ShadowJournalScreenState extends State<ShadowJournalScreen> {
     final hasUserMessage = _chatHistory.any((m) => m['role'] == 'user');
     if (!hasUserMessage) return true;
 
-    final discard = await showDialog<bool>(
+    final discard = await MindSarthiDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Exit reflection?"),
-        content: const Text("Your current Shadow Journaling session will be discarded. Do you want to exit?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Stay"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text("Discard"),
-          ),
-        ],
-      ),
+      title: "Exit reflection?",
+      content: "Your current Shadow Journaling session will be discarded. Do you want to exit?",
+      confirmText: "Discard",
+      cancelText: "Stay",
+      isDestructive: true,
     );
-    return discard ?? false;
+    return discard == true;
   }
 
   @override

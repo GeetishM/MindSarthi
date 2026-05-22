@@ -8,6 +8,8 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'journal_entry.dart';
 import 'ai_service.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/widgets/app_dialog.dart';
+
 
 class JournalEdit extends StatefulWidget {
   final JournalEntry entry;
@@ -84,29 +86,18 @@ class _JournalEditState extends State<JournalEdit> {
     Navigator.pop(context);
   }
 
-  void _confirmDelete() {
-    showDialog(
+  void _confirmDelete() async {
+    final result = await MindSarthiDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Entry'),
-        content: const Text(
-          'Are you sure you want to delete this journal entry?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _deleteEntryWithUndo();
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      title: 'Delete Entry?',
+      content: 'Are you sure you want to delete this journal entry?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      isDestructive: true,
     );
+    if (result == true) {
+      _deleteEntryWithUndo();
+    }
   }
 
   void _deleteEntryWithUndo() async {
@@ -521,27 +512,20 @@ class _JournalEditState extends State<JournalEdit> {
           );
           return false;
         } else if (_hasUnsavedChanges) {
-          final shouldExit = await showDialog<bool>(
+          final result = await MindSarthiDialog.show(
             context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Unsaved Changes'),
-              content: const Text('Do you want to save before exiting?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('No'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    _save();
-                    Navigator.pop(context, true);
-                  },
-                  child: const Text('Yes'),
-                ),
-              ],
-            ),
+            title: 'Unsaved Changes',
+            content: 'Do you want to save your changes before exiting?',
+            confirmText: 'Save & Exit',
+            cancelText: 'Discard & Exit',
           );
-          return shouldExit ?? false;
+          if (result == true) {
+            _save();
+            return false; // Already popped by _save()
+          } else if (result == false) {
+            return true; // Exit without saving
+          }
+          return false; // Backdrop tapped, stay in editor
         }
         return true;
       },

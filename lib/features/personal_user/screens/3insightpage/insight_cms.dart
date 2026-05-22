@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/widgets/app_dialog.dart';
 import 'insight_data.dart';
 
 class InsightCmsPage extends StatefulWidget {
@@ -128,18 +129,12 @@ class _InsightCmsPageState extends State<InsightCmsPage> {
                 final content = contentController.text.trim();
 
                 if (heading.isEmpty || content.isEmpty || author.isEmpty) {
-                  showCupertinoDialog(
+                  MindSarthiDialog.show(
                     context: context,
-                    builder: (ctx) => CupertinoAlertDialog(
-                      title: const Text('Validation Error'),
-                      content: const Text('Title, Author, and Content cannot be empty.'),
-                      actions: [
-                        CupertinoDialogAction(
-                          child: const Text('OK'),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
+                    title: 'Validation Error',
+                    content: 'Title, Author, and Content cannot be empty.',
+                    confirmText: 'OK',
+                    cancelText: 'Cancel',
                   );
                   return;
                 }
@@ -172,21 +167,13 @@ class _InsightCmsPageState extends State<InsightCmsPage> {
                     );
                   }
                 } catch (e) {
-                  if (context.mounted) {
-                    showCupertinoDialog(
+                    MindSarthiDialog.show(
                       context: context,
-                      builder: (ctx) => CupertinoAlertDialog(
-                        title: const Text('Error'),
-                        content: Text('Failed to save: $e'),
-                        actions: [
-                          CupertinoDialogAction(
-                            child: const Text('OK'),
-                            onPressed: () => Navigator.pop(ctx),
-                          ),
-                        ],
-                      ),
+                      title: 'Error',
+                      content: 'Failed to save: $e',
+                      confirmText: 'OK',
+                      cancelText: 'Cancel',
                     );
-                  }
                 }
               },
               child: const Text('Save'),
@@ -197,55 +184,38 @@ class _InsightCmsPageState extends State<InsightCmsPage> {
     );
   }
 
-  void _confirmDelete(String id) {
-    showCupertinoModalPopup(
+  void _confirmDelete(String id) async {
+    final confirm = await MindSarthiDialog.show(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('Delete Insight'),
-        message: const Text('Are you sure you want to permanently delete this insight? This action cannot be undone.'),
-        actions: [
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () async {
-              try {
-                await Insight.deleteInsight(id);
-                if (context.mounted) {
-                  Navigator.pop(context); // Close Action Sheet
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Insight deleted successfully!'),
-                      backgroundColor: AppColors.success,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  showCupertinoDialog(
-                    context: context,
-                    builder: (ctx) => CupertinoAlertDialog(
-                      title: const Text('Error'),
-                      content: Text('Failed to delete: $e'),
-                      actions: [
-                        CupertinoDialogAction(
-                          child: const Text('OK'),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          child: const Text('Cancel'),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      title: 'Delete Insight?',
+      content: 'Are you sure you want to permanently delete this insight? This action cannot be undone.',
+      confirmText: 'Yes, Delete',
+      cancelText: 'Cancel',
+      isDestructive: true,
     );
+    if (confirm == true) {
+      try {
+        await Insight.deleteInsight(id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Insight deleted successfully!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          await MindSarthiDialog.show(
+            context: context,
+            title: 'Error',
+            content: 'Failed to delete: $e',
+            confirmText: 'OK',
+            cancelText: 'Cancel',
+          );
+        }
+      }
+    }
   }
 
   @override

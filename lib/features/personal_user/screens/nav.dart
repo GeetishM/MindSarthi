@@ -25,6 +25,7 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:mindsarthi/core/widgets/premium_showcase.dart';
+import 'package:mindsarthi/core/widgets/app_dialog.dart';
 
 class NavBar extends StatefulWidget {
   const NavBar({super.key});
@@ -178,61 +179,41 @@ class _NavBarState extends State<NavBar> {
     );
   }
 
-  void _handleLogout(BuildContext context) {
-    showCupertinoDialog(
+  void _handleLogout(BuildContext context) async {
+    final confirm = await MindSarthiDialog.show(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out of MindSarthi?'),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () async {
-              Navigator.pop(context); // Pop dialog
-              try {
-                await FirebaseAuth.instance.signOut();
-                if (context.mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                    (route) => false,
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  AppToast.error(context, 'Sign out failed', description: e.toString());
-                }
-              }
-            },
-            child: const Text('Sign Out'),
-          ),
-        ],
-      ),
+      title: 'Sign Out?',
+      content: 'Are you sure you want to sign out of MindSarthi?',
+      confirmText: 'Sign Out',
+      cancelText: 'Cancel',
+      isDestructive: true,
     );
+    if (confirm == true) {
+      try {
+        await FirebaseAuth.instance.signOut();
+        if (context.mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          AppToast.error(context, 'Sign out failed', description: e.toString());
+        }
+      }
+    }
   }
 
   Future<void> _deleteChat(BuildContext context, ChatHistory chat) async {
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await MindSarthiDialog.show(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Delete Chat'),
-        content: const Text('Are you sure you want to permanently delete this chat history?'),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete Chat?',
+      content: 'Are you sure you want to permanently delete this chat history?',
+      confirmText: 'Yes, Delete',
+      cancelText: 'Cancel',
+      isDestructive: true,
     );
 
     if (confirmed == true) {

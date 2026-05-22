@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:mindsarthi/core/widgets/app_dialog.dart';
 
 void showMyAnimatedDialog({
   required BuildContext context,
@@ -6,33 +7,20 @@ void showMyAnimatedDialog({
   required String content,
   required String actionText,
   required Function(bool) onActionPressed,
-}) {
-  showCupertinoDialog(
+}) async {
+  final isDestructive = actionText.toLowerCase().contains('delete') ||
+      actionText.toLowerCase().contains('remove') ||
+      actionText.toLowerCase().contains('clear');
+      
+  final result = await MindSarthiDialog.show(
     context: context,
-    builder: (context) => CupertinoAlertDialog(
-      title: Text(title),
-      content: Padding(
-        padding: const EdgeInsets.only(top: 8.0),
-        child: Text(content),
-      ),
-      actions: [
-        CupertinoDialogAction(
-          onPressed: () {
-            onActionPressed(false);
-            Navigator.of(context).pop();
-          },
-          child: const Text('Cancel'),
-        ),
-        CupertinoDialogAction(
-          isDestructiveAction: actionText.toLowerCase() == 'delete',
-          onPressed: () {
-            onActionPressed(true);
-            Navigator.of(context).pop();
-          },
-          child: Text(actionText),
-        ),
-      ],
-    ),
+    title: title,
+    content: content,
+    confirmText: actionText,
+    cancelText: 'Cancel',
+    isDestructive: isDestructive,
   );
+  onActionPressed(result == true);
 }
+
 

@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/widgets/app_dialog.dart';
+
 
 class AutismAdhdScreen extends StatefulWidget {
   const AutismAdhdScreen({super.key});
@@ -214,36 +216,15 @@ class _AutismAdhdScreenState extends State<AutismAdhdScreen> with SingleTickerPr
   }
 
   void _showSensoryInfoDialog(BuildContext context, bool isDark) {
-    showDialog(
+    MindSarthiDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(CupertinoIcons.sparkles, color: isDark ? AppColors.darkPrimary : AppColors.primary),
-            const SizedBox(width: 8),
-            const Text('Sensory relief tools'),
-          ],
-        ),
-        content: Text(
-          'These tools are designed to support individuals with Autism, ADHD, or sensory processing differences during overload.\n\n'
+      title: 'Sensory Relief Tools',
+      content: 'These tools are designed to support individuals with Autism, ADHD, or sensory processing differences during overload.\n\n'
           '• Fidget Pop: Interactive tactile simulation to channel stimming urges.\n'
           '• Color Wash: Calm, changing light display to relax hyper-arousal.\n'
           '• Checklist: Cognitive scaffolding during moments of overwhelm.',
-          style: TextStyle(
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-            fontSize: 14,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('I Understand'),
-          ),
-        ],
-      ),
+      confirmText: 'I Understand',
+      cancelText: 'Cancel',
     );
   }
 }

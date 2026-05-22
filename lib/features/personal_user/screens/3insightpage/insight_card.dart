@@ -7,6 +7,9 @@ import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
 import 'package:share_plus/share_plus.dart';
 
 
+import 'package:mindsarthi/core/widgets/animated_action_menu.dart';
+
+
 class InsightCard extends StatefulWidget {
   final String heading;
   final String content;
@@ -153,8 +156,21 @@ class _InsightCardState extends State<InsightCard> {
                     color: isDark ? AppColors.darkTextHint : AppColors.textHint,
                   ),
                 ),
-                Row(
+                AnimatedActionMenu(
                   children: [
+                    GestureDetector(
+                      onTap: widget.onBookmarkToggle,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Icon(
+                          widget.isBookmarked ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark,
+                          color: widget.isBookmarked 
+                              ? (isDark ? AppColors.darkPrimary : AppColors.primary) 
+                              : (isDark ? AppColors.darkTextHint : AppColors.textHint),
+                          size: 20,
+                        ),
+                      ),
+                    ),
                     GestureDetector(
                       onTap: () async {
                         final shareText = 'Read this insightful article: "${widget.heading}" by ${widget.author} on MindSarthi!';
@@ -171,45 +187,12 @@ class _InsightCardState extends State<InsightCard> {
                           }
                         }
                       },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDark ? AppColors.darkBorder : AppColors.border,
-                            width: 1.2,
-                          ),
-                        ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
                         child: Icon(
                           CupertinoIcons.share,
                           color: isDark ? AppColors.darkTextHint : AppColors.textHint,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: widget.onBookmarkToggle,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: widget.isBookmarked 
-                              ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight) 
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: widget.isBookmarked
-                                ? Colors.transparent
-                                : (isDark ? AppColors.darkBorder : AppColors.border),
-                            width: 1.2,
-                          ),
-                        ),
-                        child: Icon(
-                          widget.isBookmarked ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark,
-                          color: widget.isBookmarked 
-                              ? (isDark ? AppColors.darkPrimary : AppColors.primary) 
-                              : (isDark ? AppColors.darkTextHint : AppColors.textHint),
-                          size: 18,
+                          size: 20,
                         ),
                       ),
                     ),
