@@ -210,7 +210,7 @@ class _InsightPageState extends State<InsightPage> {
                               ),
                             )
                           : ListView.builder(
-                              padding: const EdgeInsets.only(bottom: 24),
+                              padding: const EdgeInsets.only(bottom: 110),
                               itemCount: filtered.length,
                               itemBuilder: (context, index) {
                                 final insight = filtered[index];
@@ -296,6 +296,7 @@ class _InsightPageState extends State<InsightPage> {
         isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight;
 
     return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 110),
       itemCount: 4,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(

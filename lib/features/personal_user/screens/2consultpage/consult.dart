@@ -584,7 +584,7 @@ class _ConsultPageState extends State<ConsultPage> {
                     ),
 
                   const SliverToBoxAdapter(
-                    child: SizedBox(height: 40),
+                    child: SizedBox(height: 110),
                   ),
                 ],
               );
