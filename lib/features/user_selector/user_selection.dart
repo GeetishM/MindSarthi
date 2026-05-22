@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/theme/theme_provider.dart';
+import 'package:mindsarthi/core/widgets/premium_showcase.dart';
 import 'package:provider/provider.dart';
 import 'package:showcaseview/showcaseview.dart';
 
@@ -182,23 +183,14 @@ class _UserSelectionState extends State<UserSelection>
                     Expanded(
                       child: ListView(
                         children: [
-                          Showcase(
-                            key: _personalKey,
+                          PremiumShowcase(
+                            showcaseKey: _personalKey,
                             title: 'Personal User',
                             description: 'Select this if you want to use the app for yourself to build healthier habits & access everyday wellness tools.',
                             targetShapeBorder: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                             tooltipBackgroundColor: AppColors.primary,
-                            titleTextStyle: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                            descTextStyle: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ),
                             child: _RoleCard(
                               title: 'Personal User',
                               subtitle: "I'm here for myself",
@@ -213,23 +205,14 @@ class _UserSelectionState extends State<UserSelection>
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Showcase(
-                            key: _professionalKey,
+                          PremiumShowcase(
+                            showcaseKey: _professionalKey,
                             title: 'Professional User',
                             description: 'Select this if you are a mental health practitioner looking to manage clients and share guidance.',
                             targetShapeBorder: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                             tooltipBackgroundColor: const Color(0xFF5C6BC0),
-                            titleTextStyle: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                            descTextStyle: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ),
                             child: _RoleCard(
                               title: 'Professional User',
                               subtitle: "I'm a Mental Health Professional",
@@ -244,23 +227,14 @@ class _UserSelectionState extends State<UserSelection>
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Showcase(
-                            key: _organizationalKey,
+                          PremiumShowcase(
+                            showcaseKey: _organizationalKey,
                             title: 'Organizational User',
                             description: 'Select this if you are part of a company or organization seeking wellness programs for your team.',
                             targetShapeBorder: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                             tooltipBackgroundColor: AppColors.accent,
-                            titleTextStyle: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                            descTextStyle: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ),
                             child: _RoleCard(
                               title: 'Organizational User',
                               subtitle: "I'm part of an Organization",
@@ -280,23 +254,14 @@ class _UserSelectionState extends State<UserSelection>
                     ),
 
                     // ── Continue button — color tracks selected role ──
-                    Showcase(
-                      key: _continueKey,
+                    PremiumShowcase(
+                      showcaseKey: _continueKey,
                       title: 'Proceed & Continue',
                       description: 'Tap this button after choosing a role to complete your signup or sign in process.',
                       targetShapeBorder: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                       tooltipBackgroundColor: AppColors.primary,
-                      titleTextStyle: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      descTextStyle: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                      ),
                       child: SizedBox(
                         width: double.infinity,
                         height: 54,

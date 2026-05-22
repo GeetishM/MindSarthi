@@ -24,6 +24,7 @@ import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:showcaseview/showcaseview.dart';
+import 'package:mindsarthi/core/widgets/premium_showcase.dart';
 
 class NavBar extends StatefulWidget {
   const NavBar({super.key});
@@ -406,22 +407,12 @@ class _NavBarState extends State<NavBar> {
         translatedLabel = item.label;
     }
 
-    return Showcase(
-      key: _getTabKey(index),
+    return PremiumShowcase(
+      showcaseKey: _getTabKey(index),
       title: _getTabTitle(index),
       description: _getTabDesc(index),
       targetShapeBorder: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-      ),
-      tooltipBackgroundColor: AppColors.primary,
-      titleTextStyle: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-        fontSize: 16,
-      ),
-      descTextStyle: const TextStyle(
-        color: Colors.white,
-        fontSize: 13,
       ),
       child: GestureDetector(
         onTap: () => setState(() => _currentIndex = index),
@@ -528,6 +519,9 @@ class _NavBarState extends State<NavBar> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       tooltipBackgroundColor: AppColors.primary,
+                      tooltipBorderRadius: BorderRadius.circular(16),
+                      tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      showArrow: true,
                       titleTextStyle: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -598,6 +592,9 @@ class _NavBarState extends State<NavBar> {
               borderRadius: BorderRadius.circular(10),
             ),
             tooltipBackgroundColor: AppColors.primary,
+            tooltipBorderRadius: BorderRadius.circular(16),
+            tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            showArrow: true,
             titleTextStyle: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -742,6 +739,9 @@ class _NavBarState extends State<NavBar> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   tooltipBackgroundColor: AppColors.primary,
+                  tooltipBorderRadius: BorderRadius.circular(16),
+                  tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  showArrow: true,
                   titleTextStyle: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -858,6 +858,9 @@ class _NavBarState extends State<NavBar> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     tooltipBackgroundColor: AppColors.primary,
+                    tooltipBorderRadius: BorderRadius.circular(16),
+                    tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    showArrow: true,
                     titleTextStyle: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

@@ -1337,6 +1337,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       description: 'Tap here to open the menu where you can access your profile, configure App Lock, change theme, and sign out.',
                       targetShapeBorder: const CircleBorder(),
                       tooltipBackgroundColor: AppColors.primary,
+                      tooltipBorderRadius: BorderRadius.circular(16),
+                      tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      showArrow: true,
                       titleTextStyle: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
