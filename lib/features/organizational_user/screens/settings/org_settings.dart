@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/features/app_lock/app_lock_settings_screen.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/theme/theme_provider.dart';
 import 'package:mindsarthi/core/widgets/theme_toggle.dart';
@@ -192,6 +194,21 @@ class _OrgSettingsState extends State<OrgSettings> {
                 // ── Danger Zone ───────────────────────────────
                 _SectionHeader(title: 'Account', isDark: isDark),
                 const SizedBox(height: 12),
+                _SettingsTile(
+                  icon: CupertinoIcons.lock_shield,
+                  title: 'App Lock',
+                  subtitle: 'Secure your app with a passcode',
+                  isDark: isDark,
+                  trailing: Icon(
+                    CupertinoIcons.chevron_forward,
+                    color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                    size: 16,
+                  ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AppLockSettingsScreen()),
+                  ),
+                ),
                 _SettingsTile(
                   icon: Icons.logout_rounded,
                   title: 'Log Out',

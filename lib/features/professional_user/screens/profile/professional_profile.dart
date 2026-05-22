@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/features/app_lock/app_lock_settings_screen.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/theme/theme_provider.dart';
 import 'package:mindsarthi/core/widgets/theme_toggle.dart';
@@ -286,6 +288,50 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                     ),
                   ),
                   const SizedBox(height: 10),
+
+                  // Theme toggle tile
+                  Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                      ),
+                    ),
+                    child: ListTile(
+                      leading: Icon(
+                        CupertinoIcons.lock_shield,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        size: 22,
+                      ),
+                      title: const Text(
+                        'App Lock',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Secure your app with a passcode',
+                        style: TextStyle(
+                          fontSize: 12,
+                        ),
+                      ),
+                      trailing: Icon(
+                        CupertinoIcons.chevron_forward,
+                        color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                        size: 16,
+                      ),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AppLockSettingsScreen()),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
 
                   // Theme toggle tile
                   Container(
