@@ -360,10 +360,28 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     String? contactOrState = await _storage.read(key: 'sos_value');
 
     if (preference == null || contactOrState == null) {
-      // Delay to avoid showing dialog immediately during hero animation load
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) _showChoiceDialog();
-      });
+      final myBox = Hive.box('mybox');
+      final hasShownShowcase = myBox.get('showcase_nav', defaultValue: false);
+
+      if (!hasShownShowcase) {
+        final listenable = myBox.listenable(keys: ['showcase_nav']);
+        late void Function() listener;
+        listener = () {
+          final completed = myBox.get('showcase_nav', defaultValue: false);
+          if (completed) {
+            listenable.removeListener(listener);
+            Future.delayed(const Duration(milliseconds: 1000), () {
+              if (mounted) _showChoiceDialog();
+            });
+          }
+        };
+        listenable.addListener(listener);
+      } else {
+        // Delay to avoid showing dialog immediately during hero animation load
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) _showChoiceDialog();
+        });
+      }
     } else {
       setState(() {
         savedPreference = preference;
