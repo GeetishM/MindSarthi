@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:mindsarthi/core/theme/app_theme.dart';
+
 import 'package:mindsarthi/core/theme/app_toast.dart';
 
 class AddSessionSheet extends StatefulWidget {
@@ -92,11 +92,12 @@ class _AddSessionSheetState extends State<AddSessionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.only(
@@ -116,7 +117,7 @@ class _AddSessionSheetState extends State<AddSessionSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                    color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -127,9 +128,7 @@ class _AddSessionSheetState extends State<AddSessionSheet> {
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
+                  color: theme.textTheme.headlineSmall?.color,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -262,13 +261,16 @@ class _InfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface2 : AppColors.background,
+        color: isDark
+            ? theme.colorScheme.surfaceContainerHighest
+            : theme.scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: Row(
@@ -276,7 +278,7 @@ class _InfoTile extends StatelessWidget {
           Icon(
             icon,
             size: 20,
-            color: isDark ? AppColors.darkPrimary : AppColors.primary,
+            color: theme.colorScheme.primary,
           ),
           const SizedBox(width: 10),
           Column(
@@ -287,9 +289,7 @@ class _InfoTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.textSecondary,
+                  color: theme.textTheme.bodySmall?.color,
                 ),
               ),
               Text(
@@ -297,9 +297,7 @@ class _InfoTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
+                  color: theme.textTheme.bodyLarge?.color,
                 ),
               ),
             ],

@@ -2,9 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/theme/theme_provider.dart';
 import 'package:mindsarthi/features/organizational_user/screens/org_nav.dart';
 import 'package:mindsarthi/features/personal_user/screens/nav.dart';
 import 'package:mindsarthi/features/professional_user/screens/professional_nav.dart';
+import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
 /// Routes the authenticated user to the correct Nav screen based on their
@@ -54,13 +56,19 @@ class _RoleRouterState extends State<RoleRouter> {
 
       final data = doc.data();
       final role = data?['userRole'] as String?;
+      final resolvedRole = role ?? 'personal';
+
+      if (mounted) {
+        Provider.of<ThemeProvider>(context, listen: false).setRole(resolvedRole);
+      }
 
       setState(() {
-        _role = role ?? 'personal';
+        _role = resolvedRole;
         _loading = false;
       });
     } catch (e) {
       if (mounted) {
+        Provider.of<ThemeProvider>(context, listen: false).setRole('personal');
         setState(() {
           _role = 'personal';
           _loading = false;

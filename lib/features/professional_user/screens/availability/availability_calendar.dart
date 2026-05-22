@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:mindsarthi/core/theme/app_theme.dart';
+
 import 'package:mindsarthi/core/theme/app_toast.dart';
 
 /// Availability calendar showing a weekly grid of time slots.
@@ -102,19 +102,20 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Set Availability',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: theme.textTheme.bodyLarge?.color,
           ),
         ),
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         actions: [
           Padding(
@@ -125,7 +126,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
                 _isSaving ? 'Saving...' : 'Save',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                  color: theme.colorScheme.primary,
                 ),
               ),
             ),
@@ -142,13 +143,15 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
                   child: Row(
                     children: [
                       _LegendDot(
-                        color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                        color: theme.colorScheme.primary,
                         label: 'Available',
                         isDark: isDark,
                       ),
                       const SizedBox(width: 20),
                       _LegendDot(
-                        color: isDark ? AppColors.darkSurface2 : AppColors.background,
+                        color: isDark
+                            ? theme.colorScheme.surfaceContainerHighest
+                            : theme.scaffoldBackgroundColor,
                         label: 'Unavailable',
                         isDark: isDark,
                         hasBorder: true,
@@ -170,8 +173,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
                         dataRowMinHeight: 42,
                         dataRowMaxHeight: 42,
                         border: TableBorder.all(
-                          color:
-                              isDark ? AppColors.darkBorder : AppColors.border,
+                          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                           borderRadius: BorderRadius.circular(16),
                           width: 0.5,
                         ),
@@ -184,9 +186,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 12,
-                                  color: isDark
-                                      ? AppColors.darkTextSecondary
-                                      : AppColors.textSecondary,
+                                  color: theme.textTheme.bodyMedium?.color,
                                 ),
                               ),
                             ),
@@ -201,9 +201,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 12,
-                                      color: isDark
-                                          ? AppColors.darkTextPrimary
-                                          : AppColors.textPrimary,
+                                      color: theme.textTheme.bodyLarge?.color,
                                     ),
                                   ),
                                 ),
@@ -221,9 +219,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: isDark
-                                          ? AppColors.darkTextSecondary
-                                          : AppColors.textSecondary,
+                                      color: theme.textTheme.bodyMedium?.color,
                                     ),
                                   ),
                                 ),
@@ -241,21 +237,17 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
                                         decoration: BoxDecoration(
                                           color: _availability[day]!
                                                   .contains(slot)
-                                              ? (isDark
-                                                  ? AppColors.darkPrimary
-                                                  : AppColors.primary)
+                                              ? theme.colorScheme.primary
                                               : (isDark
-                                                  ? AppColors.darkSurface2
-                                                  : AppColors.background),
+                                                  ? theme.colorScheme.surfaceContainerHighest
+                                                  : theme.scaffoldBackgroundColor),
                                           borderRadius:
                                               BorderRadius.circular(8),
                                           border: Border.all(
                                             color: _availability[day]!
                                                     .contains(slot)
                                                 ? Colors.transparent
-                                                : (isDark
-                                                    ? AppColors.darkBorder
-                                                    : AppColors.border),
+                                                : (theme.dividerTheme.color ?? theme.colorScheme.outlineVariant),
                                           ),
                                         ),
                                         child: _availability[day]!
@@ -298,6 +290,7 @@ class _LegendDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Container(
@@ -308,7 +301,7 @@ class _LegendDot extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             border: hasBorder
                 ? Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                    color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                   )
                 : null,
           ),
@@ -319,7 +312,7 @@ class _LegendDot extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            color: theme.textTheme.bodyMedium?.color,
           ),
         ),
       ],

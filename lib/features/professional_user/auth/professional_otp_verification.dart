@@ -66,19 +66,23 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             'userRole': 'professional',
           }, SetOptions(merge: true));
 
-          toastification.show(
-            context: context,
-            type: ToastificationType.success,
-            title: const Text("New user created"),
-            autoCloseDuration: const Duration(seconds: 2),
-          );
+          if (mounted) {
+            toastification.show(
+              context: context,
+              type: ToastificationType.success,
+              title: const Text("New user created"),
+              autoCloseDuration: const Duration(seconds: 2),
+            );
+          }
         } else {
-          toastification.show(
-            context: context,
-            type: ToastificationType.success,
-            title: const Text("Welcome back!"),
-            autoCloseDuration: const Duration(seconds: 2),
-          );
+          if (mounted) {
+            toastification.show(
+              context: context,
+              type: ToastificationType.success,
+              title: const Text("Welcome back!"),
+              autoCloseDuration: const Duration(seconds: 2),
+            );
+          }
         }
         if (mounted) {
           Navigator.pushReplacement(
@@ -92,13 +96,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         _error = 'Invalid OTP';
         _isVerifying = false;
       });
-      toastification.show(
-        context: context,
-        type: ToastificationType.error,
-        title: const Text("OTP Verification Failed"),
-        description: Text(e.toString()),
-        autoCloseDuration: const Duration(seconds: 3),
-      );
+      if (mounted) {
+        toastification.show(
+          context: context,
+          type: ToastificationType.error,
+          title: const Text("OTP Verification Failed"),
+          description: Text(e.toString()),
+          autoCloseDuration: const Duration(seconds: 3),
+        );
+      }
     }
   }
 
@@ -114,16 +120,18 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     final fontScale = MediaQuery.of(context).size.width / 375;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          color: AppColors.textPrimary,
+          color: theme.textTheme.bodyLarge?.color ?? AppColors.textPrimary,
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -140,11 +148,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     padding: const EdgeInsets.all(20),
                     width: 400,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardTheme.color ?? theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black12, blurRadius: 10),
-                      ],
+                      border: Border.all(
+                        color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
+                        width: 1,
+                      ),
+                      boxShadow: isDark
+                          ? []
+                          : const [
+                              BoxShadow(color: Colors.black12, blurRadius: 10),
+                            ],
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -154,13 +168,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           style: TextStyle(
                             fontSize: 18 * fontScale,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 10),
                         Text(
                           "Enter the verification code sent via SMS",
-                          style: TextStyle(fontSize: 14 * fontScale),
+                          style: TextStyle(
+                            fontSize: 14 * fontScale,
+                            color: theme.textTheme.bodyMedium?.color,
+                          ),
                         ),
                         const SizedBox(height: 10),
                         Text(
@@ -168,6 +185,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16 * fontScale,
+                            color: theme.textTheme.bodyLarge?.color,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -178,12 +196,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           defaultPinTheme: PinTheme(
                             width: 50,
                             height: 56,
-                            textStyle: TextStyle(fontSize: 20 * fontScale),
+                            textStyle: TextStyle(
+                              fontSize: 20 * fontScale,
+                              color: theme.textTheme.bodyLarge?.color,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF2F2F2),
+                              color: isDark
+                                  ? theme.colorScheme.surfaceContainerHighest
+                                  : const Color(0xFFF2F2F2),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: AppColors.primary,
+                                color: theme.colorScheme.primary,
                               ),
                             ),
                           ),
@@ -205,7 +228,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           child: ElevatedButton(
                             onPressed: () => _verifyOtp(_enteredOtp),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: theme.colorScheme.onPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -214,7 +238,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             child: Text(
                               "Continue",
                               style: TextStyle(
-                                color: Colors.white,
                                 fontSize: 16 * fontScale,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -228,7 +251,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             "Didn't receive the code? Resend",
                             style: TextStyle(
                               fontSize: 14 * fontScale,
-                              color: AppColors.primary,
+                              color: theme.colorScheme.primary,
                             ),
                           ),
                         ),

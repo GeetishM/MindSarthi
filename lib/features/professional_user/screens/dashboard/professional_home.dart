@@ -17,11 +17,13 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
   final _firestore = FirebaseFirestore.instance;
 
   @override
+  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -44,9 +46,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.textSecondary,
+                            color: theme.textTheme.bodyMedium?.color,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -55,9 +55,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
-                            color: isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.textPrimary,
+                            color: theme.textTheme.bodyLarge?.color,
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -72,7 +70,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                child: _buildStatsRow(isDark),
+                child: _buildStatsRow(theme, isDark),
               ),
             ),
 
@@ -88,9 +86,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
+                        color: theme.textTheme.bodyLarge?.color,
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -99,9 +95,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? AppColors.darkPrimary
-                            : AppColors.primary,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ],
@@ -110,7 +104,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
             ),
 
             // ── Today's Sessions Stream ────────────────────────
-            _buildTodaySessions(isDark),
+            _buildTodaySessions(theme, isDark),
 
             // ── Bottom padding for nav bar ─────────────────────
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -127,7 +121,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
     return 'Evening';
   }
 
-  Widget _buildStatsRow(bool isDark) {
+  Widget _buildStatsRow(ThemeData theme, bool isDark) {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore
           .collection('sessions')
@@ -159,7 +153,8 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
                 label: "Today's Sessions",
                 value: '$todayCount',
                 icon: Icons.today_rounded,
-                color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                color: theme.colorScheme.primary,
+                theme: theme,
                 isDark: isDark,
               ),
             ),
@@ -169,7 +164,8 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
                 label: 'Total Clients',
                 value: '$totalClients',
                 icon: Icons.people_rounded,
-                color: AppColors.accent,
+                color: theme.colorScheme.secondary,
+                theme: theme,
                 isDark: isDark,
               ),
             ),
@@ -182,6 +178,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
                     : '0',
                 icon: Icons.check_circle_rounded,
                 color: AppColors.success,
+                theme: theme,
                 isDark: isDark,
               ),
             ),
@@ -191,7 +188,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
     );
   }
 
-  Widget _buildTodaySessions(bool isDark) {
+  Widget _buildTodaySessions(ThemeData theme, bool isDark) {
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
     return StreamBuilder<QuerySnapshot>(
@@ -203,7 +200,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
           .snapshots(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return SliverToBoxAdapter(child: _buildShimmer(isDark));
+          return SliverToBoxAdapter(child: _buildShimmer(theme, isDark));
         }
 
         if (!snap.hasData || snap.data!.docs.isEmpty) {
@@ -215,16 +212,14 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
                   Icon(
                     Icons.event_available_rounded,
                     size: 56,
-                    color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                    color: theme.textTheme.labelSmall?.color,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No sessions scheduled today',
                     style: TextStyle(
                       fontSize: 16,
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.textSecondary,
+                      color: theme.textTheme.bodyMedium?.color,
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -233,9 +228,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
                     'Add sessions from the Sessions tab',
                     style: TextStyle(
                       fontSize: 13,
-                      color: isDark
-                          ? AppColors.darkTextHint
-                          : AppColors.textHint,
+                      color: theme.textTheme.labelSmall?.color,
                     ),
                   ),
                 ],
@@ -249,7 +242,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
             (context, index) {
               final data =
                   snap.data!.docs[index].data() as Map<String, dynamic>;
-              return _SessionCard(data: data, isDark: isDark);
+              return _SessionCard(data: data, theme: theme, isDark: isDark);
             },
             childCount: snap.data!.docs.length,
           ),
@@ -258,7 +251,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
     );
   }
 
-  Widget _buildShimmer(bool isDark) {
+  Widget _buildShimmer(ThemeData theme, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Shimmer.fromColors(
@@ -272,7 +265,7 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
               margin: const EdgeInsets.only(bottom: 12),
               height: 80,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : Colors.white,
+                color: theme.cardTheme.color ?? theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
@@ -289,6 +282,7 @@ class _StatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final ThemeData theme;
   final bool isDark;
 
   const _StatCard({
@@ -296,6 +290,7 @@ class _StatCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
+    required this.theme,
     required this.isDark,
   });
 
@@ -304,10 +299,10 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: Column(
@@ -320,7 +315,7 @@ class _StatCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              color: theme.textTheme.bodyLarge?.color,
             ),
           ),
           const SizedBox(height: 2),
@@ -329,8 +324,7 @@ class _StatCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color:
-                  isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              color: theme.textTheme.bodyMedium?.color,
             ),
           ),
         ],
@@ -342,9 +336,10 @@ class _StatCard extends StatelessWidget {
 // ── Session Card ────────────────────────────────────────────────────────────
 class _SessionCard extends StatelessWidget {
   final Map<String, dynamic> data;
+  final ThemeData theme;
   final bool isDark;
 
-  const _SessionCard({required this.data, required this.isDark});
+  const _SessionCard({required this.data, required this.theme, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -353,16 +348,16 @@ class _SessionCard extends StatelessWidget {
         ? AppColors.success
         : status == 'cancelled'
             ? AppColors.error
-            : (isDark ? AppColors.darkPrimary : AppColors.primary);
+            : theme.colorScheme.primary;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: Row(
@@ -371,7 +366,7 @@ class _SessionCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+              color: theme.colorScheme.tertiary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -381,8 +376,7 @@ class _SessionCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color:
-                        isDark ? AppColors.darkPrimary : AppColors.primary,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
                 Text(
@@ -390,9 +384,7 @@ class _SessionCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary,
+                    color: theme.textTheme.bodyMedium?.color,
                   ),
                 ),
               ],
@@ -410,9 +402,7 @@ class _SessionCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
+                    color: theme.textTheme.bodyLarge?.color,
                   ),
                 ),
                 if (data['notes'] != null && data['notes'].isNotEmpty) ...[
@@ -423,9 +413,7 @@ class _SessionCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.textSecondary,
+                      color: theme.textTheme.bodyMedium?.color,
                     ),
                   ),
                 ],

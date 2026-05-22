@@ -3,7 +3,7 @@ import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:lottie/lottie.dart';
 import 'package:mindsarthi/features/professional_user/auth/professional_otp_verification.dart';
 import 'package:toastification/toastification.dart';
@@ -140,19 +140,20 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final isSmall = size.height < 600;
     final horizontalPadding = size.width * 0.05;
     final cardWidth = size.width > 400 ? 380.0 : size.width * 0.9;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F3F3),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          color: AppColors.textPrimary,
+          color: theme.textTheme.bodyLarge?.color ?? AppColors.textPrimary,
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -166,11 +167,17 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
             child: Container(
               width: cardWidth,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardTheme.color ?? theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 10),
-                ],
+                border: Border.all(
+                  color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
+                  width: 1,
+                ),
+                boxShadow: isDark
+                    ? []
+                    : const [
+                        BoxShadow(color: Colors.black12, blurRadius: 10),
+                      ],
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -180,21 +187,23 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       "Professional Login / Signup",
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: theme.textTheme.titleLarge?.color,
                       ),
                     ),
-                    const Divider(thickness: 1),
+                    Divider(thickness: 1, color: theme.dividerTheme.color),
                     const SizedBox(height: 10),
-                    const Text(
+                    Text(
                       "Welcome to MindSarthi Pro",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: theme.textTheme.headlineSmall?.color,
                       ),
                     ),
                     const SizedBox(height: 15),
@@ -202,25 +211,27 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                       invalidNumberMessage: _enteredLength > 0
                           ? 'Invalid Mobile Number                                   $_enteredLength/10'
                           : 'Invalid Mobile Number',
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: theme.textTheme.bodyLarge?.color,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
-                      dropdownTextStyle: const TextStyle(
-                        color: AppColors.textPrimary,
+                      dropdownTextStyle: TextStyle(
+                        color: theme.textTheme.bodyLarge?.color,
                         fontSize: 15,
                       ),
                       dropdownIconPosition: IconPosition.trailing,
-                      dropdownIcon: const Icon(
+                      dropdownIcon: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: AppColors.textSecondary,
+                        color: theme.textTheme.bodyMedium?.color,
                         size: 20,
                       ),
                       decoration: InputDecoration(
                         labelText: 'Phone Number',
                         filled: true,
-                        fillColor: const Color(0xFFF2F2F2),
+                        fillColor: isDark
+                            ? theme.colorScheme.surfaceContainerHighest
+                            : const Color(0xFFF2F2F2),
                         counterText: '',
                         border: _buildBorder(),
                         enabledBorder: _buildBorder(),
@@ -265,7 +276,8 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                       child: ElevatedButton(
                         onPressed: _sendOtp,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.professional,
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -274,7 +286,6 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                         child: const Text(
                           "Send OTP",
                           style: TextStyle(
-                            color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
@@ -283,13 +294,16 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                     ),
                     const SizedBox(height: 20),
                     Row(
-                      children: const [
-                        Expanded(child: Divider()),
+                      children: [
+                        Expanded(child: Divider(color: theme.dividerTheme.color)),
                         Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 10),
-                          child: Text("or"),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            "or",
+                            style: TextStyle(color: theme.textTheme.bodyMedium?.color),
+                          ),
                         ),
-                        Expanded(child: Divider()),
+                        Expanded(child: Divider(color: theme.dividerTheme.color)),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -303,9 +317,9 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                     ),
                     const SizedBox(height: 10),
                     _buildSocialButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.apple,
-                        color: Colors.black,
+                        color: isDark ? Colors.white : Colors.black,
                         size: 25,
                       ),
                       text: "Continue with Apple",
@@ -327,13 +341,14 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
     required String text,
     required VoidCallback onPressed,
   }) {
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-          side: const BorderSide(color: Colors.grey),
+          side: BorderSide(color: theme.colorScheme.outline),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -345,8 +360,8 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
             Center(
               child: Text(
                 text,
-                style: const TextStyle(
-                  color: Colors.black,
+                style: TextStyle(
+                  color: theme.textTheme.labelLarge?.color,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -359,6 +374,7 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
   }
 
   OutlineInputBorder _buildBorder({bool focused = false, bool hasError = false}) {
+    final theme = Theme.of(context);
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(
@@ -367,8 +383,8 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
             : hasError
                 ? AppColors.error
                 : focused
-                    ? AppColors.professional
-                    : const Color(0xFFBDBDBD),
+                    ? theme.colorScheme.primary
+                    : (theme.dividerTheme.color ?? const Color(0xFFBDBDBD)),
         width: focused ? 2 : 1.5,
       ),
     );

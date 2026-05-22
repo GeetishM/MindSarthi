@@ -87,8 +87,8 @@ class MindSarthi extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'MindSarthi',
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
+        theme: AppTheme.getThemeForRole(themeProvider.currentRole, isDark: false),
+        darkTheme: AppTheme.getThemeForRole(themeProvider.currentRole, isDark: true),
         themeMode: themeProvider.themeMode,
         locale: localeProvider.locale,
         supportedLocales: const [
@@ -166,6 +166,15 @@ class _AuthGateState extends State<_AuthGate> {
         if (snapshot.hasData) {
           return const AppLockWrapper(child: RoleRouter());
         } else {
+          // Reset theme role to personal upon logout/no auth session
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              final provider = Provider.of<ThemeProvider>(context, listen: false);
+              if (provider.currentRole != 'personal') {
+                provider.setRole('personal');
+              }
+            }
+          });
           return const WelcomeScreen();
         }
       },

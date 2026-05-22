@@ -32,28 +32,29 @@ class _SessionListState extends State<SessionList>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Sessions',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: theme.textTheme.headlineSmall?.color ?? theme.colorScheme.onSurface,
             letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: isDark ? AppColors.darkPrimary : AppColors.primary,
-          labelColor: isDark ? AppColors.darkPrimary : AppColors.primary,
+          indicatorColor: theme.colorScheme.primary,
+          labelColor: theme.colorScheme.primary,
           unselectedLabelColor:
-              isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              theme.textTheme.bodyMedium?.color ?? theme.colorScheme.onSurfaceVariant,
           labelStyle:
               const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           unselectedLabelStyle:
@@ -70,8 +71,8 @@ class _SessionListState extends State<SessionList>
         icon: const Icon(Icons.add_rounded),
         label: const Text('New Session',
             style: TextStyle(fontWeight: FontWeight.w700)),
-        backgroundColor: isDark ? AppColors.darkPrimary : AppColors.primary,
-        foregroundColor: AppColors.white,
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
       ),
       body: TabBarView(
         controller: _tabController,
@@ -94,6 +95,7 @@ class _SessionListState extends State<SessionList>
   }
 
   Widget _buildSessionTab(String status, bool isDark) {
+    final theme = Theme.of(context);
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('sessions')
@@ -118,16 +120,14 @@ class _SessionListState extends State<SessionList>
                           ? Icons.task_alt_rounded
                           : Icons.event_busy_rounded,
                   size: 56,
-                  color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.4) ?? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'No $status sessions',
                   style: TextStyle(
                     fontSize: 16,
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary,
+                    color: theme.textTheme.bodyMedium?.color,
                   ),
                 ),
               ],
@@ -167,10 +167,11 @@ class _SessionListState extends State<SessionList>
   }
 
   Widget _buildShimmer(bool isDark) {
+    final theme = Theme.of(context);
     return ListView.builder(
       padding: const EdgeInsets.all(24),
       itemCount: 4,
-      itemBuilder: (_, __) => Shimmer.fromColors(
+      itemBuilder: (_, index) => Shimmer.fromColors(
         baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
         highlightColor: isDark
             ? AppColors.darkShimmerHighlight
@@ -179,7 +180,7 @@ class _SessionListState extends State<SessionList>
           margin: const EdgeInsets.only(bottom: 12),
           height: 90,
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : Colors.white,
+            color: theme.cardTheme.color ?? theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
           ),
         ),
@@ -203,21 +204,22 @@ class _SessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final status = data['status'] ?? 'upcoming';
     final statusColor = status == 'completed'
         ? AppColors.success
         : status == 'cancelled'
             ? AppColors.error
-            : (isDark ? AppColors.darkPrimary : AppColors.primary);
+            : theme.colorScheme.primary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: Column(
@@ -227,13 +229,11 @@ class _SessionCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: isDark
-                    ? AppColors.darkPrimaryLight
-                    : AppColors.primaryLight,
+                backgroundColor: theme.colorScheme.tertiary,
                 child: Text(
                   (data['clientName'] ?? 'C')[0].toUpperCase(),
                   style: TextStyle(
-                    color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                    color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -248,9 +248,7 @@ class _SessionCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
+                        color: theme.textTheme.bodyLarge?.color,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -258,9 +256,7 @@ class _SessionCard extends StatelessWidget {
                       '${data['date'] ?? ''} • ${data['startTime'] ?? ''} - ${data['endTime'] ?? ''}',
                       style: TextStyle(
                         fontSize: 13,
-                        color: isDark
-                            ? AppColors.darkTextSecondary
-                            : AppColors.textSecondary,
+                        color: theme.textTheme.bodyMedium?.color,
                       ),
                     ),
                   ],

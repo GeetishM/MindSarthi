@@ -118,20 +118,21 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'My Profile',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: theme.textTheme.headlineSmall?.color ?? theme.colorScheme.onSurface,
             letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
@@ -144,8 +145,7 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                   _isSaving ? 'Saving...' : 'Save',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color:
-                        isDark ? AppColors.darkPrimary : AppColors.primary,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ),
@@ -163,9 +163,7 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                   Center(
                     child: CircleAvatar(
                       radius: 44,
-                      backgroundColor: isDark
-                          ? AppColors.darkPrimaryLight
-                          : AppColors.primaryLight,
+                      backgroundColor: theme.colorScheme.tertiary,
                       child: Text(
                         (_nameCtrl.text.isNotEmpty)
                             ? _nameCtrl.text[0].toUpperCase()
@@ -173,9 +171,7 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w800,
-                          color: isDark
-                              ? AppColors.darkPrimary
-                              : AppColors.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ),
@@ -183,7 +179,7 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                   const SizedBox(height: 28),
 
                   // Display name
-                  _buildLabel('Display Name', isDark),
+                  _buildLabel('Display Name'),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _nameCtrl,
@@ -195,7 +191,7 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                   const SizedBox(height: 20),
 
                   // Experience
-                  _buildLabel('Experience', isDark),
+                  _buildLabel('Experience'),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _experienceCtrl,
@@ -207,7 +203,7 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                   const SizedBox(height: 20),
 
                   // Bio
-                  _buildLabel('Bio', isDark),
+                  _buildLabel('Bio'),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _bioCtrl,
@@ -220,7 +216,7 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                   const SizedBox(height: 20),
 
                   // Specializations
-                  _buildLabel('Specializations', isDark),
+                  _buildLabel('Specializations'),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -238,10 +234,8 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                         onPressed: _addSpecialization,
                         icon: const Icon(Icons.add_rounded),
                         style: IconButton.styleFrom(
-                          backgroundColor: isDark
-                              ? AppColors.darkPrimary
-                              : AppColors.primary,
-                          foregroundColor: AppColors.white,
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
                         ),
                       ),
                     ],
@@ -256,18 +250,13 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                         deleteIcon: const Icon(Icons.close_rounded, size: 16),
                         onDeleted: () =>
                             setState(() => _specializations.remove(spec)),
-                        backgroundColor: isDark
-                            ? AppColors.darkPrimaryLight
-                            : AppColors.primaryLight,
+                        backgroundColor: theme.colorScheme.tertiary,
                         labelStyle: TextStyle(
-                          color: isDark
-                              ? AppColors.darkPrimary
-                              : AppColors.primary,
+                          color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),
-                        deleteIconColor:
-                            isDark ? AppColors.darkPrimary : AppColors.primary,
+                        deleteIconColor: theme.colorScheme.primary,
                         side: BorderSide.none,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
@@ -283,25 +272,25 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                      color: theme.textTheme.bodySmall?.color,
                       letterSpacing: 0.8,
                     ),
                   ),
                   const SizedBox(height: 10),
 
-                  // Theme toggle tile
+                  // App Lock tile
                   Container(
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurface : AppColors.surface,
+                      color: theme.cardTheme.color ?? theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                        color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                       ),
                     ),
                     child: ListTile(
                       leading: Icon(
                         CupertinoIcons.lock_shield,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        color: theme.textTheme.bodyMedium?.color,
                         size: 22,
                       ),
                       title: const Text(
@@ -319,7 +308,7 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                       ),
                       trailing: Icon(
                         CupertinoIcons.chevron_forward,
-                        color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                        color: theme.textTheme.bodySmall?.color,
                         size: 16,
                       ),
                       onTap: () => Navigator.push(
@@ -336,16 +325,16 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                   // Theme toggle tile
                   Container(
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurface : AppColors.surface,
+                      color: theme.cardTheme.color ?? theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                        color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                       ),
                     ),
                     child: ListTile(
                       leading: Icon(
                         isDark ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        color: theme.textTheme.bodyMedium?.color,
                         size: 22,
                       ),
                       title: Text(
@@ -353,14 +342,14 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          color: theme.textTheme.bodyLarge?.color,
                         ),
                       ),
                       subtitle: Text(
                         'Toggle app theme',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          color: theme.textTheme.bodyMedium?.color,
                         ),
                       ),
                       trailing: const ThemeToggleSwitch(),
@@ -375,10 +364,10 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                   // Logout tile
                   Container(
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurface : AppColors.surface,
+                      color: theme.cardTheme.color ?? theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                        color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                       ),
                     ),
                     child: ListTile(
@@ -400,7 +389,7 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                         'Sign out of your account',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          color: theme.textTheme.bodyMedium?.color,
                         ),
                       ),
                       shape: RoundedRectangleBorder(
@@ -414,13 +403,14 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
     );
   }
 
-  Widget _buildLabel(String text, bool isDark) {
+  Widget _buildLabel(String text) {
+    final theme = Theme.of(context);
     return Text(
       text,
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w700,
-        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+        color: theme.textTheme.bodyMedium?.color,
       ),
     );
   }

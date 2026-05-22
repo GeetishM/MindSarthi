@@ -8,22 +8,24 @@ class ClientList extends StatelessWidget {
   const ClientList({super.key});
 
   @override
+  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Clients',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: theme.textTheme.bodyLarge?.color,
             letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
@@ -34,7 +36,7 @@ class ClientList extends StatelessWidget {
             .snapshots(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return _buildShimmer(isDark);
+            return _buildShimmer(theme, isDark);
           }
 
           if (!snap.hasData || snap.data!.docs.isEmpty) {
@@ -45,16 +47,14 @@ class ClientList extends StatelessWidget {
                   Icon(
                     Icons.people_outline_rounded,
                     size: 56,
-                    color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                    color: theme.textTheme.labelSmall?.color,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No clients yet',
                     style: TextStyle(
                       fontSize: 16,
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.textSecondary,
+                      color: theme.textTheme.bodyMedium?.color,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -62,8 +62,7 @@ class ClientList extends StatelessWidget {
                     'Add sessions to see your clients here',
                     style: TextStyle(
                       fontSize: 13,
-                      color:
-                          isDark ? AppColors.darkTextHint : AppColors.textHint,
+                      color: theme.textTheme.labelSmall?.color,
                     ),
                   ),
                 ],
@@ -113,11 +112,11 @@ class ClientList extends StatelessWidget {
     );
   }
 
-  Widget _buildShimmer(bool isDark) {
+  Widget _buildShimmer(ThemeData theme, bool isDark) {
     return ListView.builder(
       padding: const EdgeInsets.all(24),
       itemCount: 5,
-      itemBuilder: (_, __) => Shimmer.fromColors(
+      itemBuilder: (context, index) => Shimmer.fromColors(
         baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
         highlightColor: isDark
             ? AppColors.darkShimmerHighlight
@@ -126,7 +125,7 @@ class ClientList extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 12),
           height: 80,
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : Colors.white,
+            color: theme.cardTheme.color ?? theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
           ),
         ),
@@ -157,26 +156,26 @@ class _ClientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundColor:
-                isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
+            backgroundColor: theme.colorScheme.tertiary,
             child: Text(
               client.name[0].toUpperCase(),
               style: TextStyle(
-                color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w800,
                 fontSize: 18,
               ),
@@ -192,9 +191,7 @@ class _ClientCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
+                    color: theme.textTheme.bodyLarge?.color,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -204,18 +201,14 @@ class _ClientCard extends StatelessWidget {
                       Icon(
                         Icons.phone_outlined,
                         size: 13,
-                        color: isDark
-                            ? AppColors.darkTextHint
-                            : AppColors.textHint,
+                        color: theme.textTheme.labelSmall?.color,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         client.phone,
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark
-                              ? AppColors.darkTextSecondary
-                              : AppColors.textSecondary,
+                          color: theme.textTheme.bodyMedium?.color,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -223,17 +216,14 @@ class _ClientCard extends StatelessWidget {
                     Icon(
                       Icons.event_rounded,
                       size: 13,
-                      color:
-                          isDark ? AppColors.darkTextHint : AppColors.textHint,
+                      color: theme.textTheme.labelSmall?.color,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '${client.totalSessions} sessions',
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDark
-                            ? AppColors.darkTextSecondary
-                            : AppColors.textSecondary,
+                        color: theme.textTheme.bodyMedium?.color,
                       ),
                     ),
                   ],
@@ -243,7 +233,7 @@ class _ClientCard extends StatelessWidget {
           ),
           Icon(
             Icons.chevron_right_rounded,
-            color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+            color: theme.textTheme.labelSmall?.color,
           ),
         ],
       ),
