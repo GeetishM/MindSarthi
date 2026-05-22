@@ -73,6 +73,10 @@ class _CommentInputScreenState extends State<CommentInputScreen> {
           decoration: const InputDecoration(
             hintText: 'Add a comment...',
             border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
           ),
           autofocus: true,
         ),

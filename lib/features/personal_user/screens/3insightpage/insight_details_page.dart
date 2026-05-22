@@ -1,9 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'bookmark_manager.dart';
 
 class InsightDetailPage extends StatefulWidget {
   final String id;
@@ -30,11 +33,28 @@ class InsightDetailPage extends StatefulWidget {
 class _InsightDetailPageState extends State<InsightDetailPage> {
   bool _hasRated = false;
   int _userRating = 0;
+  bool _isBookmarked = false;
+  bool _isShareClicked = false;
 
   @override
   void initState() {
     super.initState();
     _checkIfRated();
+    _loadBookmarkStatus();
+  }
+
+  Future<void> _loadBookmarkStatus() async {
+    final status = await BookmarkManager.isBookmarked(widget.id);
+    if (mounted) {
+      setState(() {
+        _isBookmarked = status;
+      });
+    }
+  }
+
+  Future<void> _toggleBookmark() async {
+    await BookmarkManager.toggleBookmark(widget.id);
+    _loadBookmarkStatus();
   }
 
   Future<void> _checkIfRated() async {
@@ -125,22 +145,58 @@ class _InsightDetailPageState extends State<InsightDetailPage> {
             backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
             leading: CupertinoButton(
               padding: EdgeInsets.zero,
+              onPressed: () => Navigator.pop(context),
               child: Icon(
                 CupertinoIcons.back,
                 color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
               ),
-              onPressed: () => Navigator.pop(context),
             ),
             actions: [
               CupertinoButton(
                 padding: EdgeInsets.zero,
+                onPressed: _toggleBookmark,
+                child: Icon(
+                  _isBookmarked ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark,
+                  color: _isBookmarked
+                      ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+                      : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                ),
+              ),
+              const SizedBox(width: 4),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () async {
+                  setState(() {
+                    _isShareClicked = true;
+                  });
+                  Future.delayed(const Duration(milliseconds: 1500), () {
+                    if (mounted) {
+                      setState(() {
+                        _isShareClicked = false;
+                      });
+                    }
+                  });
+
+                  final shareText = 'Read this insightful article: "${widget.heading}" by ${widget.author} on MindSarthi!';
+                  try {
+                    await Share.share(shareText);
+                  } catch (e) {
+                    await Clipboard.setData(ClipboardData(text: shareText));
+                    if (context.mounted) {
+                      AppToast.success(
+                        context,
+                        'Link copied to clipboard!',
+                        description: 'Sharing fallback: Copied description to clipboard.',
+                      );
+                    }
+                  }
+                },
                 child: Icon(
                   CupertinoIcons.share,
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                  color: _isShareClicked
+                      ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+                      : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
                 ),
-                onPressed: () {
-                  Share.share('Read this insightful article: "${widget.heading}" by ${widget.author} on MindSarthi!');
-                },
               ),
               const SizedBox(width: 8),
             ],

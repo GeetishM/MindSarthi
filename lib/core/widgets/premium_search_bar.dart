@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 class PremiumSearchBar extends StatefulWidget {
   final TextEditingController controller;
@@ -116,7 +117,7 @@ class _PremiumSearchBarState extends State<PremiumSearchBar> with SingleTickerPr
                 RotationTransition(
                   turns: _iconRotationAnimation,
                   child: Icon(
-                    Icons.search_rounded,
+                    CupertinoIcons.search,
                     color: _isFocused ? primaryColor : (isDark ? Colors.grey[400] : Colors.grey[600]),
                   ),
                 ),
@@ -135,6 +136,10 @@ class _PremiumSearchBarState extends State<PremiumSearchBar> with SingleTickerPr
                         color: isDark ? Colors.grey[500] : Colors.grey[500],
                       ),
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
@@ -146,16 +151,20 @@ class _PremiumSearchBarState extends State<PremiumSearchBar> with SingleTickerPr
                     scale: animation,
                     child: child,
                   ),
-                  child: widget.controller.text.isNotEmpty
+                  child: (_isFocused || widget.controller.text.isNotEmpty)
                       ? GestureDetector(
                           key: const ValueKey('clear_btn'),
                           onTap: () {
+                            final hadText = widget.controller.text.isNotEmpty;
                             widget.controller.clear();
                             if (widget.onClear != null) widget.onClear!();
                             if (widget.onChanged != null) widget.onChanged!('');
+                            if (!hadText) {
+                              _focusNode.unfocus();
+                            }
                           },
                           child: Icon(
-                            Icons.close_rounded,
+                            CupertinoIcons.clear_circled_solid,
                             size: 20,
                             color: isDark ? Colors.grey[400] : Colors.grey[600],
                           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
@@ -664,11 +665,22 @@ class _PostCardState extends State<PostCard>
 
               const Spacer(),
               GestureDetector(
-                onTap: () {
+                onTap: () async {
                   final textToShare = isAnonymous
                       ? 'Anonymous Post: "${data['content']}"\nShared via MindSarthi'
                       : 'Post by @${data['username'] ?? 'User'}: "${data['content']}"\nShared via MindSarthi';
-                  Share.share(textToShare);
+                  try {
+                    await Share.share(textToShare);
+                  } catch (e) {
+                    await Clipboard.setData(ClipboardData(text: textToShare));
+                    if (context.mounted) {
+                      AppToast.success(
+                        context,
+                        'Link copied to clipboard!',
+                        description: 'Sharing fallback: Copied description to clipboard.',
+                      );
+                    }
+                  }
                 },
                 child: Icon(
                   CupertinoIcons.share,

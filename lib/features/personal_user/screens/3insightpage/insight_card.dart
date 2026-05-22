@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:share_plus/share_plus.dart';
 
 
@@ -168,8 +170,20 @@ class _InsightCardState extends State<InsightCard> {
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: () {
-                        Share.share('Read this insightful article: "${widget.heading}" by ${widget.author} on MindSarthi!');
+                      onTap: () async {
+                        final shareText = 'Read this insightful article: "${widget.heading}" by ${widget.author} on MindSarthi!';
+                        try {
+                          await Share.share(shareText);
+                        } catch (e) {
+                          await Clipboard.setData(ClipboardData(text: shareText));
+                          if (context.mounted) {
+                            AppToast.success(
+                              context,
+                              'Link copied to clipboard!',
+                              description: 'Sharing fallback: Copied description to clipboard.',
+                            );
+                          }
+                        }
                       },
                       child: Container(
                         padding: const EdgeInsets.all(8),
