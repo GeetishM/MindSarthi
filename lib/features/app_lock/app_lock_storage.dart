@@ -4,6 +4,7 @@ class AppLockStorage {
   static const _pinKey = 'user_pin';
   static const _isPinEnabledKey = 'is_pin_enabled';
   static const _isBiometricEnabledKey = 'is_biometric_enabled';
+  static const _autoLockDurationKey = 'auto_lock_duration'; // Auto lock delay in seconds
 
   static Future<void> setPin(String pin) async {
     final prefs = await SharedPreferences.getInstance();
@@ -35,10 +36,21 @@ class AppLockStorage {
     return prefs.getBool(_isBiometricEnabledKey) ?? false;
   }
 
+  static Future<void> setAutoLockDuration(int seconds) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_autoLockDurationKey, seconds);
+  }
+
+  static Future<int> getAutoLockDuration() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_autoLockDurationKey) ?? 0; // Default is 0 (Immediately)
+  }
+
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_pinKey);
     await prefs.remove(_isPinEnabledKey);
     await prefs.remove(_isBiometricEnabledKey);
+    await prefs.remove(_autoLockDurationKey);
   }
 }

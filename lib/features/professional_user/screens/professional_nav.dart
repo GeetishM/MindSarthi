@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/professional_user/screens/dashboard/professional_home.dart';
@@ -61,7 +61,7 @@ class _ProfessionalNavState extends State<ProfessionalNav> {
             now.difference(_lastBackPressed!) < const Duration(seconds: 2);
 
         if (backPressedRecently) {
-          exit(0);
+          SystemNavigator.pop();
         } else {
           _lastBackPressed = now;
           AppToast.info(context, 'Press back again to exit');

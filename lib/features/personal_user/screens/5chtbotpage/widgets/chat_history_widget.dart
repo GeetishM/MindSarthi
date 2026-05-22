@@ -91,7 +91,7 @@ class ChatHistoryWidget extends StatelessWidget {
           isNewChat: false,
           chatID: chat.chatId,
         );
-        if (context.mounted) {
+        if (context.mounted && Navigator.canPop(context)) {
           Navigator.pop(context);
         }
       },

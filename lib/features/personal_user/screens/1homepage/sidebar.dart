@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
@@ -8,7 +9,7 @@ import 'package:mindsarthi/core/widgets/theme_toggle.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:mindsarthi/features/app_lock/app_lock_screen.dart';
+import 'package:mindsarthi/features/app_lock/app_lock_settings_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/profile.dart';
 import 'package:mindsarthi/core/localization/locale_provider.dart';
 import 'package:mindsarthi/core/localization/app_localizations.dart';
@@ -151,7 +152,7 @@ class _SidebarState extends State<Sidebar> with SingleTickerProviderStateMixin {
                     children: [
                       _buildAnimatedItem(
                         index: 1,
-                        icon: Icons.shield_rounded,
+                        icon: CupertinoIcons.lock_shield_fill,
                         title: context.tr('sb_app_lock'),
                         isDark: isDark,
                         onTap: (ctx) => Navigator.push(

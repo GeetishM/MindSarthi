@@ -77,20 +77,22 @@ class _ChatScreenState extends State<ChatScreen> {
             elevation: 0,
             centerTitle: true,
             automaticallyImplyLeading: false,
-            leading: CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ChatHistoryScreen()),
-                );
-              },
-              child: Icon(
-                CupertinoIcons.clock,
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                size: 24,
-              ),
-            ),
+            leading: MediaQuery.of(context).size.width >= 1024
+                ? null
+                : CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ChatHistoryScreen()),
+                      );
+                    },
+                    child: Icon(
+                      CupertinoIcons.clock,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      size: 24,
+                    ),
+                  ),
             title: Text(
               'Sarthi AI',
               style: TextStyle(

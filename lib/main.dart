@@ -21,6 +21,7 @@ import 'package:mindsarthi/core/services/notification_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/insight_data.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/MoodInputs/models/mood_provider.dart';
+import 'package:mindsarthi/features/app_lock/app_lock_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -163,7 +164,7 @@ class _AuthGateState extends State<_AuthGate> {
           );
         }
         if (snapshot.hasData) {
-          return const RoleRouter();
+          return const AppLockWrapper(child: RoleRouter());
         } else {
           return const WelcomeScreen();
         }
