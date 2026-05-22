@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/Bookmarked_screen.dart';
+import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
 import 'package:shimmer/shimmer.dart';
 import 'bookmark_manager.dart';
 import 'insight_card.dart';
@@ -89,20 +90,21 @@ class _InsightPageState extends State<InsightPage> {
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            key: const ValueKey('cms_nav_button'),
-            icon: Icon(
-              CupertinoIcons.pencil_ellipsis_rectangle,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+          if (Insight.isTestingMode)
+            IconButton(
+              key: const ValueKey('cms_nav_button'),
+              icon: Icon(
+                CupertinoIcons.pencil_ellipsis_rectangle,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  CupertinoPageRoute(builder: (_) => const InsightCmsPage()),
+                );
+                setState(() {});
+              },
             ),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                CupertinoPageRoute(builder: (_) => const InsightCmsPage()),
-              );
-              _loadBookmarks(); // reload in case updates happen
-            },
-          ),
           IconButton(
             key: const ValueKey('bookmarks_nav_button'),
             icon: Icon(
@@ -126,18 +128,9 @@ class _InsightPageState extends State<InsightPage> {
           // Cupertino Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: CupertinoSearchTextField(
+            child: PremiumSearchBar(
               controller: _searchController,
-              placeholder: 'Search topics, categories, articles...',
-              backgroundColor: isDark ? AppColors.darkSurface : AppColors.surface,
-              style: TextStyle(
-                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              ),
-              placeholderStyle: TextStyle(
-                color: isDark ? AppColors.darkTextHint : AppColors.textHint,
-              ),
-              itemColor: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              itemSize: 20,
+              hintText: 'Search topics, categories, articles...',
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
@@ -234,6 +227,7 @@ class _InsightPageState extends State<InsightPage> {
                                       context,
                                       CupertinoPageRoute(
                                         builder: (_) => InsightDetailPage(
+                                          id: insight.id,
                                           heading: insight.heading,
                                           content: insight.content,
                                           author: insight.author,

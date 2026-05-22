@@ -48,7 +48,7 @@ void main() {
     expect(find.text('Author B'), findsOneWidget);
 
     // 2. Search bar successfully filters insights.
-    final searchField = find.byType(CupertinoSearchTextField);
+    final searchField = find.byType(TextField);
     expect(searchField, findsOneWidget);
 
     // Enter search query "One"

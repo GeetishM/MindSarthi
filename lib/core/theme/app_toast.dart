@@ -131,4 +131,44 @@ class AppToast {
         return AppColors.primary;
     }
   }
+
+  static void showUndo(
+    BuildContext context,
+    String message, {
+    required VoidCallback onUndo,
+    Duration duration = const Duration(seconds: 4),
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black87,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: theme.colorScheme.primary.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        elevation: 6,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        duration: duration,
+        action: SnackBarAction(
+          label: 'Undo',
+          textColor: theme.colorScheme.primary,
+          onPressed: onUndo,
+        ),
+      ),
+    );
+  }
 }
+

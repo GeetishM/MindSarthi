@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/new_post.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_card.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/hidden_posts_manager.dart';
+import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -24,6 +26,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
   final ScrollController _contentScrollController = ScrollController();
   final ScrollController _chipScrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   bool _isScrolled = false;
   bool _isProfileComplete = false;
   bool _isCheckingProfile = true;
@@ -32,6 +35,11 @@ class _CommunityPageState extends State<CommunityPage> {
   List<GlobalKey> chipKeys = [];
 
   final uid = FirebaseAuth.instance.currentUser?.uid;
+
+  StreamSubscription? _followingSubscription;
+  StreamSubscription? _savedPostsSubscription;
+  Set<String> _followingUids = {};
+  Set<String> _savedPostIds = {};
 
   List<String> get activeFilters {
     if (_selectedSegment == 0) {
@@ -55,12 +63,48 @@ class _CommunityPageState extends State<CommunityPage> {
     super.initState();
     _checkProfileStatus();
     _loadHiddenPosts();
+    _setupFollowingAndSavedListeners();
     _contentScrollController.addListener(() {
       if (_contentScrollController.hasClients) {
         setState(() {
           _isScrolled = _contentScrollController.offset > 0;
         });
       }
+    });
+  }
+
+  void _setupFollowingAndSavedListeners() {
+    final currentUid = uid;
+    if (currentUid == null) return;
+
+    _followingSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUid)
+        .collection('following')
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _followingUids = snapshot.docs.map((doc) => doc.id).toSet();
+        });
+      }
+    }, onError: (e) {
+      debugPrint('Error listening to following: $e');
+    });
+
+    _savedPostsSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUid)
+        .collection('saved_posts')
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _savedPostIds = snapshot.docs.map((doc) => doc.id).toSet();
+        });
+      }
+    }, onError: (e) {
+      debugPrint('Error listening to saved posts: $e');
     });
   }
 
@@ -122,8 +166,11 @@ class _CommunityPageState extends State<CommunityPage> {
 
   @override
   void dispose() {
+    _followingSubscription?.cancel();
+    _savedPostsSubscription?.cancel();
     _chipScrollController.dispose();
     _contentScrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -193,6 +240,23 @@ class _CommunityPageState extends State<CommunityPage> {
         ),
         actions: [
           CupertinoButton(
+            padding: EdgeInsets.zero,
+            child: Icon(
+              CupertinoIcons.bookmark,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              size: 22,
+            ),
+            onPressed: () {
+              setState(() {
+                _selectedSegment = 0;
+                selectedFilter = 'Saved';
+              });
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _scrollToSelectedChip(3);
+              });
+            },
+          ),
+          CupertinoButton(
             padding: const EdgeInsets.only(right: 12),
             child: Icon(
               CupertinoIcons.bell, 
@@ -257,7 +321,9 @@ class _CommunityPageState extends State<CommunityPage> {
               // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: _SearchWidget(
+                child: PremiumSearchBar(
+                  controller: _searchController,
+                  hintText: 'Search topics...',
                   onChanged: (val) {
                     setState(() {
                       _searchQuery = val.toLowerCase().trim();
@@ -383,15 +449,18 @@ class _CommunityPageState extends State<CommunityPage> {
                 }
 
                 if (selectedFilter == 'Following') {
-                  return _buildEmptyMessage(
-                    "You're not following anyone yet.",
-                  );
+                  final followingPosts = posts.where((doc) {
+                    final postUid = doc['uid'];
+                    return _followingUids.contains(postUid);
+                  }).toList();
+                  return _buildFilteredPostList(followingPosts);
                 }
 
                 if (selectedFilter == 'Saved') {
-                  return _buildEmptyMessage(
-                    "You haven't saved any posts yet.",
-                  );
+                  final savedPosts = posts.where((doc) {
+                    return _savedPostIds.contains(doc.id);
+                  }).toList();
+                  return _buildFilteredPostList(savedPosts);
                 }
 
                 if (selectedFilter == 'My comments') {
@@ -685,33 +754,5 @@ class _CommunityPageState extends State<CommunityPage> {
       if (commentsSnap.docs.isNotEmpty) result.add(post);
     }
     return result;
-  }
-}
-
-class _SearchWidget extends StatelessWidget {
-  final ValueChanged<String>? onChanged;
-  const _SearchWidget({this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return CupertinoSearchTextField(
-      placeholder: 'Search topics...',
-      onChanged: onChanged,
-      style: TextStyle(
-        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-      ),
-      placeholderStyle: TextStyle(
-        color: isDark ? AppColors.darkTextHint : AppColors.textHint,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface2 : AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
-          width: 1.2,
-        ),
-      ),
-    );
   }
 }

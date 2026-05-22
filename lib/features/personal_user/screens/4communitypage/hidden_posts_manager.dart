@@ -22,4 +22,14 @@ class HiddenPostsManager {
     final hidden = await getHiddenPostIds();
     return hidden.contains(postId);
   }
+
+  static Future<void> unhidePost(String postId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final hidden = prefs.getStringList(_key) ?? [];
+
+    if (hidden.contains(postId)) {
+      hidden.remove(postId);
+      await prefs.setStringList(_key, hidden);
+    }
+  }
 }

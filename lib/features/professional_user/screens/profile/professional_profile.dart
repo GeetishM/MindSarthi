@@ -9,6 +9,7 @@ import 'package:mindsarthi/core/theme/theme_provider.dart';
 import 'package:mindsarthi/core/widgets/theme_toggle.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
+import 'package:mindsarthi/features/personal_user/screens/3insightpage/insight_cms.dart';
 
 class ProfessionalProfile extends StatefulWidget {
   const ProfessionalProfile({super.key});
@@ -277,6 +278,50 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                     ),
                   ),
                   const SizedBox(height: 10),
+
+                  // Insights CMS tile
+                  Container(
+                    decoration: BoxDecoration(
+                      color: theme.cardTheme.color ?? theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
+                      ),
+                    ),
+                    child: ListTile(
+                      leading: Icon(
+                        CupertinoIcons.pencil_ellipsis_rectangle,
+                        color: theme.colorScheme.primary,
+                        size: 22,
+                      ),
+                      title: const Text(
+                        'Insights CMS',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Create and manage insight articles',
+                        style: TextStyle(
+                          fontSize: 12,
+                        ),
+                      ),
+                      trailing: Icon(
+                        CupertinoIcons.chevron_forward,
+                        color: theme.textTheme.bodySmall?.color,
+                        size: 16,
+                      ),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const InsightCmsPage()),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
 
                   // App Lock tile
                   Container(

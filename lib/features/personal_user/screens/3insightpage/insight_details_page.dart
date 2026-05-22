@@ -1,8 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 
-class InsightDetailPage extends StatelessWidget {
+class InsightDetailPage extends StatefulWidget {
+  final String id;
   final String heading;
   final String content;
   final String author;
@@ -11,12 +15,84 @@ class InsightDetailPage extends StatelessWidget {
 
   const InsightDetailPage({
     super.key,
+    required this.id,
     required this.heading,
     required this.content,
     required this.author,
     required this.date,
     this.category = '',
   });
+
+  @override
+  State<InsightDetailPage> createState() => _InsightDetailPageState();
+}
+
+class _InsightDetailPageState extends State<InsightDetailPage> {
+  bool _hasRated = false;
+  int _userRating = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfRated();
+  }
+
+  Future<void> _checkIfRated() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _hasRated = prefs.getBool('rated_${widget.id}') ?? false;
+      _userRating = prefs.getInt('rating_val_${widget.id}') ?? 0;
+    });
+  }
+
+  Future<void> _submitRating(int rating) async {
+    if (_hasRated) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('rated_${widget.id}', true);
+    await prefs.setInt('rating_val_${widget.id}', rating);
+    setState(() {
+      _hasRated = true;
+      _userRating = rating;
+    });
+
+    try {
+      final docRef = FirebaseFirestore.instance.collection('insights').doc(widget.id);
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (snapshot.exists) {
+          final data = snapshot.data() as Map<String, dynamic>;
+          final double currentSum = (data['ratingSum'] as num?)?.toDouble() ?? 0.0;
+          final int currentCount = (data['ratingCount'] as num?)?.toInt() ?? 0;
+
+          transaction.update(docRef, {
+            'ratingSum': currentSum + rating,
+            'ratingCount': currentCount + 1,
+          });
+        } else {
+          // If the article is static / has not been written to DB, seed it now with this rating
+          transaction.set(docRef, {
+            'heading': widget.heading,
+            'content': widget.content,
+            'author': widget.author,
+            'date': widget.date,
+            'category': widget.category,
+            'ratingSum': rating.toDouble(),
+            'ratingCount': 1,
+          });
+        }
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Thank you for rating this article!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error submitting rating: $e");
+    }
+  }
 
   String _getInitials(String name) {
     if (name.isEmpty) return '?';
@@ -30,10 +106,10 @@ class InsightDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final initials = _getInitials(author);
+    final initials = _getInitials(widget.author);
 
     // Calculate dynamic reading time based on content length
-    final wordCount = content.split(RegExp(r'\s+')).length;
+    final wordCount = widget.content.split(RegExp(r'\s+')).length;
     final readTime = (wordCount / 180).ceil().clamp(1, 15);
 
     return Scaffold(
@@ -63,12 +139,7 @@ class InsightDetailPage extends StatelessWidget {
                   color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                 ),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Insight link copied to clipboard!'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+                  Share.share('Read this insightful article: "${widget.heading}" by ${widget.author} on MindSarthi!');
                 },
               ),
               const SizedBox(width: 8),
@@ -92,7 +163,7 @@ class InsightDetailPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          category.isNotEmpty ? category.toUpperCase() : 'INSIGHT',
+                          widget.category.isNotEmpty ? widget.category.toUpperCase() : 'INSIGHT',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
@@ -116,7 +187,7 @@ class InsightDetailPage extends StatelessWidget {
                   
                   // Heading/Title
                   Text(
-                    heading,
+                    widget.heading,
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
@@ -159,7 +230,7 @@ class InsightDetailPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            author,
+                            widget.author,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -168,7 +239,7 @@ class InsightDetailPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            date,
+                            widget.date,
                             style: TextStyle(
                               fontSize: 12,
                               color: isDark ? AppColors.darkTextHint : AppColors.textHint,
@@ -190,7 +261,7 @@ class InsightDetailPage extends StatelessWidget {
                   
                   // Article Content Body
                   Text(
-                    content,
+                    widget.content,
                     style: TextStyle(
                       fontSize: 16,
                       color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
@@ -199,6 +270,116 @@ class InsightDetailPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 40),
+
+                  // Interactive Ratings Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : Colors.grey[200]!,
+                        width: 1.2,
+                      ),
+                    ),
+                    child: StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance.collection('insights').doc(widget.id).snapshots(),
+                      builder: (context, snapshot) {
+                        double avgRating = 0.0;
+                        int count = 0;
+                        if (snapshot.hasData && snapshot.data!.exists) {
+                          final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+                          final double sum = (data['ratingSum'] as num?)?.toDouble() ?? 0.0;
+                          count = (data['ratingCount'] as num?)?.toInt() ?? 0;
+                          if (count > 0) {
+                            avgRating = sum / count;
+                          }
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'How helpful was this article?',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Current Average Rating display
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ...List.generate(5, (index) {
+                                  final starValue = index + 1;
+                                  if (starValue <= avgRating.floor()) {
+                                    return const Icon(Icons.star_rounded, color: Colors.amber, size: 22);
+                                  } else if (starValue - 0.5 <= avgRating) {
+                                    return const Icon(Icons.star_half_rounded, color: Colors.amber, size: 22);
+                                  } else {
+                                    return const Icon(Icons.star_border_rounded, color: Colors.amber, size: 22);
+                                  }
+                                }),
+                                const SizedBox(width: 8),
+                                Text(
+                                  count > 0 
+                                      ? '${avgRating.toStringAsFixed(1)} ($count reviews)' 
+                                      : 'No reviews yet',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Divider(
+                              color: isDark ? AppColors.darkBorder : Colors.grey[200]!,
+                              thickness: 1,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _hasRated ? 'Your Rating' : 'Tap a star to rate',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Interactive Star Rating row
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(5, (index) {
+                                final starVal = index + 1;
+                                final isActive = _hasRated ? (_userRating >= starVal) : false;
+                                return GestureDetector(
+                                  onTap: _hasRated ? null : () => _submitRating(starVal),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: Icon(
+                                      _hasRated 
+                                          ? (isActive ? Icons.star_rounded : Icons.star_border_rounded)
+                                          : Icons.star_border_rounded,
+                                      color: _hasRated 
+                                          ? (isActive ? Colors.amber : Colors.grey[600])
+                                          : Colors.grey[400],
+                                      size: 32,
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 48),
                 ],
               ),
             ),

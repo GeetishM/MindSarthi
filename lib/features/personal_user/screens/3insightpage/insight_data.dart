@@ -23,6 +23,8 @@ class Insight {
             'author': insight.author,
             'date': insight.date,
             'category': insight.category,
+            'ratingSum': insight.ratingSum,
+            'ratingCount': insight.ratingCount,
           });
         }
         await batch.commit();
@@ -52,6 +54,8 @@ class Insight {
   final String author;
   final String date;
   final String category; // e.g. 'Panic Attacks', 'Insomnia', etc.
+  final double ratingSum;
+  final int ratingCount;
 
   Insight({
     required this.id,
@@ -60,6 +64,8 @@ class Insight {
     required this.author,
     required this.date,
     this.category = '',
+    this.ratingSum = 0.0,
+    this.ratingCount = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -70,6 +76,8 @@ class Insight {
       'author': author,
       'date': date,
       'category': category,
+      'ratingSum': ratingSum,
+      'ratingCount': ratingCount,
     };
   }
 
@@ -81,6 +89,8 @@ class Insight {
       author: map['author'] ?? '',
       date: map['date'] ?? '',
       category: map['category'] ?? '',
+      ratingSum: (map['ratingSum'] as num?)?.toDouble() ?? 0.0,
+      ratingCount: map['ratingCount'] ?? 0,
     );
   }
 
@@ -94,6 +104,8 @@ class Insight {
       author: data['author'] ?? '',
       date: data['date'] ?? '',
       category: data['category'] ?? '',
+      ratingSum: (data['ratingSum'] as num?)?.toDouble() ?? 0.0,
+      ratingCount: data['ratingCount'] ?? 0,
     );
   }
 
@@ -112,6 +124,8 @@ class Insight {
       'author': insight.author,
       'date': insight.date,
       'category': insight.category,
+      'ratingSum': insight.ratingSum,
+      'ratingCount': insight.ratingCount,
     });
   }
 
@@ -130,6 +144,8 @@ class Insight {
       'author': insight.author,
       'date': insight.date,
       'category': insight.category,
+      'ratingSum': insight.ratingSum,
+      'ratingCount': insight.ratingCount,
     });
   }
 
@@ -142,6 +158,7 @@ class Insight {
     await firestore.collection('insights').doc(id).delete();
   }
 }
+
 
 // Static fallback list (used when Firestore `insights` collection is empty)
 final List<Insight> insightsList = [

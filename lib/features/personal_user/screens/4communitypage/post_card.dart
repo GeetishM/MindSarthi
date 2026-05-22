@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/comment_input_screen.dart';
@@ -179,12 +180,23 @@ class _PostCardState extends State<PostCard>
                   ),
                 );
                 if (confirm == true) {
+                  final postData = Map<String, dynamic>.from(data);
+                  final postId = widget.post.id;
                   await FirebaseFirestore.instance
                       .collection('posts')
-                      .doc(widget.post.id)
+                      .doc(postId)
                       .delete();
                   if (context.mounted) {
-                    AppToast.success(context, 'Post deleted');
+                    AppToast.showUndo(
+                      context,
+                      'Post deleted',
+                      onUndo: () async {
+                        await FirebaseFirestore.instance
+                            .collection('posts')
+                            .doc(postId)
+                            .set(postData);
+                      },
+                    );
                   }
                 }
               },
@@ -216,12 +228,23 @@ class _PostCardState extends State<PostCard>
                   ),
                 );
                 if (confirm == true) {
+                  final postData = Map<String, dynamic>.from(data);
+                  final postId = widget.post.id;
                   await FirebaseFirestore.instance
                       .collection('posts')
-                      .doc(widget.post.id)
+                      .doc(postId)
                       .delete();
                   if (context.mounted) {
-                    AppToast.success(context, 'Post deleted by moderator');
+                    AppToast.showUndo(
+                      context,
+                      'Post deleted by moderator',
+                      onUndo: () async {
+                        await FirebaseFirestore.instance
+                            .collection('posts')
+                            .doc(postId)
+                            .set(postData);
+                      },
+                    );
                   }
                 }
               },
@@ -233,12 +256,22 @@ class _PostCardState extends State<PostCard>
             CupertinoActionSheetAction(
               onPressed: () async {
                 Navigator.pop(context);
-                await HiddenPostsManager.hidePost(widget.post.id);
+                final postId = widget.post.id;
+                await HiddenPostsManager.hidePost(postId);
+                if (widget.onPostHidden != null) {
+                  widget.onPostHidden!();
+                }
                 if (context.mounted) {
-                  AppToast.success(context, 'Post hidden');
-                  if (widget.onPostHidden != null) {
-                    widget.onPostHidden!();
-                  }
+                  AppToast.showUndo(
+                    context,
+                    'Post hidden',
+                    onUndo: () async {
+                      await HiddenPostsManager.unhidePost(postId);
+                      if (widget.onPostHidden != null) {
+                        widget.onPostHidden!();
+                      }
+                    },
+                  );
                 }
               },
               child: const Text('Hide Post'),
@@ -393,6 +426,60 @@ class _PostCardState extends State<PostCard>
                             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                           ),
                         ),
+                        if (!isOwner) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '•',
+                            style: TextStyle(
+                              color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          StreamBuilder<DocumentSnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(currentUid)
+                                .collection('following')
+                                .doc(data['uid'])
+                                .snapshots(),
+                            builder: (context, followSnapshot) {
+                              final isFollowing = followSnapshot.data?.exists ?? false;
+                              return GestureDetector(
+                                onTap: () async {
+                                  final followRef = FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(currentUid)
+                                      .collection('following')
+                                      .doc(data['uid']);
+                                  if (isFollowing) {
+                                    await followRef.delete();
+                                    if (context.mounted) {
+                                      AppToast.success(context, 'Unfollowed user');
+                                    }
+                                  } else {
+                                    await followRef.set({
+                                      'timestamp': FieldValue.serverTimestamp(),
+                                    });
+                                    if (context.mounted) {
+                                      AppToast.success(context, 'Followed user');
+                                    }
+                                  }
+                                },
+                                child: Text(
+                                  isFollowing ? 'Following' : 'Follow',
+                                  style: TextStyle(
+                                    color: isFollowing 
+                                        ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
+                                        : (isDark ? AppColors.darkPrimary : AppColors.primary),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ],
                     );
                   },
@@ -428,6 +515,51 @@ class _PostCardState extends State<PostCard>
               height: 1.4,
             ),
           ),
+          if (data['mediaUrl'] != null && data['mediaUrl'].toString().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Image.network(
+                    data['mediaUrl'],
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 220,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 150,
+                        color: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+                        child: Center(
+                          child: Icon(
+                            CupertinoIcons.photo,
+                            color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                            size: 40,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  if (data['mediaType'] == 'video')
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
 
           // Bottom Actions
@@ -485,11 +617,64 @@ class _PostCardState extends State<PostCard>
                 ),
               ],
 
+              // Save/Bookmark button (only for non-anonymous posts)
+              if (!isAnonymous) ...[
+                const SizedBox(width: 20),
+                StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(currentUid)
+                      .collection('saved_posts')
+                      .doc(widget.post.id)
+                      .snapshots(),
+                  builder: (context, savedSnapshot) {
+                    final isSaved = savedSnapshot.data?.exists ?? false;
+                    return GestureDetector(
+                      onTap: () async {
+                        final savedRef = FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(currentUid)
+                            .collection('saved_posts')
+                            .doc(widget.post.id);
+                        if (isSaved) {
+                          await savedRef.delete();
+                          if (context.mounted) {
+                            AppToast.success(context, 'Removed from Saved');
+                          }
+                        } else {
+                          await savedRef.set({
+                            'savedAt': FieldValue.serverTimestamp(),
+                          });
+                          if (context.mounted) {
+                            AppToast.success(context, 'Saved post');
+                          }
+                        }
+                      },
+                      child: Icon(
+                        isSaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark,
+                        color: isSaved 
+                            ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+                            : (isDark ? AppColors.darkTextHint : AppColors.textHint),
+                        size: 22,
+                      ),
+                    );
+                  },
+                ),
+              ],
+
               const Spacer(),
-              Icon(
-                CupertinoIcons.share,
-                color: isDark ? AppColors.darkTextHint : AppColors.textHint,
-                size: 22,
+              GestureDetector(
+                onTap: () {
+                  final textToShare = isAnonymous
+                      ? 'Anonymous Post: "${data['content']}"\nShared via MindSarthi'
+                      : 'Post by @${data['username'] ?? 'User'}: "${data['content']}"\nShared via MindSarthi';
+                  Share.share(textToShare);
+                },
+                child: Icon(
+                  CupertinoIcons.share,
+                  color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                  size: 22,
+                ),
               ),
             ],
           ),

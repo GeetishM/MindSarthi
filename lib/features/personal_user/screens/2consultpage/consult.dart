@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
 
 class Therapist {
   final String id;
@@ -102,6 +105,10 @@ const List<Therapist> kTherapists = [
 ];
 
 class ConsultPage extends StatefulWidget {
+  static bool isTestingMode = false;
+  static List<Session> testSessionsList = [];
+  static List<Therapist> testTherapistsList = [];
+
   const ConsultPage({super.key});
 
   @override
@@ -111,7 +118,8 @@ class ConsultPage extends StatefulWidget {
 class _ConsultPageState extends State<ConsultPage> {
   String _selectedCategory = 'All';
   String _selectedSort = 'Rating';
-  List<Session> _sessions = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   final List<String> _categories = [
     'All',
@@ -126,22 +134,102 @@ class _ConsultPageState extends State<ConsultPage> {
   @override
   void initState() {
     super.initState();
-    _sessions = [
-      Session(
-        id: 's1',
-        therapistName: 'Dr. Neha Sharma',
-        status: 'Upcoming',
-        dateTime: DateTime.now().add(const Duration(days: 1, hours: 2)),
-        type: 'Video',
-      ),
-      Session(
-        id: 's2',
-        therapistName: 'Dr. John Doe',
-        status: 'Completed',
-        dateTime: DateTime.now().subtract(const Duration(days: 3)),
-        type: 'Voice',
-      ),
-    ];
+    _seedProfessionalsIfEmpty();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _seedProfessionalsIfEmpty() async {
+    if (ConsultPage.isTestingMode) return;
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final snapshot = await firestore.collection('professionals').limit(1).get();
+      if (snapshot.docs.isEmpty) {
+        final batch = firestore.batch();
+        for (var t in kTherapists) {
+          final docRef = firestore.collection('professionals').doc(t.id);
+          batch.set(docRef, {
+            'uid': t.id,
+            'displayName': t.name,
+            'role': t.role,
+            'experience': t.experience,
+            'rating': t.rating,
+            'reviewsCount': t.reviewsCount,
+            'startingPrice': t.startingPrice,
+            'specializations': t.expertiseTags,
+            'bio': t.biography,
+            'availableSlots': t.availableSlots,
+            'avatarColorValue': t.avatarColor.value,
+          });
+        }
+        await batch.commit();
+        debugPrint("Professionals successfully seeded to Firestore!");
+      }
+    } catch (e) {
+      debugPrint("Error seeding professionals: $e");
+    }
+  }
+
+  Stream<List<Session>> _sessionsStream() {
+    if (ConsultPage.isTestingMode) {
+      return Stream.value(ConsultPage.testSessionsList);
+    }
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    var query = FirebaseFirestore.instance.collection('sessions');
+    Query actualQuery;
+    if (currentUid != null) {
+      actualQuery = query.where('clientUid', isEqualTo: currentUid);
+    } else {
+      actualQuery = query;
+    }
+    return actualQuery.snapshots().map((snapshot) {
+      final list = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        Timestamp? ts = data['dateTime'] as Timestamp?;
+        DateTime dt = ts != null ? ts.toDate() : DateTime.now();
+        return Session(
+          id: doc.id,
+          therapistName: data['therapistName'] ?? 'Therapist',
+          status: data['status'] ?? 'Upcoming',
+          dateTime: dt,
+          type: data['type'] ?? 'Video',
+        );
+      }).toList();
+      // Sort sessions by date (newest first)
+      list.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      return list;
+    });
+  }
+
+  Stream<List<Therapist>> _therapistsStream() {
+    if (ConsultPage.isTestingMode) {
+      return Stream.value(ConsultPage.testTherapistsList);
+    }
+    return FirebaseFirestore.instance.collection('professionals').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        final List<String> slots = List<String>.from(data['availableSlots'] ?? ['09:00 AM', '12:00 PM', '03:00 PM', '06:00 PM']);
+        final List<String> specs = List<String>.from(data['specializations'] ?? data['expertiseTags'] ?? ['Therapy']);
+        final int colorValue = data['avatarColorValue'] ?? data['avatarColor'] ?? Colors.indigo.value;
+        return Therapist(
+          id: doc.id,
+          name: data['displayName'] ?? data['name'] ?? 'Certified Professional',
+          role: data['role'] ?? 'Therapist',
+          experience: data['experience'] ?? '5 years',
+          rating: (data['rating'] as num?)?.toDouble() ?? 5.0,
+          reviewsCount: (data['reviewsCount'] as num?)?.toInt() ?? 1,
+          startingPrice: (data['startingPrice'] as num?)?.toInt() ?? 500,
+          expertiseTags: specs,
+          biography: data['bio'] ?? data['biography'] ?? 'No biography details provided yet.',
+          availableSlots: slots,
+          avatarColor: Color(colorValue),
+        );
+      }).toList();
+    });
   }
 
   int _parseSlotHour(String slot) {
@@ -171,44 +259,97 @@ class _ConsultPageState extends State<ConsultPage> {
       builder: (context) {
         return BookingSheet(
           therapist: therapist,
-          onBookingConfirmed: (DateTime selectedDate, String selectedSlot, String medium) {
-            final newSession = Session(
-              id: DateTime.now().millisecondsSinceEpoch.toString(),
-              therapistName: therapist.name,
-              status: 'Upcoming',
-              dateTime: DateTime(
-                selectedDate.year,
-                selectedDate.month,
-                selectedDate.day,
-                _parseSlotHour(selectedSlot),
-                _parseSlotMinute(selectedSlot),
-              ),
-              type: medium,
-            );
-            setState(() {
-              _sessions.insert(0, newSession);
-            });
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    const Icon(CupertinoIcons.checkmark_circle_fill, color: Colors.white),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "Session booked with ${therapist.name}!",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+          onBookingConfirmed: (DateTime selectedDate, String selectedSlot, String medium) async {
+            try {
+              if (ConsultPage.isTestingMode) {
+                final newSession = Session(
+                  id: 'session_${DateTime.now().millisecondsSinceEpoch}',
+                  therapistName: therapist.name,
+                  status: 'Upcoming',
+                  dateTime: DateTime(
+                    selectedDate.year,
+                    selectedDate.month,
+                    selectedDate.day,
+                    _parseSlotHour(selectedSlot),
+                    _parseSlotMinute(selectedSlot),
+                  ),
+                  type: medium,
+                );
+                ConsultPage.testSessionsList.add(newSession);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(CupertinoIcons.checkmark_circle_fill, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "Session booked with ${therapist.name}!",
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
                       ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      margin: const EdgeInsets.all(16),
                     ),
-                  ],
+                  );
+                }
+                return;
+              }
+              final currentUid = FirebaseAuth.instance.currentUser?.uid;
+              final sessionData = {
+                'clientUid': currentUid,
+                'therapistName': therapist.name,
+                'therapistId': therapist.id,
+                'status': 'Upcoming',
+                'dateTime': DateTime(
+                  selectedDate.year,
+                  selectedDate.month,
+                  selectedDate.day,
+                  _parseSlotHour(selectedSlot),
+                  _parseSlotMinute(selectedSlot),
                 ),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                margin: const EdgeInsets.all(16),
-              ),
-            );
+                'type': medium,
+                'createdAt': FieldValue.serverTimestamp(),
+              };
+              await FirebaseFirestore.instance.collection('sessions').add(sessionData);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(CupertinoIcons.checkmark_circle_fill, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Session booked with ${therapist.name}!",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    margin: const EdgeInsets.all(16),
+                  ),
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Booking failed: $e"),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
           },
         );
       },
@@ -221,22 +362,6 @@ class _ConsultPageState extends State<ConsultPage> {
     final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-
-    // Filter therapists
-    final filteredTherapists = kTherapists.where((t) {
-      if (_selectedCategory == 'All') return true;
-      return t.expertiseTags.contains(_selectedCategory);
-    }).toList();
-
-    // Sort therapists
-    if (_selectedSort == 'Price') {
-      filteredTherapists.sort((a, b) => a.startingPrice.compareTo(b.startingPrice));
-    } else if (_selectedSort == 'Experience') {
-      int getYears(String exp) => int.tryParse(exp.replaceAll(RegExp(r'\D'), '')) ?? 0;
-      filteredTherapists.sort((a, b) => getYears(b.experience).compareTo(getYears(a.experience)));
-    } else if (_selectedSort == 'Rating') {
-      filteredTherapists.sort((a, b) => b.rating.compareTo(a.rating));
-    }
 
     return Scaffold(
       backgroundColor: scaffoldBg,
@@ -253,167 +378,218 @@ class _ConsultPageState extends State<ConsultPage> {
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Sessions Section
-          if (_sessions.isNotEmpty) ...[
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Your Sessions',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 120,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        clipBehavior: Clip.none,
-                        itemCount: _sessions.length,
-                        separatorBuilder: (context, index) => const SizedBox(width: 16),
-                        itemBuilder: (context, index) {
-                          return SessionCard(
-                            session: _sessions[index],
-                            isDark: isDark,
-                          );
-                        },
+      body: StreamBuilder<List<Session>>(
+        stream: _sessionsStream(),
+        builder: (context, sessionsSnapshot) {
+          final sessions = sessionsSnapshot.data ?? [];
+          return StreamBuilder<List<Therapist>>(
+            stream: _therapistsStream(),
+            builder: (context, therapistsSnapshot) {
+              final allTherapists = therapistsSnapshot.data ?? [];
+
+              // Filter therapists locally
+              var filteredTherapists = allTherapists.where((t) {
+                final matchesCategory = _selectedCategory == 'All' || t.expertiseTags.contains(_selectedCategory);
+                final query = _searchQuery.toLowerCase();
+                final matchesSearch = _searchQuery.isEmpty || 
+                    t.name.toLowerCase().contains(query) ||
+                    t.role.toLowerCase().contains(query) ||
+                    t.biography.toLowerCase().contains(query) ||
+                    t.expertiseTags.any((tag) => tag.toLowerCase().contains(query));
+                return matchesCategory && matchesSearch;
+              }).toList();
+
+              // Sort therapists
+              if (_selectedSort == 'Price') {
+                filteredTherapists.sort((a, b) => a.startingPrice.compareTo(b.startingPrice));
+              } else if (_selectedSort == 'Experience') {
+                int getYears(String exp) => int.tryParse(exp.replaceAll(RegExp(r'\D'), '')) ?? 0;
+                filteredTherapists.sort((a, b) => getYears(b.experience).compareTo(getYears(a.experience)));
+              } else if (_selectedSort == 'Rating') {
+                filteredTherapists.sort((a, b) => b.rating.compareTo(a.rating));
+              }
+
+              return CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  // Sessions Section
+                  if (sessions.isNotEmpty) ...[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Your Sessions',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: textPrimary,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              height: 120,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                clipBehavior: Clip.none,
+                                itemCount: sessions.length,
+                                separatorBuilder: (context, index) => const SizedBox(width: 16),
+                                itemBuilder: (context, index) {
+                                  return SessionCard(
+                                    session: sessions[index],
+                                    isDark: isDark,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
-                ),
-              ),
-            ),
-          ],
 
-          // Book a Session Title & Filter Row
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Book a Session',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: textPrimary,
-                      letterSpacing: -0.5,
+                  // Book a Session Title & Filter Row
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Book a Session',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: textPrimary,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          FilterButton(
+                            isDark: isDark,
+                            selectedSort: _selectedSort,
+                            onSelected: (val) {
+                              setState(() {
+                                _selectedSort = val;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  FilterButton(
-                    
-                    isDark: isDark,
-                    selectedSort: _selectedSort,
-                    onSelected: (val) {
-                      setState(() {
-                        _selectedSort = val;
-                      });
-                    },
+
+                  // Premium Search Bar
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                      child: PremiumSearchBar(
+                        controller: _searchController,
+                        hintText: 'Search experts, specializations...',
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 8)),
+
+                  // Categories Horizontal List
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: SizedBox(
+                        height: 38,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          itemCount: _categories.length,
+                          separatorBuilder: (context, index) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            final cat = _categories[index];
+                            return CategoryPill(
+                              category: cat,
+                              isSelected: cat == _selectedCategory,
+                              onTap: () {
+                                setState(() {
+                                  _selectedCategory = cat;
+                                });
+                              },
+                              isDark: isDark,
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Therapist List
+                  if (filteredTherapists.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                CupertinoIcons.person_crop_circle_badge_exclam,
+                                size: 48,
+                                color: textSecondary.withOpacity(0.4),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "No experts available",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                "Try searching for a different keyword or category.",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: textSecondary,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final therapist = filteredTherapists[index];
+                          return TherapistCard(
+                            therapist: therapist,
+                            isDark: isDark,
+                            onBookTap: () => _openBookingSheet(context, therapist),
+                          );
+                        },
+                        childCount: filteredTherapists.length,
+                      ),
+                    ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 40),
                   ),
                 ],
-              ),
-            ),
-          ),
-
-          // Categories Horizontal List
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: SizedBox(
-                height: 38,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  itemCount: _categories.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final cat = _categories[index];
-                    return CategoryPill(
-                      category: cat,
-                      isSelected: cat == _selectedCategory,
-                      onTap: () {
-                        setState(() {
-                          _selectedCategory = cat;
-                        });
-                      },
-                      isDark: isDark,
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-
-          // Therapist List
-          if (filteredTherapists.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        CupertinoIcons.person_crop_circle_badge_exclam,
-                        size: 48,
-                        color: textSecondary.withValues(alpha: 0.4),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        "No experts available",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Try selecting a different filter category.",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final therapist = filteredTherapists[index];
-                  return TherapistCard(
-                    therapist: therapist,
-                    isDark: isDark,
-                    onBookTap: () => _openBookingSheet(context, therapist),
-                  );
-                },
-                childCount: filteredTherapists.length,
-              ),
-            ),
-
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 40),
-          ),
-        ],
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -482,7 +658,6 @@ class FilterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
     return PopupMenuButton<String>(
       padding: EdgeInsets.zero,
@@ -550,7 +725,7 @@ class FilterButton extends StatelessWidget {
             Icon(
               CupertinoIcons.chevron_down,
               size: 12,
-              color: textSecondary,
+              color: isDark ? AppColors.darkTextHint : AppColors.textHint,
             ),
           ],
         ),
@@ -597,7 +772,7 @@ class TherapistCard extends StatelessWidget {
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.04),
+              color: AppColors.primary.withOpacity(0.04),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -618,7 +793,7 @@ class TherapistCard extends StatelessWidget {
                       gradient: LinearGradient(
                         colors: [
                           therapist.avatarColor,
-                          therapist.avatarColor.withValues(alpha: 0.6),
+                          therapist.avatarColor.withOpacity(0.6),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -837,7 +1012,7 @@ class SessionCard extends StatelessWidget {
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.04),
+              color: AppColors.primary.withOpacity(0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -850,7 +1025,7 @@ class SessionCard extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               color: isUpcoming
-                  ? primaryColor.withValues(alpha: 0.1)
+                  ? primaryColor.withOpacity(0.1)
                   : (isDark ? AppColors.darkSurface2 : AppColors.border),
               shape: BoxShape.circle,
             ),
@@ -1020,7 +1195,7 @@ class _BookingSheetState extends State<BookingSheet> {
               width: 36,
               height: 5,
               decoration: BoxDecoration(
-                color: textSecondary.withValues(alpha: 0.2),
+                color: textSecondary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(2.5),
               ),
             ),
@@ -1240,9 +1415,8 @@ class _BookingSheetState extends State<BookingSheet> {
                       setState(() {
                         _isConfirming = true;
                       });
-                      await Future.delayed(const Duration(milliseconds: 800));
-                      if (context.mounted) {
-                        widget.onBookingConfirmed(_selectedDate, _selectedSlot, _selectedMedium);
+                      await widget.onBookingConfirmed(_selectedDate, _selectedSlot, _selectedMedium);
+                      if (mounted) {
                         Navigator.pop(context);
                       }
                     },

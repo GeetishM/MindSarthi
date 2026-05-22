@@ -130,6 +130,7 @@ class _BookmarkedPageState extends State<BookmarkedPage> {
                           context,
                           CupertinoPageRoute(
                             builder: (_) => InsightDetailPage(
+                              id: insight.id,
                               heading: insight.heading,
                               content: insight.content,
                               author: insight.author,

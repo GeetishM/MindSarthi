@@ -10,6 +10,25 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
 
     // Build ConsultPage within a MaterialApp and Scaffold.
+    ConsultPage.isTestingMode = true;
+    ConsultPage.testTherapistsList = List<Therapist>.from(kTherapists);
+    ConsultPage.testSessionsList = [
+      Session(
+        id: 's1',
+        therapistName: 'Dr. Neha Sharma',
+        status: 'Upcoming',
+        dateTime: DateTime.now().add(const Duration(days: 1)),
+        type: 'Video',
+      ),
+      Session(
+        id: 's2',
+        therapistName: 'Dr. John Doe',
+        status: 'Completed',
+        dateTime: DateTime.now().subtract(const Duration(days: 2)),
+        type: 'Voice',
+      ),
+    ];
+
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -17,6 +36,7 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
 
     // Verify initial state: "Your Sessions" lists existing sessions.
     expect(find.text('Your Sessions'), findsOneWidget);
