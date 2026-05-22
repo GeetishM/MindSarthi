@@ -511,25 +511,12 @@ class _NavBarState extends State<NavBar> {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Center(
-                    child: Showcase(
-                      key: _getTabKey(index),
+                    child: PremiumShowcase(
+                      showcaseKey: _getTabKey(index),
                       title: _getTabTitle(index),
                       description: _getTabDesc(index),
                       targetShapeBorder: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
-                      ),
-                      tooltipBackgroundColor: AppColors.primary,
-                      tooltipBorderRadius: BorderRadius.circular(16),
-                      tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      showArrow: true,
-                      titleTextStyle: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      descTextStyle: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
                       ),
                       child: Tooltip(
                         message: item.label,
@@ -584,25 +571,12 @@ class _NavBarState extends State<NavBar> {
             onTap: () => _showLanguageSelector(context),
             isDark: isDark,
           ),
-          Showcase(
-            key: _profileKey,
+          PremiumShowcase(
+            showcaseKey: _profileKey,
             title: 'Your Profile & Settings',
             description: 'Configure App Lock settings, toggle theme mode, select language preference, and sign out of your account.',
             targetShapeBorder: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
-            ),
-            tooltipBackgroundColor: AppColors.primary,
-            tooltipBorderRadius: BorderRadius.circular(16),
-            tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            showArrow: true,
-            titleTextStyle: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-            descTextStyle: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
             ),
             child: _buildTabletSettingButton(
               icon: CupertinoIcons.profile_circled,
@@ -731,25 +705,12 @@ class _NavBarState extends State<NavBar> {
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: Showcase(
-                  key: _profileKey,
+                child: PremiumShowcase(
+                  showcaseKey: _profileKey,
                   title: 'Your Profile & Settings',
                   description: 'Access your profile to check settings, configure passcodes for App Lock, switch light/dark theme, and change language preference.',
                   targetShapeBorder: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
-                  ),
-                  tooltipBackgroundColor: AppColors.primary,
-                  tooltipBorderRadius: BorderRadius.circular(16),
-                  tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  showArrow: true,
-                  titleTextStyle: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                  descTextStyle: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
                   ),
                   child: InkWell(
                     onTap: () => Navigator.push(
@@ -850,25 +811,12 @@ class _NavBarState extends State<NavBar> {
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Showcase(
-                    key: _getTabKey(index),
+                  child: PremiumShowcase(
+                    showcaseKey: _getTabKey(index),
                     title: _getTabTitle(index),
                     description: _getTabDesc(index),
                     targetShapeBorder: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                    ),
-                    tooltipBackgroundColor: AppColors.primary,
-                    tooltipBorderRadius: BorderRadius.circular(16),
-                    tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    showArrow: true,
-                    titleTextStyle: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                    descTextStyle: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
                     ),
                     child: InkWell(
                       onTap: () => setState(() => _currentIndex = index),

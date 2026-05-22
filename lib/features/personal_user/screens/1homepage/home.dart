@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:showcaseview/showcaseview.dart';
+import 'package:mindsarthi/core/widgets/premium_showcase.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -1325,30 +1325,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         future: _fetchNickname(),
         builder: (context, snapshot) {
           final nickname = snapshot.data ?? 'Friend';
-          final firstLetter = nickname.isNotEmpty ? nickname[0].toUpperCase() : 'F';
           final hasData = snapshot.connectionState != ConnectionState.waiting;
 
           return Row(
             children: [
               widget.menuKey != null
-                  ? Showcase(
-                      key: widget.menuKey!,
+                  ? PremiumShowcase(
+                      showcaseKey: widget.menuKey!,
                       title: 'Settings & Profile',
                       description: 'Tap here to open the menu where you can access your profile, configure App Lock, change theme, and sign out.',
                       targetShapeBorder: const CircleBorder(),
-                      tooltipBackgroundColor: AppColors.primary,
-                      tooltipBorderRadius: BorderRadius.circular(16),
-                      tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      showArrow: true,
-                      titleTextStyle: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      descTextStyle: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                      ),
                       child: GestureDetector(
                         onTap: () {
                           if (_isDrawerOpen) {

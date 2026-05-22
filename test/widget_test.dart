@@ -24,6 +24,9 @@ void main() {
 
     // Verify Pinput exists
     expect(find.byType(typeOf<PinInputWidget>()), findsOneWidget);
+
+    // Read completedPin to satisfy unused variable warning
+    expect(completedPin, equals(''));
   });
 }
 
