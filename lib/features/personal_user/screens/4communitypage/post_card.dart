@@ -8,6 +8,7 @@ import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
 import 'package:mindsarthi/core/widgets/app_dialog.dart';
+import 'package:mindsarthi/core/widgets/app_action_sheet.dart';
 import 'package:mindsarthi/core/widgets/animated_action_menu.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/comment_input_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/report_dialog.dart';
@@ -137,135 +138,136 @@ class _PostCardState extends State<PostCard>
     );
   }
 
-  /// Shows the Cupertino Action Sheet for post options (Report, Hide, Delete).
+  /// Shows a themed action sheet for post options (Report, Hide, Delete).
   void _showPostOptions(BuildContext context, Map<String, dynamic> data) {
     final isOwner = data['uid'] == currentUid;
     final isAnonymous = data['isAnonymous'] == true;
 
-    showCupertinoModalPopup(
-      context: context,
-      builder: (BuildContext context) => CupertinoActionSheet(
-        title: const Text('Post Options'),
-        message: isAnonymous ? const Text('Anonymous Friendly Space') : null,
-        actions: <CupertinoActionSheetAction>[
-          // Owner delete option
-          if (isOwner)
-            CupertinoActionSheetAction(
-              isDestructiveAction: true,
-              onPressed: () async {
-                Navigator.pop(context);
-                final confirm = await MindSarthiDialog.show(
-                  context: context,
-                  title: 'Delete Post?',
-                  content: 'Are you sure you want to delete this post? This action cannot be undone.',
-                  confirmText: 'Yes, Delete',
-                  cancelText: 'Cancel',
-                  isDestructive: true,
-                );
-                if (confirm == true) {
-                  final postData = Map<String, dynamic>.from(data);
-                  final postId = widget.post.id;
+    final actions = <ActionSheetItem>[];
+
+    // Owner delete option
+    if (isOwner) {
+      actions.add(ActionSheetItem(
+        label: 'Delete Post',
+        icon: CupertinoIcons.trash,
+        isDestructive: true,
+        onTap: () async {
+          final confirm = await MindSarthiDialog.show(
+            context: context,
+            title: 'Delete Post?',
+            content:
+                'Are you sure you want to delete this post? This action cannot be undone.',
+            confirmText: 'Yes, Delete',
+            cancelText: 'Cancel',
+            isDestructive: true,
+          );
+          if (confirm == true) {
+            final postData = Map<String, dynamic>.from(data);
+            final postId = widget.post.id;
+            await FirebaseFirestore.instance
+                .collection('posts')
+                .doc(postId)
+                .delete();
+            if (context.mounted) {
+              AppToast.showUndo(
+                context,
+                'Post deleted',
+                onUndo: () async {
                   await FirebaseFirestore.instance
                       .collection('posts')
                       .doc(postId)
-                      .delete();
-                  if (context.mounted) {
-                    AppToast.showUndo(
-                      context,
-                      'Post deleted',
-                      onUndo: () async {
-                        await FirebaseFirestore.instance
-                            .collection('posts')
-                            .doc(postId)
-                            .set(postData);
-                      },
-                    );
-                  }
-                }
-              },
-              child: const Text('Delete Post'),
-            ),
+                      .set(postData);
+                },
+              );
+            }
+          }
+        },
+      ));
+    }
 
-          // Moderator delete option
-          if (!isOwner && widget.isModerator)
-            CupertinoActionSheetAction(
-              isDestructiveAction: true,
-              onPressed: () async {
-                Navigator.pop(context);
-                final confirm = await MindSarthiDialog.show(
-                  context: context,
-                  title: 'Delete Post (Moderator)?',
-                  content: 'Are you sure you want to delete this post as a moderator? This action cannot be undone.',
-                  confirmText: 'Yes, Delete',
-                  cancelText: 'Cancel',
-                  isDestructive: true,
-                );
-                if (confirm == true) {
-                  final postData = Map<String, dynamic>.from(data);
-                  final postId = widget.post.id;
+    // Moderator delete option
+    if (!isOwner && widget.isModerator) {
+      actions.add(ActionSheetItem(
+        label: 'Delete Post (Moderator)',
+        icon: CupertinoIcons.shield_lefthalf_fill,
+        isDestructive: true,
+        onTap: () async {
+          final confirm = await MindSarthiDialog.show(
+            context: context,
+            title: 'Delete Post (Moderator)?',
+            content:
+                'Are you sure you want to delete this post as a moderator? This action cannot be undone.',
+            confirmText: 'Yes, Delete',
+            cancelText: 'Cancel',
+            isDestructive: true,
+          );
+          if (confirm == true) {
+            final postData = Map<String, dynamic>.from(data);
+            final postId = widget.post.id;
+            await FirebaseFirestore.instance
+                .collection('posts')
+                .doc(postId)
+                .delete();
+            if (context.mounted) {
+              AppToast.showUndo(
+                context,
+                'Post deleted by moderator',
+                onUndo: () async {
                   await FirebaseFirestore.instance
                       .collection('posts')
                       .doc(postId)
-                      .delete();
-                  if (context.mounted) {
-                    AppToast.showUndo(
-                      context,
-                      'Post deleted by moderator',
-                      onUndo: () async {
-                        await FirebaseFirestore.instance
-                            .collection('posts')
-                            .doc(postId)
-                            .set(postData);
-                      },
-                    );
-                  }
-                }
-              },
-              child: const Text('Delete Post (Moderator)'),
-            ),
+                      .set(postData);
+                },
+              );
+            }
+          }
+        },
+      ));
+    }
 
-          // Hide post option (only for public posts)
-          if (!isAnonymous)
-            CupertinoActionSheetAction(
-              onPressed: () async {
-                Navigator.pop(context);
-                final postId = widget.post.id;
-                await HiddenPostsManager.hidePost(postId);
+    // Hide post option (only for public posts)
+    if (!isAnonymous) {
+      actions.add(ActionSheetItem(
+        label: 'Hide Post',
+        icon: CupertinoIcons.eye_slash,
+        onTap: () async {
+          final postId = widget.post.id;
+          await HiddenPostsManager.hidePost(postId);
+          if (widget.onPostHidden != null) {
+            widget.onPostHidden!();
+          }
+          if (context.mounted) {
+            AppToast.showUndo(
+              context,
+              'Post hidden',
+              onUndo: () async {
+                await HiddenPostsManager.unhidePost(postId);
                 if (widget.onPostHidden != null) {
                   widget.onPostHidden!();
                 }
-                if (context.mounted) {
-                  AppToast.showUndo(
-                    context,
-                    'Post hidden',
-                    onUndo: () async {
-                      await HiddenPostsManager.unhidePost(postId);
-                      if (widget.onPostHidden != null) {
-                        widget.onPostHidden!();
-                      }
-                    },
-                  );
-                }
               },
-              child: const Text('Hide Post'),
-            ),
+            );
+          }
+        },
+      ));
+    }
 
-          // Report post option (only for public posts, and not owner)
-          if (!isAnonymous && !isOwner)
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.pop(context);
-                showReportSheet(context, widget.post.id);
-              },
-              child: const Text('Report Post'),
-            ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          isDefaultAction: true,
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-      ),
+    // Report post option (only for public posts, and not owner)
+    if (!isAnonymous && !isOwner) {
+      actions.add(ActionSheetItem(
+        label: 'Report Post',
+        icon: CupertinoIcons.flag,
+        onTap: () {
+          showReportSheet(context, widget.post.id);
+        },
+      ));
+    }
+
+    MindSarthiActionSheet.show(
+      context: context,
+      title: 'Post Options',
+      subtitle: isAnonymous ? 'Anonymous Friendly Space' : null,
+      actions: actions,
     );
   }
 

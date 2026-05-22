@@ -26,6 +26,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:mindsarthi/core/widgets/premium_showcase.dart';
 import 'package:mindsarthi/core/widgets/app_dialog.dart';
+import 'package:mindsarthi/core/widgets/app_action_sheet.dart';
 
 class NavBar extends StatefulWidget {
   const NavBar({super.key});
@@ -137,45 +138,27 @@ class _NavBarState extends State<NavBar> {
 
   void _showLanguageSelector(BuildContext context) {
     final localeProvider = context.read<LocaleProvider>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    showCupertinoModalPopup(
+    MindSarthiActionSheet.show(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: Text(
-          'Choose Language / भाषा चुनें',
-          style: TextStyle(
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-          ),
+      title: 'Choose Language',
+      subtitle: 'भाषा चुनें',
+      actions: [
+        ActionSheetItem(
+          label: 'English',
+          icon: CupertinoIcons.textformat,
+          onTap: () => localeProvider.setLocale(const Locale('en')),
         ),
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () {
-              localeProvider.setLocale(const Locale('en'));
-              Navigator.pop(context);
-            },
-            child: const Text('English'),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              localeProvider.setLocale(const Locale('hi'));
-              Navigator.pop(context);
-            },
-            child: const Text('हिन्दी (Hindi)'),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              localeProvider.setLocale(const Locale('bn'));
-              Navigator.pop(context);
-            },
-            child: const Text('বাংলা (Bengali)'),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          isDefaultAction: true,
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+        ActionSheetItem(
+          label: 'हिन्दी (Hindi)',
+          icon: CupertinoIcons.textformat,
+          onTap: () => localeProvider.setLocale(const Locale('hi')),
         ),
-      ),
+        ActionSheetItem(
+          label: 'বাংলা (Bengali)',
+          icon: CupertinoIcons.textformat,
+          onTap: () => localeProvider.setLocale(const Locale('bn')),
+        ),
+      ],
     );
   }
 
