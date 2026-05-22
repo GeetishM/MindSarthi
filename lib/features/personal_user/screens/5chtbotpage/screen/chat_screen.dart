@@ -171,8 +171,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                       ],
                                     ),
                                     child: SizedBox(
-                                      height: 160,
-                                      width: 160,
+                                      height: 360,
+                                      width: 360,
                                       child: Lottie.asset(
                                         'assets/lottie/chatbot.json',
                                         fit: BoxFit.contain,
