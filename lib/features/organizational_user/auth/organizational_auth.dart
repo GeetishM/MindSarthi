@@ -74,36 +74,35 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Dialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? AppColors.darkSurface
-            : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Lottie.asset(
-                'assets/lottie/otp_org.json',
-                height: 120,
-                width: 120,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Sending OTP...',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
+      builder: (context) {
+        final dialogTheme = Theme.of(context);
+        return Dialog(
+          backgroundColor: dialogTheme.cardTheme.color ?? dialogTheme.colorScheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.asset(
+                  'assets/lottie/otp_org.json',
+                  height: 120,
+                  width: 120,
+                  fit: BoxFit.contain,
                 ),
-              ),
-            ],
+                const SizedBox(height: 20),
+                Text(
+                  'Sending OTP...',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: dialogTheme.textTheme.bodyLarge?.color,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
 
     try {
@@ -164,18 +163,19 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
     final cardWidth = size.width > 400 ? 380.0 : size.width * 0.9;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: theme.textTheme.bodyLarge?.color,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
@@ -188,15 +188,15 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
             child: Container(
               width: cardWidth,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : AppColors.surface,
+                color: theme.cardTheme.color ?? theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                  color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                 ),
                 boxShadow: [
                   if (!isDark)
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.06),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.06),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -211,14 +211,12 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.accent.withValues(alpha: 0.12)
-                            : AppColors.accentLight,
+                        color: theme.colorScheme.tertiary,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.business_rounded,
-                        color: AppColors.accent,
+                        color: theme.colorScheme.primary,
                         size: 32,
                       ),
                     ),
@@ -228,9 +226,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
+                        color: theme.textTheme.bodyLarge?.color,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -240,9 +236,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
-                        color: isDark
-                            ? AppColors.darkTextSecondary
-                            : AppColors.textSecondary,
+                        color: theme.textTheme.bodyMedium?.color,
                         height: 1.5,
                       ),
                     ),
@@ -255,22 +249,18 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                         labelText: 'Organization Name',
                         prefixIcon: Icon(
                           Icons.domain_rounded,
-                          color: isDark
-                              ? AppColors.darkTextHint
-                              : AppColors.textHint,
+                          color: theme.hintColor,
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(
-                            color: isDark ? AppColors.darkOrg : AppColors.org,
+                            color: theme.colorScheme.primary,
                             width: 1.8,
                           ),
                         ),
                       ),
                       style: TextStyle(
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
+                        color: theme.textTheme.bodyLarge?.color,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -280,28 +270,28 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                           ? 'Invalid Mobile Number                                   $_enteredLength/10'
                           : 'Invalid Mobile Number',
                       style: TextStyle(
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: theme.textTheme.bodyLarge?.color,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
                       dropdownTextStyle: TextStyle(
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        color: theme.textTheme.bodyLarge?.color,
                         fontSize: 15,
                       ),
                       dropdownIconPosition: IconPosition.trailing,
                       dropdownIcon: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        color: theme.textTheme.bodyMedium?.color,
                         size: 20,
                       ),
                       decoration: InputDecoration(
                         labelText: 'Admin Phone Number',
                         counterText: '',
-                        border: _buildBorder(isDark: isDark),
-                        enabledBorder: _buildBorder(isDark: isDark),
-                        focusedBorder: _buildBorder(focused: true, isDark: isDark),
-                        errorBorder: _buildBorder(hasError: true, isDark: isDark),
-                        focusedErrorBorder: _buildBorder(focused: true, hasError: true, isDark: isDark),
+                        border: _buildBorder(theme: theme),
+                        enabledBorder: _buildBorder(theme: theme),
+                        focusedBorder: _buildBorder(focused: true, theme: theme),
+                        errorBorder: _buildBorder(hasError: true, theme: theme),
+                        focusedErrorBorder: _buildBorder(focused: true, hasError: true, theme: theme),
                       ),
                       initialCountryCode: 'IN',
                       onChanged: (phone) {
@@ -342,8 +332,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                       child: ElevatedButton(
                         onPressed: _sendOtp,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              isDark ? AppColors.darkOrg : AppColors.org,
+                          backgroundColor: theme.colorScheme.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
@@ -381,7 +370,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
     );
   }
 
-  OutlineInputBorder _buildBorder({bool focused = false, bool hasError = false, required bool isDark}) {
+  OutlineInputBorder _buildBorder({bool focused = false, bool hasError = false, required ThemeData theme}) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(
@@ -390,8 +379,8 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
             : hasError
                 ? AppColors.error
                 : focused
-                    ? (isDark ? AppColors.darkOrg : AppColors.org)
-                    : (isDark ? AppColors.darkBorder : AppColors.border),
+                    ? theme.colorScheme.primary
+                    : (theme.dividerTheme.color ?? theme.colorScheme.outlineVariant),
         width: focused ? 1.8 : 1.0,
       ),
     );

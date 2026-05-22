@@ -104,19 +104,20 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Wellness Heatmap',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: theme.textTheme.titleLarge?.color,
           ),
         ),
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
       ),
       body: _isLoading
@@ -129,27 +130,27 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
                   child: Row(
                     children: [
                       _legendItem(
+                        theme,
                         'Low (1-2)',
-                        AppColors.error.withValues(alpha: isDark ? 0.4 : 0.25),
-                        isDark,
+                        theme.colorScheme.error.withValues(alpha: isDark ? 0.4 : 0.25),
                       ),
                       const SizedBox(width: 16),
                       _legendItem(
+                        theme,
                         'Mid (3)',
                         AppColors.warning.withValues(alpha: isDark ? 0.4 : 0.3),
-                        isDark,
                       ),
                       const SizedBox(width: 16),
                       _legendItem(
+                        theme,
                         'Good (4-5)',
                         AppColors.success.withValues(alpha: isDark ? 0.4 : 0.3),
-                        isDark,
                       ),
                       const Spacer(),
                       _legendItem(
+                        theme,
                         'No data',
-                        isDark ? AppColors.darkSurface2 : AppColors.background,
-                        isDark,
+                        theme.chipTheme.backgroundColor ?? (isDark ? const Color(0xFF32231E) : const Color(0xFFFCFAF9)),
                         hasBorder: true,
                       ),
                     ],
@@ -181,9 +182,7 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w700,
-                                            color: isDark
-                                                ? AppColors.darkTextSecondary
-                                                : AppColors.textSecondary,
+                                            color: theme.textTheme.bodyMedium?.color,
                                           ),
                                         ),
                                         Text(
@@ -191,9 +190,7 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w800,
-                                            color: isDark
-                                                ? AppColors.darkTextPrimary
-                                                : AppColors.textPrimary,
+                                            color: theme.textTheme.titleMedium?.color,
                                           ),
                                         ),
                                       ],
@@ -218,9 +215,7 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
-                                        color: isDark
-                                            ? AppColors.darkTextSecondary
-                                            : AppColors.textSecondary,
+                                        color: theme.textTheme.bodyMedium?.color,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -235,14 +230,12 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
                                         width: 50,
                                         height: 40,
                                         decoration: BoxDecoration(
-                                          color: _cellColor(score, isDark),
+                                          color: _cellColor(theme, isDark, score),
                                           borderRadius:
                                               BorderRadius.circular(8),
                                           border: score == null
                                               ? Border.all(
-                                                  color: isDark
-                                                      ? AppColors.darkBorder
-                                                      : AppColors.border,
+                                                  color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                                                   width: 0.5,
                                                 )
                                               : null,
@@ -254,11 +247,7 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.w800,
-                                                    color: isDark
-                                                        ? AppColors
-                                                            .darkTextPrimary
-                                                        : AppColors
-                                                            .textPrimary,
+                                                    color: theme.textTheme.titleMedium?.color,
                                                   ),
                                                 ),
                                               )
@@ -280,12 +269,12 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
     );
   }
 
-  Color _cellColor(double? score, bool isDark) {
+  Color _cellColor(ThemeData theme, bool isDark, double? score) {
     if (score == null) {
-      return isDark ? AppColors.darkSurface2 : AppColors.background;
+      return theme.chipTheme.backgroundColor ?? (isDark ? const Color(0xFF32231E) : const Color(0xFFFCFAF9));
     }
     if (score <= 2) {
-      return AppColors.error.withValues(alpha: isDark ? 0.4 : 0.25);
+      return theme.colorScheme.error.withValues(alpha: isDark ? 0.4 : 0.25);
     }
     if (score <= 3) {
       return AppColors.warning.withValues(alpha: isDark ? 0.4 : 0.3);
@@ -293,7 +282,7 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
     return AppColors.success.withValues(alpha: isDark ? 0.4 : 0.3);
   }
 
-  Widget _legendItem(String label, Color color, bool isDark,
+  Widget _legendItem(ThemeData theme, String label, Color color,
       {bool hasBorder = false}) {
     return Row(
       children: [
@@ -305,7 +294,7 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
             borderRadius: BorderRadius.circular(4),
             border: hasBorder
                 ? Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.border)
+                    color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant)
                 : null,
           ),
         ),
@@ -315,8 +304,7 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color:
-                isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            color: theme.textTheme.bodyMedium?.color,
           ),
         ),
       ],

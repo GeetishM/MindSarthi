@@ -125,17 +125,18 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: theme.textTheme.bodyLarge?.color,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
@@ -148,10 +149,10 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
             width: 400,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.surface,
+              color: theme.cardTheme.color ?? theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: isDark ? AppColors.darkBorder : AppColors.border,
+                color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
               ),
             ),
             child: Column(
@@ -160,13 +161,14 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.accent.withValues(alpha: 0.12)
-                        : AppColors.accentLight,
+                    color: theme.colorScheme.tertiary,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.verified_user_rounded,
-                      color: AppColors.accent, size: 28),
+                  child: Icon(
+                    Icons.verified_user_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -174,9 +176,7 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
+                    color: theme.textTheme.bodyLarge?.color,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -185,9 +185,7 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
                   'Enter the code sent to',
                   style: TextStyle(
                     fontSize: 14,
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary,
+                    color: theme.textTheme.bodyMedium?.color,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -196,9 +194,7 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
+                    color: theme.textTheme.bodyLarge?.color,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -211,17 +207,13 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
                     height: 56,
                     textStyle: TextStyle(
                       fontSize: 20,
-                      color: isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.textPrimary,
+                      color: theme.textTheme.bodyLarge?.color,
                     ),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkSurface2
-                          : AppColors.background,
+                      color: theme.inputDecorationTheme.fillColor ?? theme.scaffoldBackgroundColor,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                        color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                       ),
                     ),
                   ),
@@ -230,17 +222,13 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
                     height: 56,
                     textStyle: TextStyle(
                       fontSize: 20,
-                      color: isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.textPrimary,
+                      color: theme.textTheme.bodyLarge?.color,
                     ),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkSurface2
-                          : AppColors.background,
+                      color: theme.inputDecorationTheme.fillColor ?? theme.scaffoldBackgroundColor,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                        color: theme.colorScheme.primary,
                         width: 2,
                       ),
                     ),
@@ -263,8 +251,7 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
                   child: ElevatedButton(
                     onPressed: _isVerifying ? null : () => _verifyOtp(_enteredOtp),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isDark ? AppColors.darkPrimary : AppColors.primary,
+                      backgroundColor: theme.colorScheme.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -298,7 +285,7 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
                     "Didn't receive the code? Resend",
                     style: TextStyle(
                       fontSize: 14,
-                      color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                      color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

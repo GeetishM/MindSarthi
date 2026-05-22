@@ -32,28 +32,28 @@ class _AnonymousReportsState extends State<AnonymousReports>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Reports',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: theme.textTheme.bodyLarge?.color,
             letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: isDark ? AppColors.darkPrimary : AppColors.primary,
-          labelColor: isDark ? AppColors.darkPrimary : AppColors.primary,
-          unselectedLabelColor:
-              isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+          indicatorColor: theme.colorScheme.primary,
+          labelColor: theme.colorScheme.primary,
+          unselectedLabelColor: theme.textTheme.bodyMedium?.color,
           labelStyle:
               const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           tabs: const [
@@ -70,20 +70,18 @@ class _AnonymousReportsState extends State<AnonymousReports>
         icon: const Icon(Icons.edit_note_rounded),
         label: const Text('Submit Report',
             style: TextStyle(fontWeight: FontWeight.w700)),
-        backgroundColor: AppColors.accent,
-        foregroundColor: AppColors.white,
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildReportTab(false, isDark),
-          _buildReportTab(true, isDark),
+          _buildReportTab(false, theme, isDark),
+          _buildReportTab(true, theme, isDark),
         ],
       ),
     );
   }
 
-  Widget _buildReportTab(bool resolved, bool isDark) {
+  Widget _buildReportTab(bool resolved, ThemeData theme, bool isDark) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('anonymous_reports')
@@ -94,7 +92,7 @@ class _AnonymousReportsState extends State<AnonymousReports>
           .snapshots(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return _buildShimmer(isDark);
+          return _buildShimmer(theme, isDark);
         }
 
         if (!snap.hasData || snap.data!.docs.isEmpty) {
@@ -107,16 +105,14 @@ class _AnonymousReportsState extends State<AnonymousReports>
                       ? Icons.check_circle_outline_rounded
                       : Icons.inbox_rounded,
                   size: 56,
-                  color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                  color: theme.hintColor,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   resolved ? 'No resolved reports' : 'No open reports',
                   style: TextStyle(
                     fontSize: 16,
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary,
+                    color: theme.textTheme.bodyMedium?.color,
                   ),
                 ),
               ],
@@ -134,7 +130,7 @@ class _AnonymousReportsState extends State<AnonymousReports>
               data: data,
               docId: doc.id,
               orgId: _uid!,
-              isDark: isDark,
+              theme: theme,
               isResolved: resolved,
             );
           },
@@ -143,7 +139,7 @@ class _AnonymousReportsState extends State<AnonymousReports>
     );
   }
 
-  Widget _buildShimmer(bool isDark) {
+  Widget _buildShimmer(ThemeData theme, bool isDark) {
     return ListView.builder(
       padding: const EdgeInsets.all(24),
       itemCount: 4,
@@ -156,7 +152,7 @@ class _AnonymousReportsState extends State<AnonymousReports>
           margin: const EdgeInsets.only(bottom: 12),
           height: 100,
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : Colors.white,
+            color: theme.cardTheme.color ?? theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
           ),
         ),
@@ -169,14 +165,14 @@ class _ReportCard extends StatelessWidget {
   final Map<String, dynamic> data;
   final String docId;
   final String orgId;
-  final bool isDark;
+  final ThemeData theme;
   final bool isResolved;
 
   const _ReportCard({
     required this.data,
     required this.docId,
     required this.orgId,
-    required this.isDark,
+    required this.theme,
     required this.isResolved,
   });
 
@@ -188,22 +184,21 @@ class _ReportCard extends StatelessWidget {
     final categoryColors = {
       'Harassment': AppColors.error,
       'Workload': AppColors.warning,
-      'Management': AppColors.accent,
-      'Environment': isDark ? AppColors.darkPrimary : AppColors.primary,
-      'Other': isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+      'Management': theme.colorScheme.secondary,
+      'Environment': theme.colorScheme.primary,
+      'Other': theme.textTheme.bodyMedium?.color ?? Colors.grey,
     };
 
-    final color = categoryColors[category] ??
-        (isDark ? AppColors.darkPrimary : AppColors.primary);
+    final color = categoryColors[category] ?? theme.colorScheme.primary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: Column(
@@ -231,7 +226,7 @@ class _ReportCard extends StatelessWidget {
               Icon(
                 Icons.shield_rounded,
                 size: 16,
-                color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                color: theme.hintColor,
               ),
               const SizedBox(width: 4),
               Text(
@@ -239,7 +234,7 @@ class _ReportCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                  color: theme.hintColor,
                 ),
               ),
             ],
@@ -249,7 +244,7 @@ class _ReportCard extends StatelessWidget {
             content,
             style: TextStyle(
               fontSize: 14,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              color: theme.textTheme.bodyLarge?.color,
               height: 1.5,
             ),
           ),

@@ -70,19 +70,20 @@ class _SubmitReportState extends State<SubmitReport> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Submit Report',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: theme.textTheme.bodyLarge?.color,
           ),
         ),
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -94,19 +95,17 @@ class _SubmitReportState extends State<SubmitReport> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.darkPrimaryLight
-                    : AppColors.primaryLight,
+                color: theme.colorScheme.tertiary,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                  color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                 ),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.shield_rounded,
-                    color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                    color: theme.colorScheme.primary,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -114,9 +113,7 @@ class _SubmitReportState extends State<SubmitReport> {
                       'Your identity is fully anonymous. No personal information is stored with this report.',
                       style: TextStyle(
                         fontSize: 13,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
+                        color: theme.textTheme.bodyLarge?.color,
                         height: 1.4,
                       ),
                     ),
@@ -132,9 +129,7 @@ class _SubmitReportState extends State<SubmitReport> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: isDark
-                    ? AppColors.darkTextSecondary
-                    : AppColors.textSecondary,
+                color: theme.textTheme.bodyMedium?.color,
               ),
             ),
             const SizedBox(height: 10),
@@ -151,17 +146,13 @@ class _SubmitReportState extends State<SubmitReport> {
                         horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? (isDark ? AppColors.darkPrimary : AppColors.primary)
-                          : (isDark
-                              ? AppColors.darkSurface
-                              : AppColors.surface),
+                          ? theme.colorScheme.primary
+                          : (theme.cardTheme.color ?? theme.colorScheme.surface),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
                         color: isSelected
                             ? Colors.transparent
-                            : (isDark
-                                ? AppColors.darkBorder
-                                : AppColors.border),
+                            : (theme.dividerTheme.color ?? theme.colorScheme.outlineVariant),
                       ),
                     ),
                     child: Text(
@@ -170,10 +161,8 @@ class _SubmitReportState extends State<SubmitReport> {
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: isSelected
-                            ? AppColors.white
-                            : (isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.textPrimary),
+                            ? theme.colorScheme.onPrimary
+                            : theme.textTheme.bodyLarge?.color,
                       ),
                     ),
                   ),
@@ -188,9 +177,7 @@ class _SubmitReportState extends State<SubmitReport> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: isDark
-                    ? AppColors.darkTextSecondary
-                    : AppColors.textSecondary,
+                color: theme.textTheme.bodyMedium?.color,
               ),
             ),
             const SizedBox(height: 10),
@@ -202,7 +189,7 @@ class _SubmitReportState extends State<SubmitReport> {
                     'Provide details about the issue you want to report...',
                 alignLabelWithHint: true,
                 hintStyle: TextStyle(
-                  color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                  color: theme.hintColor,
                 ),
               ),
             ),
@@ -215,8 +202,8 @@ class _SubmitReportState extends State<SubmitReport> {
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: AppColors.white,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                 ),
                 child: _isSubmitting
                     ? const SizedBox(

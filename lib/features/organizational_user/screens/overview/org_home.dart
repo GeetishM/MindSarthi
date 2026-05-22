@@ -18,10 +18,11 @@ class _OrgHomeState extends State<OrgHome> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -33,7 +34,7 @@ class _OrgHomeState extends State<OrgHome> {
                   future: _firestore.collection('organizations').doc(_uid).get(),
                   builder: (context, snap) {
                     if (snap.connectionState == ConnectionState.waiting) {
-                      return _shimmerHeader(isDark);
+                      return _shimmerHeader(theme, isDark);
                     }
 
                     final orgName = snap.data?.data() != null
@@ -47,15 +48,13 @@ class _OrgHomeState extends State<OrgHome> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 5),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.accent.withValues(alpha: 0.12)
-                                : AppColors.accentLight,
+                            color: theme.colorScheme.tertiary,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Organization Dashboard',
                             style: TextStyle(
-                              color: AppColors.accent,
+                              color: theme.colorScheme.primary,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
@@ -67,9 +66,7 @@ class _OrgHomeState extends State<OrgHome> {
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
-                            color: isDark
-                                ? AppColors.darkTextPrimary
-                                : AppColors.textPrimary,
+                            color: theme.textTheme.bodyLarge?.color,
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -84,7 +81,7 @@ class _OrgHomeState extends State<OrgHome> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                child: _buildStatsRow(isDark),
+                child: _buildStatsRow(theme, isDark),
               ),
             ),
 
@@ -100,9 +97,7 @@ class _OrgHomeState extends State<OrgHome> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.textPrimary,
+                        color: theme.textTheme.bodyLarge?.color,
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -116,9 +111,7 @@ class _OrgHomeState extends State<OrgHome> {
                         'View Full →',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? AppColors.darkPrimary
-                              : AppColors.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ),
@@ -131,7 +124,7 @@ class _OrgHomeState extends State<OrgHome> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _buildMiniHeatmap(isDark),
+                child: _buildMiniHeatmap(theme, isDark),
               ),
             ),
 
@@ -144,9 +137,7 @@ class _OrgHomeState extends State<OrgHome> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
+                    color: theme.textTheme.bodyLarge?.color,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -154,7 +145,7 @@ class _OrgHomeState extends State<OrgHome> {
             ),
 
             // ── Recent Reports ─────────────────────────────
-            _buildRecentReports(isDark),
+            _buildRecentReports(theme, isDark),
 
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
@@ -163,7 +154,7 @@ class _OrgHomeState extends State<OrgHome> {
     );
   }
 
-  Widget _buildStatsRow(bool isDark) {
+  Widget _buildStatsRow(ThemeData theme, bool isDark) {
     return Row(
       children: [
         Expanded(
@@ -178,8 +169,8 @@ class _OrgHomeState extends State<OrgHome> {
                 label: 'Members',
                 value: '${snap.data?.docs.length ?? 0}',
                 icon: Icons.groups_rounded,
-                color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                isDark: isDark,
+                color: theme.colorScheme.primary,
+                theme: theme,
               );
             },
           ),
@@ -207,8 +198,8 @@ class _OrgHomeState extends State<OrgHome> {
                 label: 'Avg Wellness',
                 value: avg > 0 ? avg.toStringAsFixed(1) : '--',
                 icon: Icons.favorite_rounded,
-                color: AppColors.accent,
-                isDark: isDark,
+                color: theme.colorScheme.secondary,
+                theme: theme,
               );
             },
           ),
@@ -228,7 +219,7 @@ class _OrgHomeState extends State<OrgHome> {
                 value: '${snap.data?.docs.length ?? 0}',
                 icon: Icons.report_outlined,
                 color: AppColors.warning,
-                isDark: isDark,
+                theme: theme,
               );
             },
           ),
@@ -237,17 +228,17 @@ class _OrgHomeState extends State<OrgHome> {
     );
   }
 
-  Widget _buildMiniHeatmap(bool isDark) {
+  Widget _buildMiniHeatmap(ThemeData theme, bool isDark) {
     final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     final depts = ['Engineering', 'Marketing', 'Sales', 'HR'];
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: Column(
@@ -263,9 +254,7 @@ class _OrgHomeState extends State<OrgHome> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? AppColors.darkTextSecondary
-                              : AppColors.textSecondary,
+                          color: theme.textTheme.bodyMedium?.color,
                         ),
                       ),
                     ),
@@ -285,9 +274,7 @@ class _OrgHomeState extends State<OrgHome> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? AppColors.darkTextSecondary
-                              : AppColors.textSecondary,
+                          color: theme.textTheme.bodyMedium?.color,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -302,7 +289,7 @@ class _OrgHomeState extends State<OrgHome> {
                           child: Container(
                             height: 28,
                             decoration: BoxDecoration(
-                              color: _scoreColor(score, isDark),
+                              color: _scoreColor(score, theme, isDark),
                               borderRadius: BorderRadius.circular(6),
                             ),
                           ),
@@ -317,11 +304,11 @@ class _OrgHomeState extends State<OrgHome> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _legendItem('Low', AppColors.error.withValues(alpha: 0.2), isDark),
+              _legendItem('Low', AppColors.error.withValues(alpha: 0.2), theme),
               const SizedBox(width: 12),
-              _legendItem('Mid', AppColors.warning.withValues(alpha: 0.25), isDark),
+              _legendItem('Mid', AppColors.warning.withValues(alpha: 0.25), theme),
               const SizedBox(width: 12),
-              _legendItem('Good', AppColors.success.withValues(alpha: 0.25), isDark),
+              _legendItem('Good', AppColors.success.withValues(alpha: 0.25), theme),
             ],
           ),
         ],
@@ -329,13 +316,13 @@ class _OrgHomeState extends State<OrgHome> {
     );
   }
 
-  Color _scoreColor(int score, bool isDark) {
+  Color _scoreColor(int score, ThemeData theme, bool isDark) {
     if (score <= 2) return AppColors.error.withValues(alpha: isDark ? 0.3 : 0.2);
     if (score <= 3) return AppColors.warning.withValues(alpha: isDark ? 0.3 : 0.25);
     return AppColors.success.withValues(alpha: isDark ? 0.3 : 0.25);
   }
 
-  Widget _legendItem(String label, Color color, bool isDark) {
+  Widget _legendItem(String label, Color color, ThemeData theme) {
     return Row(
       children: [
         Container(
@@ -352,14 +339,14 @@ class _OrgHomeState extends State<OrgHome> {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+            color: theme.textTheme.bodySmall?.color,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildRecentReports(bool isDark) {
+  Widget _buildRecentReports(ThemeData theme, bool isDark) {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore
           .collection('anonymous_reports')
@@ -370,7 +357,7 @@ class _OrgHomeState extends State<OrgHome> {
           .snapshots(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return SliverToBoxAdapter(child: _shimmerCards(isDark));
+          return SliverToBoxAdapter(child: _shimmerCards(theme, isDark));
         }
 
         if (!snap.hasData || snap.data!.docs.isEmpty) {
@@ -380,15 +367,15 @@ class _OrgHomeState extends State<OrgHome> {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : AppColors.surface,
+                  color: theme.cardTheme.color ?? theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                    color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                   ),
                 ),
                 child: Column(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.check_circle_outline_rounded,
                       size: 40,
                       color: AppColors.success,
@@ -397,9 +384,7 @@ class _OrgHomeState extends State<OrgHome> {
                     Text(
                       'No reports — all clear!',
                       style: TextStyle(
-                        color: isDark
-                            ? AppColors.darkTextSecondary
-                            : AppColors.textSecondary,
+                        color: theme.textTheme.bodyMedium?.color,
                       ),
                     ),
                   ],
@@ -414,7 +399,7 @@ class _OrgHomeState extends State<OrgHome> {
             (context, index) {
               final data =
                   snap.data!.docs[index].data() as Map<String, dynamic>;
-              return _ReportPreviewCard(data: data, isDark: isDark);
+              return _ReportPreviewCard(data: data, theme: theme);
             },
             childCount: snap.data!.docs.length,
           ),
@@ -423,7 +408,7 @@ class _OrgHomeState extends State<OrgHome> {
     );
   }
 
-  Widget _shimmerHeader(bool isDark) {
+  Widget _shimmerHeader(ThemeData theme, bool isDark) {
     return Shimmer.fromColors(
       baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
       highlightColor:
@@ -435,7 +420,7 @@ class _OrgHomeState extends State<OrgHome> {
             width: 140,
             height: 22,
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : Colors.white,
+              color: theme.cardTheme.color ?? theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
             ),
           ),
@@ -444,7 +429,7 @@ class _OrgHomeState extends State<OrgHome> {
             width: 200,
             height: 30,
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : Colors.white,
+              color: theme.cardTheme.color ?? theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(8),
             ),
           ),
@@ -453,7 +438,7 @@ class _OrgHomeState extends State<OrgHome> {
     );
   }
 
-  Widget _shimmerCards(bool isDark) {
+  Widget _shimmerCards(ThemeData theme, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Shimmer.fromColors(
@@ -468,7 +453,7 @@ class _OrgHomeState extends State<OrgHome> {
               margin: const EdgeInsets.only(bottom: 12),
               height: 70,
               decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : Colors.white,
+                color: theme.cardTheme.color ?? theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
@@ -484,14 +469,14 @@ class _StatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
-  final bool isDark;
+  final ThemeData theme;
 
   const _StatCard({
     required this.label,
     required this.value,
     required this.icon,
     required this.color,
-    required this.isDark,
+    required this.theme,
   });
 
   @override
@@ -499,10 +484,10 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: Column(
@@ -515,7 +500,7 @@ class _StatCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              color: theme.textTheme.bodyLarge?.color,
             ),
           ),
           const SizedBox(height: 2),
@@ -524,8 +509,7 @@ class _StatCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color:
-                  isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              color: theme.textTheme.bodyMedium?.color,
             ),
           ),
         ],
@@ -536,9 +520,9 @@ class _StatCard extends StatelessWidget {
 
 class _ReportPreviewCard extends StatelessWidget {
   final Map<String, dynamic> data;
-  final bool isDark;
+  final ThemeData theme;
 
-  const _ReportPreviewCard({required this.data, required this.isDark});
+  const _ReportPreviewCard({required this.data, required this.theme});
 
   @override
   Widget build(BuildContext context) {
@@ -550,10 +534,10 @@ class _ReportPreviewCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: Row(
@@ -584,9 +568,7 @@ class _ReportPreviewCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
+                    color: theme.textTheme.bodyLarge?.color,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -596,9 +578,7 @@ class _ReportPreviewCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary,
+                    color: theme.textTheme.bodyMedium?.color,
                     height: 1.4,
                   ),
                 ),

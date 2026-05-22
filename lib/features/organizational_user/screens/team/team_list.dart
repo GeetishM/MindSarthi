@@ -9,21 +9,22 @@ class TeamList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Team',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: theme.textTheme.titleLarge?.color,
             letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
@@ -36,7 +37,7 @@ class TeamList extends StatelessWidget {
             .snapshots(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return _buildShimmer(isDark);
+            return _buildShimmer(theme, isDark);
           }
 
           if (!snap.hasData || snap.data!.docs.isEmpty) {
@@ -47,16 +48,14 @@ class TeamList extends StatelessWidget {
                   Icon(
                     Icons.group_add_rounded,
                     size: 56,
-                    color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                    color: theme.textTheme.labelSmall?.color,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No team members yet',
                     style: TextStyle(
                       fontSize: 16,
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.textSecondary,
+                      color: theme.textTheme.bodyLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -64,8 +63,7 @@ class TeamList extends StatelessWidget {
                     'Invite members from Settings',
                     style: TextStyle(
                       fontSize: 13,
-                      color:
-                          isDark ? AppColors.darkTextHint : AppColors.textHint,
+                      color: theme.textTheme.bodySmall?.color,
                     ),
                   ),
                 ],
@@ -79,7 +77,7 @@ class TeamList extends StatelessWidget {
             itemBuilder: (context, index) {
               final data =
                   snap.data!.docs[index].data() as Map<String, dynamic>;
-              return _MemberCard(data: data, isDark: isDark);
+              return _MemberCard(data: data);
             },
           );
         },
@@ -87,7 +85,7 @@ class TeamList extends StatelessWidget {
     );
   }
 
-  Widget _buildShimmer(bool isDark) {
+  Widget _buildShimmer(ThemeData theme, bool isDark) {
     return ListView.builder(
       padding: const EdgeInsets.all(24),
       itemCount: 5,
@@ -100,7 +98,7 @@ class TeamList extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 12),
           height: 72,
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : Colors.white,
+            color: theme.cardTheme.color ?? theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
           ),
         ),
@@ -111,12 +109,12 @@ class TeamList extends StatelessWidget {
 
 class _MemberCard extends StatelessWidget {
   final Map<String, dynamic> data;
-  final bool isDark;
 
-  const _MemberCard({required this.data, required this.isDark});
+  const _MemberCard({required this.data});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final role = data['role'] ?? 'member';
     final department = data['department'] ?? '';
     final uid = data['uid'] ?? '';
@@ -124,34 +122,33 @@ class _MemberCard extends StatelessWidget {
     Color roleColor;
     switch (role) {
       case 'admin':
-        roleColor = AppColors.accent;
+        roleColor = theme.colorScheme.secondary;
         break;
       case 'manager':
-        roleColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+        roleColor = theme.colorScheme.primary;
         break;
       default:
-        roleColor = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+        roleColor = theme.textTheme.bodyMedium?.color ?? Colors.grey;
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor:
-                isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
+            backgroundColor: theme.colorScheme.tertiary,
             child: Icon(
               Icons.person_rounded,
-              color: isDark ? AppColors.darkPrimary : AppColors.primary,
+              color: theme.colorScheme.primary,
               size: 22,
             ),
           ),
@@ -165,9 +162,7 @@ class _MemberCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
+                    color: theme.textTheme.titleMedium?.color,
                   ),
                 ),
                 if (department.isNotEmpty) ...[
@@ -176,9 +171,7 @@ class _MemberCard extends StatelessWidget {
                     department,
                     style: TextStyle(
                       fontSize: 13,
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.textSecondary,
+                      color: theme.textTheme.bodyMedium?.color,
                     ),
                   ),
                 ],

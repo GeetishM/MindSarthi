@@ -50,7 +50,8 @@ class _OrgNavState extends State<OrgNav> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return PopScope(
       canPop: false,
@@ -75,17 +76,17 @@ class _OrgNavState extends State<OrgNav> {
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             height: 68,
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkSurface : AppColors.surface,
+              color: theme.cardTheme.color ?? theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(34),
               border: Border.all(
-                color: isDark ? AppColors.darkBorder : AppColors.border,
+                color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
                   color: isDark
                       ? Colors.black.withValues(alpha: 0.3)
-                      : AppColors.primary.withValues(alpha: 0.08),
+                      : theme.colorScheme.primary.withValues(alpha: 0.08),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -95,7 +96,7 @@ class _OrgNavState extends State<OrgNav> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(
                 _navItems.length,
-                (index) => _buildNavItem(index, isDark),
+                (index) => _buildNavItem(index, theme),
               ),
             ),
           ),
@@ -104,7 +105,7 @@ class _OrgNavState extends State<OrgNav> {
     );
   }
 
-  Widget _buildNavItem(int index, bool isDark) {
+  Widget _buildNavItem(int index, ThemeData theme) {
     final item = _navItems[index];
     final isSelected = _currentIndex == index;
 
@@ -120,7 +121,7 @@ class _OrgNavState extends State<OrgNav> {
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight)
+              ? theme.colorScheme.tertiary
               : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
         ),
@@ -136,10 +137,8 @@ class _OrgNavState extends State<OrgNav> {
                 isSelected ? item.activeIcon : item.icon,
                 key: ValueKey<bool>(isSelected),
                 color: isSelected
-                    ? (isDark ? AppColors.darkPrimary : AppColors.primary)
-                    : (isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.textSecondary),
+                    ? theme.colorScheme.primary
+                    : (theme.textTheme.bodyMedium?.color),
                 size: 24,
               ),
             ),
@@ -153,8 +152,7 @@ class _OrgNavState extends State<OrgNav> {
                   child: Text(
                     item.label,
                     style: TextStyle(
-                      color:
-                          isDark ? AppColors.darkPrimary : AppColors.primary,
+                      color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                     ),

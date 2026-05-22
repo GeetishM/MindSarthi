@@ -94,20 +94,21 @@ class _OrgSettingsState extends State<OrgSettings> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Settings',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+            color: theme.textTheme.bodyLarge?.color,
             letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
@@ -120,7 +121,7 @@ class _OrgSettingsState extends State<OrgSettings> {
                   'Save',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ),
@@ -132,8 +133,8 @@ class _OrgSettingsState extends State<OrgSettings> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
               children: [
-                // ── Org Name ──────────────────────────────────
-                _SectionHeader(title: 'Organization', isDark: isDark),
+                // ── Organization ─────────────────────────────
+                const _SectionHeader(title: 'Organization'),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _orgNameCtrl,
@@ -145,38 +146,34 @@ class _OrgSettingsState extends State<OrgSettings> {
                 const SizedBox(height: 28),
 
                 // ── Policies ──────────────────────────────────
-                _SectionHeader(title: 'Policies', isDark: isDark),
+                const _SectionHeader(title: 'Policies'),
                 const SizedBox(height: 12),
                 _SettingsTile(
                   icon: Icons.shield_outlined,
                   title: 'Anonymous Reporting',
                   subtitle: 'Allow team members to submit anonymous reports',
-                  isDark: isDark,
                   trailing: Switch.adaptive(
                     value: _anonymousReporting,
                     onChanged: (v) =>
                         setState(() => _anonymousReporting = v),
-                    activeColor:
-                        isDark ? AppColors.darkPrimary : AppColors.primary,
+                    activeColor: theme.colorScheme.primary,
                   ),
                 ),
                 _SettingsTile(
                   icon: Icons.calendar_month_rounded,
                   title: 'Mandatory Weekly Check-in',
                   subtitle: 'Require weekly wellness check-ins from all members',
-                  isDark: isDark,
                   trailing: Switch.adaptive(
                     value: _mandatoryCheckin,
                     onChanged: (v) =>
                         setState(() => _mandatoryCheckin = v),
-                    activeColor:
-                        isDark ? AppColors.darkPrimary : AppColors.primary,
+                    activeColor: theme.colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 28),
 
                 // ── Appearance ────────────────────────────────
-                _SectionHeader(title: 'Appearance', isDark: isDark),
+                const _SectionHeader(title: 'Appearance'),
                 const SizedBox(height: 12),
                 _SettingsTile(
                   icon: isDark
@@ -184,24 +181,22 @@ class _OrgSettingsState extends State<OrgSettings> {
                       : Icons.wb_sunny_rounded,
                   title: isDark ? 'Dark Mode' : 'Light Mode',
                   subtitle: 'Toggle app theme',
-                  isDark: isDark,
                   trailing: const ThemeToggleSwitch(),
                   onTap: () =>
                       context.read<ThemeProvider>().toggle(),
                 ),
                 const SizedBox(height: 28),
 
-                // ── Danger Zone ───────────────────────────────
-                _SectionHeader(title: 'Account', isDark: isDark),
+                // ── Account ───────────────────────────────────
+                const _SectionHeader(title: 'Account'),
                 const SizedBox(height: 12),
                 _SettingsTile(
                   icon: CupertinoIcons.lock_shield,
                   title: 'App Lock',
                   subtitle: 'Secure your app with a passcode',
-                  isDark: isDark,
                   trailing: Icon(
                     CupertinoIcons.chevron_forward,
-                    color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+                    color: theme.hintColor,
                     size: 16,
                   ),
                   onTap: () => Navigator.push(
@@ -213,7 +208,6 @@ class _OrgSettingsState extends State<OrgSettings> {
                   icon: Icons.logout_rounded,
                   title: 'Log Out',
                   subtitle: 'Sign out of your account',
-                  isDark: isDark,
                   iconColor: AppColors.error,
                   titleColor: AppColors.error,
                   onTap: _logout,
@@ -226,18 +220,18 @@ class _OrgSettingsState extends State<OrgSettings> {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  final bool isDark;
 
-  const _SectionHeader({required this.title, required this.isDark});
+  const _SectionHeader({required this.title});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Text(
       title,
       style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w700,
-        color: isDark ? AppColors.darkTextHint : AppColors.textHint,
+        color: theme.hintColor,
         letterSpacing: 0.5,
       ),
     );
@@ -248,7 +242,6 @@ class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final bool isDark;
   final Widget? trailing;
   final VoidCallback? onTap;
   final Color? iconColor;
@@ -258,7 +251,6 @@ class _SettingsTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.isDark,
     this.trailing,
     this.onTap,
     this.iconColor,
@@ -267,21 +259,22 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
+          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: ListTile(
         onTap: onTap,
         leading: Icon(
           icon,
-          color: iconColor ??
-              (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+          color: iconColor ?? theme.textTheme.bodyMedium?.color,
           size: 22,
         ),
         title: Text(
@@ -289,16 +282,14 @@ class _SettingsTile extends StatelessWidget {
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: titleColor ??
-                (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+            color: titleColor ?? theme.textTheme.bodyLarge?.color,
           ),
         ),
         subtitle: Text(
           subtitle,
           style: TextStyle(
             fontSize: 12,
-            color:
-                isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+            color: theme.textTheme.bodyMedium?.color,
           ),
         ),
         trailing: trailing,
