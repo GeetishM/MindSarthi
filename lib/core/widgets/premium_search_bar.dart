@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
 
 class PremiumSearchBar extends StatefulWidget {
   final TextEditingController controller;
@@ -24,7 +25,6 @@ class PremiumSearchBar extends StatefulWidget {
 class _PremiumSearchBarState extends State<PremiumSearchBar> with SingleTickerProviderStateMixin {
   late FocusNode _focusNode;
   late AnimationController _animationController;
-  late Animation<double> _glowAnimation;
   late Animation<double> _iconRotationAnimation;
   bool _isFocused = false;
 
@@ -37,10 +37,6 @@ class _PremiumSearchBarState extends State<PremiumSearchBar> with SingleTickerPr
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
-    );
-
-    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
     _iconRotationAnimation = Tween<double>(begin: 0.0, end: 0.25).animate(
@@ -90,28 +86,25 @@ class _PremiumSearchBarState extends State<PremiumSearchBar> with SingleTickerPr
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
-              BoxShadow(
-                color: primaryColor.withValues(alpha: (isDark ? 0.2 : 0.1) * _glowAnimation.value),
-                blurRadius: _glowAnimation.value * 8,
-                spreadRadius: _glowAnimation.value * 2,
-              ),
+              if (_isFocused)
+                BoxShadow(
+                  color: primaryColor.withValues(alpha: isDark ? 0.15 : 0.08),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
             ],
           ),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
+          child: NeumorphicContainer(
+            isPressed: true, // Sunken search input field
+            borderRadius: BorderRadius.circular(24),
+            bevel: 8.0,
+            border: Border.all(
               color: _isFocused
-                  ? (isDark ? Colors.grey[900] : Colors.white)
-                  : (isDark ? Colors.grey[850] : Colors.grey[100]),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: _isFocused
-                    ? primaryColor
-                    : (isDark ? Colors.grey[800]! : Colors.grey[300]!),
-                width: _isFocused ? 2.0 : 1.0,
-              ),
+                  ? primaryColor
+                  : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02)),
+              width: _isFocused ? 1.5 : 0.8,
             ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
                 RotationTransition(

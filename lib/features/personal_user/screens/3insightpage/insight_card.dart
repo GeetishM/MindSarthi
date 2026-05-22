@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
 import 'package:share_plus/share_plus.dart';
 
 
@@ -43,25 +44,10 @@ class _InsightCardState extends State<InsightCard> {
 
     return GestureDetector(
       onTap: widget.onTap,
-      child: Container(
+      child: NeumorphicContainer(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.border,
-            width: 1.2,
-          ),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-          ],
-        ),
+        borderRadius: BorderRadius.circular(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

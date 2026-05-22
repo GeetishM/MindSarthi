@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/comment_input_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/report_dialog.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/hidden_posts_manager.dart';
@@ -304,25 +305,10 @@ class _PostCardState extends State<PostCard>
     final isAnonymous = data['isAnonymous'] == true;
     final isOwner = data['uid'] == currentUid;
 
-    return Container(
+    return NeumorphicContainer(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
-          width: 1.2,
-        ),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
+      borderRadius: BorderRadius.circular(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

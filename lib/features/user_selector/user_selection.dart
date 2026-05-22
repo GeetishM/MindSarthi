@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/theme/theme_provider.dart';
+import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
 import 'package:mindsarthi/core/widgets/premium_showcase.dart';
 import 'package:provider/provider.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -352,27 +353,18 @@ class _RoleCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? accentColor : AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? accentColor : AppColors.border,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: accentColor.withValues(alpha: 0.30),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  )
-                ]
-              : [],
+      child: NeumorphicContainer(
+        borderRadius: BorderRadius.circular(16),
+        color: isSelected ? accentColor : AppColors.background,
+        bevel: isSelected ? 16.0 : 10.0,
+        // For selected: colorful accent shadow; for idle: standard soft neumorphic shadow
+        shadowColor: isSelected ? accentColor.withValues(alpha: 0.3) : null,
+        lightShadowColor: isSelected ? Colors.white.withValues(alpha: 0.15) : null,
+        border: Border.all(
+          color: isSelected ? accentColor : AppColors.border.withValues(alpha: 0.4),
+          width: isSelected ? 1.5 : 0.8,
         ),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             // ── Icon badge ──────────────────────────────
@@ -382,12 +374,12 @@ class _RoleCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? Colors.white.withValues(alpha: 0.20)
-                    : AppColors.background,
+                    : AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
                 icon,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? Colors.white : AppColors.primary,
                 size: 26,
               ),
             ),

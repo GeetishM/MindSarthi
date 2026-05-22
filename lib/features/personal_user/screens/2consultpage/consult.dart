@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
+import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
 
 class Therapist {
   final String id;
@@ -759,25 +760,11 @@ class TherapistCard extends StatelessWidget {
         .join()
         .toUpperCase();
 
-    return Container(
+    return NeumorphicContainer(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
-          width: 1.2,
-        ),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
+      borderRadius: BorderRadius.circular(24),
+      color: isDark ? AppColors.darkSurface : AppColors.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -999,25 +986,11 @@ class SessionCard extends StatelessWidget {
         break;
     }
 
-    return Container(
+    return NeumorphicContainer(
       width: 280,
       padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
-          width: 1.2,
-        ),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
+      borderRadius: BorderRadius.circular(24),
+      color: surfaceColor,
       child: Row(
         children: [
           Container(
