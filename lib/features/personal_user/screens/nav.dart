@@ -23,6 +23,7 @@ import 'package:mindsarthi/features/personal_user/screens/profile.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class NavBar extends StatefulWidget {
   const NavBar({super.key});
@@ -36,13 +37,61 @@ class _NavBarState extends State<NavBar> {
   DateTime? _lastBackPressed;
   String _chatSearchQuery = '';
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const ConsultPage(),
-    const InsightPage(),
-    const CommunityPage(),
-    const ChatScreen(),
-  ];
+  final GlobalKey _menuKey = GlobalKey();
+  final GlobalKey _profileKey = GlobalKey();
+  final GlobalKey _homeKey = GlobalKey();
+  final GlobalKey _expertsKey = GlobalKey();
+  final GlobalKey _discoverKey = GlobalKey();
+  final GlobalKey _connectKey = GlobalKey();
+  final GlobalKey _sarthiKey = GlobalKey();
+  bool _showcaseStarted = false;
+
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      HomePage(menuKey: _menuKey),
+      const ConsultPage(),
+      const InsightPage(),
+      const CommunityPage(),
+      const ChatScreen(),
+    ];
+  }
+
+  GlobalKey _getTabKey(int index) {
+    switch (index) {
+      case 0: return _homeKey;
+      case 1: return _expertsKey;
+      case 2: return _discoverKey;
+      case 3: return _connectKey;
+      case 4: return _sarthiKey;
+      default: return GlobalKey();
+    }
+  }
+
+  String _getTabTitle(int index) {
+    switch (index) {
+      case 0: return 'Home Dashboard';
+      case 1: return 'Consult Experts';
+      case 2: return 'Discover Insights';
+      case 3: return 'Connect Community';
+      case 4: return 'Sarthi AI Companion';
+      default: return '';
+    }
+  }
+
+  String _getTabDesc(int index) {
+    switch (index) {
+      case 0: return 'Your personal feed tracking goals, mood patterns, and active panic SOS help.';
+      case 1: return 'Connect with certified mental health professional counselors and therapists.';
+      case 2: return 'Explore guided journals, articles, self-care paths, and wellness media.';
+      case 3: return 'Join support communities, discussion rooms, and share your experiences.';
+      case 4: return 'Chat with our AI companion Sarthi for instant active listening and support.';
+      default: return '';
+    }
+  }
 
   final List<_NavItemData> _navItems = [
     _NavItemData(
@@ -195,113 +244,140 @@ class _NavBarState extends State<NavBar> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final screenWidth = MediaQuery.of(context).size.width;
 
-    if (screenWidth < 640) {
-      // ── Mobile layout (< 640px) ───────────────────────────
-      return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) async {
-          if (didPop) return;
-          final now = DateTime.now();
-          final backPressedRecently = _lastBackPressed != null &&
-              now.difference(_lastBackPressed!) < const Duration(seconds: 2);
+    return ShowCaseWidget(
+      onFinish: () {
+        Hive.box('mybox').put('showcase_nav', true);
+      },
+      builder: (context) {
+          final screenWidth = MediaQuery.of(context).size.width;
 
-          if (backPressedRecently) {
-            SystemNavigator.pop();
-          } else {
-            _lastBackPressed = now;
-            AppToast.info(context, 'Press back again to exit');
+          if (!_showcaseStarted) {
+            _showcaseStarted = true;
+            final myBox = Hive.box('mybox');
+            final hasShown = myBox.get('showcase_nav', defaultValue: false);
+            if (!hasShown) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Future.delayed(const Duration(milliseconds: 1000), () {
+                  if (context.mounted) {
+                    final isMobile = screenWidth < 640;
+                    final list = isMobile
+                        ? [_menuKey, _homeKey, _expertsKey, _discoverKey, _connectKey, _sarthiKey]
+                        : [_profileKey, _homeKey, _expertsKey, _discoverKey, _connectKey, _sarthiKey];
+                    ShowCaseWidget.of(context).startShowCase(list);
+                  }
+                });
+              });
+            }
           }
-        },
-        child: Scaffold(
-          extendBody: true,
-          body: _pages[_currentIndex],
-          bottomNavigationBar: SafeArea(
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              height: 68,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : AppColors.surface,
-                borderRadius: BorderRadius.circular(34),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.border,
-                  width: 1.5,
+
+          if (screenWidth < 640) {
+            // ── Mobile layout (< 640px) ───────────────────────────
+            return PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, _) async {
+                if (didPop) return;
+                final now = DateTime.now();
+                final backPressedRecently = _lastBackPressed != null &&
+                    now.difference(_lastBackPressed!) < const Duration(seconds: 2);
+
+                if (backPressedRecently) {
+                  SystemNavigator.pop();
+                } else {
+                  _lastBackPressed = now;
+                  AppToast.info(context, 'Press back again to exit');
+                }
+              },
+              child: Scaffold(
+                extendBody: true,
+                body: _pages[_currentIndex],
+                bottomNavigationBar: SafeArea(
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    height: 68,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : AppColors.surface,
+                      borderRadius: BorderRadius.circular(34),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withValues(alpha: 0.3)
+                              : AppColors.primary.withValues(alpha: 0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: List.generate(
+                        _navItems.length,
+                        (index) => _buildMobileNavItem(index, isDark),
+                      ),
+                    ),
+                  ),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark
-                        ? Colors.black.withValues(alpha: 0.3)
-                        : AppColors.primary.withValues(alpha: 0.08),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+              ),
+            );
+          } else if (screenWidth >= 640 && screenWidth < 1024) {
+            // ── Tablet Layout (640px - 1024px) (Icons-only rail) ──
+            return Scaffold(
+              backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+              body: Row(
+                children: [
+                  _buildTabletSidebar(isDark),
+                  VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                  ),
+                  Expanded(
+                    child: _pages[_currentIndex],
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(
-                  _navItems.length,
-                  (index) => _buildMobileNavItem(index, isDark),
-                ),
+            );
+          } else {
+            // ── Desktop Layout (>= 1024px) (Expanded primary sidebar) ──
+            return Scaffold(
+              backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+              body: Row(
+                children: [
+                  _buildDesktopSidebar(isDark),
+                  VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                  ),
+                  // Double Sidebar for Chat Page
+                  if (_currentIndex == 4) ...[
+                    _buildInnerChatHistorySidebar(context, isDark),
+                    VerticalDivider(
+                      width: 1,
+                      thickness: 1,
+                      color: isDark ? AppColors.darkBorder : AppColors.border,
+                    ),
+                  ],
+                  Expanded(
+                    child: _currentIndex == 4
+                        ? Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 800),
+                              child: _pages[_currentIndex],
+                            ),
+                          )
+                        : _pages[_currentIndex],
+                  ),
+                ],
               ),
-            ),
-          ),
-        ),
-      );
-    } else if (screenWidth >= 640 && screenWidth < 1024) {
-      // ── Tablet Layout (640px - 1024px) (Icons-only rail) ──
-      return Scaffold(
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
-        body: Row(
-          children: [
-            _buildTabletSidebar(isDark),
-            VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: isDark ? AppColors.darkBorder : AppColors.border,
-            ),
-            Expanded(
-              child: _pages[_currentIndex],
-            ),
-          ],
-        ),
-      );
-    } else {
-      // ── Desktop Layout (>= 1024px) (Expanded primary sidebar) ──
-      return Scaffold(
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
-        body: Row(
-          children: [
-            _buildDesktopSidebar(isDark),
-            VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: isDark ? AppColors.darkBorder : AppColors.border,
-            ),
-            // Double Sidebar for Chat Page
-            if (_currentIndex == 4) ...[
-              _buildInnerChatHistorySidebar(context, isDark),
-              VerticalDivider(
-                width: 1,
-                thickness: 1,
-                color: isDark ? AppColors.darkBorder : AppColors.border,
-              ),
-            ],
-            Expanded(
-              child: _currentIndex == 4
-                  ? Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 800),
-                        child: _pages[_currentIndex],
-                      ),
-                    )
-                  : _pages[_currentIndex],
-            ),
-          ],
-        ),
-      );
-    }
+            );
+          }
+        },
+    );
   }
 
   // ── Mobile Nav Item Builder ──────────────────────────────────────────
@@ -330,59 +406,77 @@ class _NavBarState extends State<NavBar> {
         translatedLabel = item.label;
     }
 
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutQuint,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16.0 : 12.0,
-          vertical: 12.0,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return ScaleTransition(scale: animation, child: child);
-              },
-              child: Icon(
-                isSelected ? item.activeIcon : item.icon,
-                key: ValueKey<bool>(isSelected),
-                color: isSelected
-                    ? (isDark ? AppColors.darkPrimary : AppColors.primary)
-                    : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                size: 24,
+    return Showcase(
+      key: _getTabKey(index),
+      title: _getTabTitle(index),
+      description: _getTabDesc(index),
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+      ),
+      tooltipBackgroundColor: AppColors.primary,
+      titleTextStyle: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+      ),
+      descTextStyle: const TextStyle(
+        color: Colors.white,
+        fontSize: 13,
+      ),
+      child: GestureDetector(
+        onTap: () => setState(() => _currentIndex = index),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutQuint,
+          padding: EdgeInsets.symmetric(
+            horizontal: isSelected ? 16.0 : 12.0,
+            vertical: 12.0,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return ScaleTransition(scale: animation, child: child);
+                },
+                child: Icon(
+                  isSelected ? item.activeIcon : item.icon,
+                  key: ValueKey<bool>(isSelected),
+                  color: isSelected
+                      ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+                      : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                  size: 24,
+                ),
               ),
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutQuint,
-              child: SizedBox(
-                width: isSelected ? null : 0,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 6.0),
-                  child: Text(
-                    translatedLabel,
-                    style: TextStyle(
-                      color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+              AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutQuint,
+                child: SizedBox(
+                  width: isSelected ? null : 0,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 6.0),
+                    child: Text(
+                      translatedLabel,
+                      style: TextStyle(
+                        color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
                     ),
-                    maxLines: 1,
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -426,25 +520,43 @@ class _NavBarState extends State<NavBar> {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Center(
-                    child: Tooltip(
-                      message: item.label,
-                      child: InkWell(
-                        onTap: () => setState(() => _currentIndex = index),
-                        borderRadius: BorderRadius.circular(16),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Icon(
-                            isSelected ? item.activeIcon : item.icon,
-                            color: isSelected ? activeColor : inactiveColor,
-                            size: 24,
+                    child: Showcase(
+                      key: _getTabKey(index),
+                      title: _getTabTitle(index),
+                      description: _getTabDesc(index),
+                      targetShapeBorder: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      tooltipBackgroundColor: AppColors.primary,
+                      titleTextStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      descTextStyle: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                      ),
+                      child: Tooltip(
+                        message: item.label,
+                        child: InkWell(
+                          onTap: () => setState(() => _currentIndex = index),
+                          borderRadius: BorderRadius.circular(16),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Icon(
+                              isSelected ? item.activeIcon : item.icon,
+                              color: isSelected ? activeColor : inactiveColor,
+                              size: 24,
+                            ),
                           ),
                         ),
                       ),
@@ -478,14 +590,32 @@ class _NavBarState extends State<NavBar> {
             onTap: () => _showLanguageSelector(context),
             isDark: isDark,
           ),
-          _buildTabletSettingButton(
-            icon: CupertinoIcons.profile_circled,
-            tooltip: 'Profile',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfilePage()),
+          Showcase(
+            key: _profileKey,
+            title: 'Your Profile & Settings',
+            description: 'Configure App Lock settings, toggle theme mode, select language preference, and sign out of your account.',
+            targetShapeBorder: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
             ),
-            isDark: isDark,
+            tooltipBackgroundColor: AppColors.primary,
+            titleTextStyle: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+            descTextStyle: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+            ),
+            child: _buildTabletSettingButton(
+              icon: CupertinoIcons.profile_circled,
+              tooltip: 'Profile',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              ),
+              isDark: isDark,
+            ),
           ),
           _buildTabletSettingButton(
             icon: Icons.logout_rounded,
@@ -604,63 +734,81 @@ class _NavBarState extends State<NavBar> {
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: InkWell(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProfilePage()),
+                child: Showcase(
+                  key: _profileKey,
+                  title: 'Your Profile & Settings',
+                  description: 'Access your profile to check settings, configure passcodes for App Lock, switch light/dark theme, and change language preference.',
+                  targetShapeBorder: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurface2 : AppColors.primaryLight.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.border,
-                        width: 1,
-                      ),
+                  tooltipBackgroundColor: AppColors.primary,
+                  titleTextStyle: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  descTextStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                  ),
+                  child: InkWell(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfilePage()),
                     ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundColor: activeColor,
-                          child: Text(
-                            letter,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurface2 : AppColors.primaryLight.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? AppColors.darkBorder : AppColors.border,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: activeColor,
+                            child: Text(
+                              letter,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  color: textPrimary,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                    color: textPrimary,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                'View profile',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: inactiveColor,
-                                  fontWeight: FontWeight.w500,
+                                Text(
+                                  'View profile',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: inactiveColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -702,34 +850,52 @@ class _NavBarState extends State<NavBar> {
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: InkWell(
-                    onTap: () => setState(() => _currentIndex = index),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isSelected ? item.activeIcon : item.icon,
-                            color: isSelected ? activeColor : inactiveColor,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 14),
-                          Text(
-                            translatedLabel,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                              color: isSelected ? activeColor : textPrimary,
+                  child: Showcase(
+                    key: _getTabKey(index),
+                    title: _getTabTitle(index),
+                    description: _getTabDesc(index),
+                    targetShapeBorder: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    tooltipBackgroundColor: AppColors.primary,
+                    titleTextStyle: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    descTextStyle: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                    ),
+                    child: InkWell(
+                      onTap: () => setState(() => _currentIndex = index),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isSelected ? item.activeIcon : item.icon,
+                              color: isSelected ? activeColor : inactiveColor,
+                              size: 22,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 14),
+                            Text(
+                              translatedLabel,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                color: isSelected ? activeColor : textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -19,7 +20,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final GlobalKey? menuKey;
+  const HomePage({super.key, this.menuKey});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -1310,41 +1312,93 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
           return Row(
             children: [
-              GestureDetector(
-                onTap: () {
-                  if (_isDrawerOpen) {
-                    Navigator.pop(context);
-                  } else {
-                    _scaffoldKey.currentState?.openDrawer();
-                  }
-                },
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface2 : AppColors.surface,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark ? AppColors.darkBorder : AppColors.border,
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      if (!isDark)
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+              widget.menuKey != null
+                  ? Showcase(
+                      key: widget.menuKey!,
+                      title: 'Settings & Profile',
+                      description: 'Tap here to open the menu where you can access your profile, configure App Lock, change theme, and sign out.',
+                      targetShapeBorder: const CircleBorder(),
+                      tooltipBackgroundColor: AppColors.primary,
+                      titleTextStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      descTextStyle: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                      ),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (_isDrawerOpen) {
+                            Navigator.pop(context);
+                          } else {
+                            _scaffoldKey.currentState?.openDrawer();
+                          }
+                        },
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkSurface2 : AppColors.surface,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark ? AppColors.darkBorder : AppColors.border,
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              if (!isDark)
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                            ],
+                          ),
+                          child: Icon(
+                            _isDrawerOpen ? Icons.close_rounded : Icons.menu_rounded,
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.textPrimary,
+                          ),
                         ),
-                    ],
-                  ),
-                  child: Icon(
-                    _isDrawerOpen ? Icons.close_rounded : Icons.menu_rounded,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.textPrimary,
-                  ),
-                ),
-              ),
+                      ),
+                    )
+                  : GestureDetector(
+                      onTap: () {
+                        if (_isDrawerOpen) {
+                          Navigator.pop(context);
+                        } else {
+                          _scaffoldKey.currentState?.openDrawer();
+                        }
+                      },
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkSurface2 : AppColors.surface,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? AppColors.darkBorder : AppColors.border,
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            if (!isDark)
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                          ],
+                        ),
+                        child: Icon(
+                          _isDrawerOpen ? Icons.close_rounded : Icons.menu_rounded,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
               const SizedBox(width: 16),
               Expanded(
                 child: hasData

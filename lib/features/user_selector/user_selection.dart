@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class UserSelection extends StatefulWidget {
   const UserSelection({super.key});
@@ -16,6 +18,12 @@ class _UserSelectionState extends State<UserSelection>
   late AnimationController _ctrl;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
+
+  final GlobalKey _personalKey = GlobalKey();
+  final GlobalKey _professionalKey = GlobalKey();
+  final GlobalKey _organizationalKey = GlobalKey();
+  final GlobalKey _continueKey = GlobalKey();
+  bool _showcaseStarted = false;
 
   @override
   void initState() {
@@ -66,177 +74,275 @@ class _UserSelectionState extends State<UserSelection>
 
   @override
   Widget build(BuildContext context) {
+    return ShowCaseWidget(
+      onFinish: () {
+        Hive.box('mybox').put('showcase_user_selection', true);
+      },
+      builder: (context) {
+          if (!_showcaseStarted) {
+            _showcaseStarted = true;
+            final myBox = Hive.box('mybox');
+            final hasShown = myBox.get('showcase_user_selection', defaultValue: false);
+            if (!hasShown) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Future.delayed(const Duration(milliseconds: 1000), () {
+                  if (context.mounted) {
+                    ShowCaseWidget.of(context).startShowCase([
+                      _personalKey,
+                      _professionalKey,
+                      _organizationalKey,
+                      _continueKey,
+                    ]);
+                  }
+                });
+              });
+            }
+          }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          color: AppColors.textPrimary,
-          onPressed: () =>
-              Navigator.pushReplacementNamed(context, '/welcome'),
-        ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
+              backgroundColor: AppColors.background,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                color: AppColors.textPrimary,
+                onPressed: () =>
+                    Navigator.pushReplacementNamed(context, '/welcome'),
+              ),
+            ),
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
 
-              // ── Page header ───────────────────────────────
-              FadeTransition(
-                opacity: _fadeAnim,
-                child: SlideTransition(
-                  position: _slideAnim,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Step indicator
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(20),
+                    // ── Page header ───────────────────────────────
+                    FadeTransition(
+                      opacity: _fadeAnim,
+                      child: SlideTransition(
+                        position: _slideAnim,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Step indicator
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLight,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Text(
+                                'Step 1 of 2',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            const Text(
+                              'Choose your role',
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                                letterSpacing: -0.5,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Personalises your space and shows\nyou the right tools.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textSecondary,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
                         ),
-                        child: const Text(
-                          'Step 1 of 2',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // ── Role cards ─────────────────────────────────
+                    Expanded(
+                      child: ListView(
+                        children: [
+                          Showcase(
+                            key: _personalKey,
+                            title: 'Personal User',
+                            description: 'Select this if you want to use the app for yourself to build healthier habits & access everyday wellness tools.',
+                            targetShapeBorder: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            tooltipBackgroundColor: AppColors.primary,
+                            titleTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            descTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                            child: _RoleCard(
+                              title: 'Personal User',
+                              subtitle: "I'm here for myself",
+                              description:
+                                  'Build healthier habits & access everyday support tools',
+                              roleKey: 'personal',
+                              icon: Icons.person_rounded,
+                              accentColor: AppColors.primary,
+                              imagePath: 'assets/illustrations/curiosity-pana 1.svg',
+                              isSelected: selectedRole == 'personal',
+                              onTap: () => _selectRole('personal'),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Showcase(
+                            key: _professionalKey,
+                            title: 'Professional User',
+                            description: 'Select this if you are a mental health practitioner looking to manage clients and share guidance.',
+                            targetShapeBorder: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            tooltipBackgroundColor: const Color(0xFF5C6BC0),
+                            titleTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            descTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                            child: _RoleCard(
+                              title: 'Professional User',
+                              subtitle: "I'm a Mental Health Professional",
+                              description:
+                                  'Offer support, manage clients & grow your practice',
+                              roleKey: 'professional',
+                              icon: Icons.health_and_safety_rounded,
+                              accentColor: const Color(0xFF5C6BC0),
+                              imagePath: 'assets/illustrations/curiosity-pana 1.svg',
+                              isSelected: selectedRole == 'professional',
+                              onTap: () => _selectRole('professional'),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Showcase(
+                            key: _organizationalKey,
+                            title: 'Organizational User',
+                            description: 'Select this if you are part of a company or organization seeking wellness programs for your team.',
+                            targetShapeBorder: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            tooltipBackgroundColor: AppColors.accent,
+                            titleTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            descTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                            child: _RoleCard(
+                              title: 'Organizational User',
+                              subtitle: "I'm part of an Organization",
+                              description:
+                                  'Access workplace wellness tools & team programmes',
+                              roleKey: 'organization',
+                              icon: Icons.business_rounded,
+                              accentColor: AppColors.accent,
+                              imagePath: 'assets/illustrations/curiosity-pana 1.svg',
+                              isSelected: selectedRole == 'organization',
+                              onTap: () => _selectRole('organization'),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
+
+                    // ── Continue button — color tracks selected role ──
+                    Showcase(
+                      key: _continueKey,
+                      title: 'Proceed & Continue',
+                      description: 'Tap this button after choosing a role to complete your signup or sign in process.',
+                      targetShapeBorder: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      tooltipBackgroundColor: AppColors.primary,
+                      titleTextStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      descTextStyle: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: ElevatedButton(
+                          onPressed: _continue,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _roleColor,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: AppColors.border,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                          ).copyWith(
+                            // Keeps ripple white regardless of role color
+                            overlayColor: WidgetStateProperty.all(
+                              Colors.white.withValues(alpha: 0.15),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Continue',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              if (selectedRole != null) ...[
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 20,
+                                  color: Colors.white,
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      const Text(
-                        'Choose your role',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                          letterSpacing: -0.5,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Personalises your space and shows\nyou the right tools.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // ── Role cards ─────────────────────────────────
-              Expanded(
-                child: ListView(
-                  children: [
-                    _RoleCard(
-                      title: 'Personal User',
-                      subtitle: "I'm here for myself",
-                      description:
-                          'Build healthier habits & access everyday support tools',
-                      roleKey: 'personal',
-                      icon: Icons.person_rounded,
-                      accentColor: AppColors.primary,
-                      imagePath: 'assets/illustrations/curiosity-pana 1.svg',
-                      isSelected: selectedRole == 'personal',
-                      onTap: () => _selectRole('personal'),
                     ),
-                    const SizedBox(height: 12),
-                    _RoleCard(
-                      title: 'Professional User',
-                      subtitle: "I'm a Mental Health Professional",
-                      description:
-                          'Offer support, manage clients & grow your practice',
-                      roleKey: 'professional',
-                      icon: Icons.health_and_safety_rounded,
-                      accentColor: const Color(0xFF5C6BC0),
-                      imagePath: 'assets/illustrations/curiosity-pana 1.svg',
-                      isSelected: selectedRole == 'professional',
-                      onTap: () => _selectRole('professional'),
-                    ),
-                    const SizedBox(height: 12),
-                    _RoleCard(
-                      title: 'Organizational User',
-                      subtitle: "I'm part of an Organization",
-                      description:
-                          'Access workplace wellness tools & team programmes',
-                      roleKey: 'organization',
-                      icon: Icons.business_rounded,
-                      accentColor: AppColors.accent,
-                      imagePath: 'assets/illustrations/curiosity-pana 1.svg',
-                      isSelected: selectedRole == 'organization',
-                      onTap: () => _selectRole('organization'),
-                    ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
-
-              // ── Continue button — color tracks selected role ──
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _continue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _roleColor,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.border,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                  ).copyWith(
-                    // Keeps ripple white regardless of role color
-                    overlayColor: WidgetStateProperty.all(
-                      Colors.white.withValues(alpha: 0.15),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Continue',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      if (selectedRole != null) ...[
-                        const SizedBox(width: 8),
-                        const Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 20,
-                          color: Colors.white,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
+            ),
+          );
+      },
     );
   }
 }
