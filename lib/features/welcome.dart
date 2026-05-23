@@ -41,9 +41,18 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgCol = isDark ? AppColors.darkBackground : AppColors.background;
+    final textPrimaryCol = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondaryCol = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final textHintCol = isDark ? AppColors.darkTextHint : AppColors.textHint;
+    final primaryLightCol = isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight;
+    final borderCol = isDark ? AppColors.darkBorder : AppColors.border;
+    final primaryCol = isDark ? AppColors.darkPrimary : AppColors.primary;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgCol,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -63,9 +72,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
+                          color: primaryLightCol,
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: borderCol),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -73,16 +82,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             Container(
                               width: 8,
                               height: 8,
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
+                              decoration: BoxDecoration(
+                                color: primaryCol,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'Your mental wellness companion',
                               style: TextStyle(
-                                color: AppColors.primary,
+                                color: primaryCol,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -100,16 +109,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           style: TextStyle(
                             fontSize: size.width * 0.075,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                            color: textPrimaryCol,
                             height: 1.25,
                           ),
-                          children: const [
-                            TextSpan(text: "Hi, I'm "),
+                          children: [
+                            const TextSpan(text: "Hi, I'm "),
                             TextSpan(
                               text: 'MindSarthi',
-                              style: TextStyle(color: AppColors.primary),
+                              style: TextStyle(color: primaryCol),
                             ),
-                            TextSpan(text: ' 👋'),
+                            const TextSpan(text: ' 👋'),
                           ],
                         ),
                       ),
@@ -121,7 +130,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: size.width * 0.038,
-                          color: AppColors.textSecondary,
+                          color: textSecondaryCol,
                           height: 1.6,
                           fontWeight: FontWeight.w400,
                         ),
@@ -159,7 +168,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               builder: (_) => const UserSelection()),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: primaryCol,
                           foregroundColor: AppColors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -188,7 +197,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       'Free • Private • No judgment',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textHint,
+                        color: textHintCol,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

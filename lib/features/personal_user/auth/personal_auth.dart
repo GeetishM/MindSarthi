@@ -105,12 +105,14 @@ class _PersonalAuthState extends State<PersonalAuth>
 
     setState(() => _isSending = true);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // Loading dialog
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => Dialog(
-        backgroundColor: AppColors.white,
+        backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
           padding: const EdgeInsets.all(28),
@@ -123,10 +125,10 @@ class _PersonalAuthState extends State<PersonalAuth>
                 width: 100,
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Sending OTP…',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),

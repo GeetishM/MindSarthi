@@ -104,15 +104,23 @@ class _UserSelectionState extends State<UserSelection>
             }
           }
 
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final bgCol = isDark ? AppColors.darkBackground : AppColors.background;
+          final textPrimaryCol = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+          final textSecondaryCol = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+          final primaryLightCol = isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight;
+          final primaryCol = isDark ? AppColors.darkPrimary : AppColors.primary;
+          final borderCol = isDark ? AppColors.darkBorder : AppColors.border;
+
           return Scaffold(
-            backgroundColor: AppColors.background,
+            backgroundColor: bgCol,
             appBar: AppBar(
-              backgroundColor: AppColors.background,
+              backgroundColor: bgCol,
               elevation: 0,
               scrolledUnderElevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-                color: AppColors.textPrimary,
+                color: textPrimaryCol,
                 onPressed: () =>
                     Navigator.pushReplacementNamed(context, '/welcome'),
               ),
@@ -138,35 +146,35 @@ class _UserSelectionState extends State<UserSelection>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 5),
                               decoration: BoxDecoration(
-                                color: AppColors.primaryLight,
+                                color: primaryLightCol,
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Step 1 of 2',
                                 style: TextStyle(
-                                  color: AppColors.primary,
+                                  color: primaryCol,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
                             const SizedBox(height: 14),
-                            const Text(
+                            Text(
                               'Choose your role',
                               style: TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
+                                color: textPrimaryCol,
                                 letterSpacing: -0.5,
                                 height: 1.2,
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            Text(
                               'Personalises your space and shows\nyou the right tools.',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: AppColors.textSecondary,
+                                color: textSecondaryCol,
                                 height: 1.5,
                               ),
                             ),
@@ -188,7 +196,7 @@ class _UserSelectionState extends State<UserSelection>
                             targetShapeBorder: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            tooltipBackgroundColor: AppColors.primary,
+                            tooltipBackgroundColor: primaryCol,
                             child: _RoleCard(
                               title: 'Personal User',
                               subtitle: "I'm here for myself",
@@ -196,7 +204,7 @@ class _UserSelectionState extends State<UserSelection>
                                   'Build healthier habits & access everyday support tools',
                               roleKey: 'personal',
                               icon: Icons.person_rounded,
-                              accentColor: AppColors.primary,
+                              accentColor: primaryCol,
                               imagePath: 'assets/illustrations/curiosity-pana 1.svg',
                               isSelected: selectedRole == 'personal',
                               onTap: () => _selectRole('personal'),
@@ -259,7 +267,7 @@ class _UserSelectionState extends State<UserSelection>
                       targetShapeBorder: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      tooltipBackgroundColor: AppColors.primary,
+                      tooltipBackgroundColor: primaryCol,
                       child: SizedBox(
                         width: double.infinity,
                         height: 54,
@@ -268,7 +276,7 @@ class _UserSelectionState extends State<UserSelection>
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _roleColor,
                             foregroundColor: Colors.white,
-                            disabledBackgroundColor: AppColors.border,
+                            disabledBackgroundColor: borderCol,
                             shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -342,23 +350,45 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     // When selected: solid accent background + all text/icons go white
-    final textColor = isSelected ? Colors.white : AppColors.textPrimary;
+    final textColor = isSelected 
+        ? Colors.white 
+        : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary);
     final subTextColor = isSelected
         ? Colors.white.withValues(alpha: 0.85)
-        : AppColors.textSecondary;
+        : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary);
+
+    final cardBg = isSelected 
+        ? accentColor 
+        : (isDark ? AppColors.darkSurface2 : AppColors.background);
+    final cardBorder = isSelected 
+        ? accentColor 
+        : (isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.4));
+    
+    final iconBg = isSelected
+        ? Colors.white.withValues(alpha: 0.20)
+        : (isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight);
+    final iconCol = isSelected 
+        ? Colors.white 
+        : (isDark ? AppColors.darkPrimary : AppColors.primary);
+
+    final indicatorBorder = isSelected 
+        ? Colors.white 
+        : (isDark ? AppColors.darkBorder : AppColors.border);
 
     return GestureDetector(
       onTap: onTap,
       child: NeumorphicContainer(
         borderRadius: BorderRadius.circular(16),
-        color: isSelected ? accentColor : AppColors.background,
+        color: cardBg,
         bevel: isSelected ? 16.0 : 10.0,
         // For selected: colorful accent shadow; for idle: standard soft neumorphic shadow
         shadowColor: isSelected ? accentColor.withValues(alpha: 0.3) : null,
         lightShadowColor: isSelected ? Colors.white.withValues(alpha: 0.15) : null,
         border: Border.all(
-          color: isSelected ? accentColor : AppColors.border.withValues(alpha: 0.4),
+          color: cardBorder,
           width: isSelected ? 1.5 : 0.8,
         ),
         padding: const EdgeInsets.all(16),
@@ -369,14 +399,12 @@ class _RoleCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.20)
-                    : AppColors.primaryLight,
+                color: iconBg,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
                 icon,
-                color: isSelected ? Colors.white : AppColors.primary,
+                color: iconCol,
                 size: 26,
               ),
             ),
@@ -427,7 +455,7 @@ class _RoleCard extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? Colors.white : AppColors.border,
+                  color: indicatorBorder,
                   width: 2,
                 ),
                 color: isSelected
@@ -445,3 +473,4 @@ class _RoleCard extends StatelessWidget {
     );
   }
 }
+
