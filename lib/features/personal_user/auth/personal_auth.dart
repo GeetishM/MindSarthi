@@ -335,10 +335,6 @@ class _PersonalAuthState extends State<PersonalAuth>
                               ),
                               decoration: InputDecoration(
                                 labelText: 'Phone Number',
-                                filled: true,
-                                fillColor: isDark
-                                    ? AppColors.darkBackground
-                                    : AppColors.background,
                                 counterText: '',
                                 border: _buildBorder(
                                     isDark ? AppColors.darkBorder : AppColors.border),

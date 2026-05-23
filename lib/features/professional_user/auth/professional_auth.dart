@@ -280,10 +280,6 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                       ),
                       decoration: InputDecoration(
                         labelText: 'Phone Number',
-                        filled: true,
-                        fillColor: isDark
-                            ? theme.colorScheme.surfaceContainerHighest
-                            : const Color(0xFFF2F2F2),
                         counterText: '',
                         border: _buildBorder(),
                         enabledBorder: _buildBorder(),
