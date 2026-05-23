@@ -161,6 +161,7 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final palette = ThemePalette.forRole('org', isDark: isDark);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -320,12 +321,22 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
                 const SizedBox(height: 12),
                 TextButton(
                   onPressed: _resendOtp,
-                  child: Text(
-                    "Didn't receive the code? Resend",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
+                  child: RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: palette.textSecondary,
+                      ),
+                      children: [
+                        const TextSpan(text: "Didn't receive code? "),
+                        TextSpan(
+                          text: 'Resend',
+                          style: TextStyle(
+                            color: palette.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

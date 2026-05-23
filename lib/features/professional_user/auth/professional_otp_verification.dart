@@ -155,6 +155,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     final fontScale = MediaQuery.of(context).size.width / 375;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final palette = ThemePalette.forRole('professional', isDark: isDark);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -297,11 +298,22 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         const SizedBox(height: 12),
                         TextButton(
                           onPressed: _resendOtp,
-                          child: Text(
-                            "Didn't receive the code? Resend",
-                            style: TextStyle(
-                              fontSize: 14 * fontScale,
-                              color: theme.colorScheme.primary,
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 13 * fontScale,
+                                color: palette.textSecondary,
+                              ),
+                              children: [
+                                const TextSpan(text: "Didn't receive code? "),
+                                TextSpan(
+                                  text: 'Resend',
+                                  style: TextStyle(
+                                    color: palette.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
