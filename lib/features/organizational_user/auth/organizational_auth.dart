@@ -3,6 +3,7 @@ import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mindsarthi/core/widgets/rive_teddy_widget.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mindsarthi/features/organizational_user/auth/org_otp_verification.dart';
 import 'package:toastification/toastification.dart';
@@ -22,17 +23,49 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
   bool _dialogOpen = false;
   int _enteredLength = 0;
 
+  RiveTeddyController? _teddyCtrl;
+  final FocusNode _orgNameFocusNode = FocusNode();
+  final FocusNode _phoneFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _orgNameFocusNode.addListener(_onFocusChanged);
+    _phoneFocusNode.addListener(_onFocusChanged);
+  }
+
+  @override
+  void dispose() {
+    _orgNameFocusNode.removeListener(_onFocusChanged);
+    _phoneFocusNode.removeListener(_onFocusChanged);
+    _orgNameFocusNode.dispose();
+    _phoneFocusNode.dispose();
+    _orgNameController.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChanged() {
+    if (_orgNameFocusNode.hasFocus || _phoneFocusNode.hasFocus) {
+      _teddyCtrl?.isChecking = true;
+    } else {
+      _teddyCtrl?.isChecking = false;
+    }
+  }
+
+  void _onOrgNameChanged(String name) {
+    _teddyCtrl?.look = name.length * 4.0;
+  }
+
+  void _onPhoneChanged(String number) {
+    final length = number.replaceAll(RegExp(r'\D'), '').length;
+    _teddyCtrl?.look = length * 5.0;
+  }
+
   void _dismissDialog() {
     if (_dialogOpen && mounted) {
       _dialogOpen = false;
       Navigator.of(context, rootNavigator: true).pop();
     }
-  }
-
-  @override
-  void dispose() {
-    _orgNameController.dispose();
-    super.dispose();
   }
 
   void _checkPhoneValidity(String? value) {
@@ -49,6 +82,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
 
   Future<void> _sendOtp() async {
     if (_phoneNumber == null || !_isPhoneValid) {
+      _teddyCtrl?.triggerFail();
       toastification.show(
         context: context,
         type: ToastificationType.warning,
@@ -60,6 +94,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
     }
 
     if (_orgNameController.text.trim().isEmpty) {
+      _teddyCtrl?.triggerFail();
       toastification.show(
         context: context,
         type: ToastificationType.warning,
@@ -69,6 +104,10 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
       );
       return;
     }
+
+    _orgNameFocusNode.unfocus();
+    _phoneFocusNode.unfocus();
+    _teddyCtrl?.isChecking = false;
 
     _dialogOpen = true;
     showDialog(
@@ -185,42 +224,40 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: Container(
-              width: cardWidth,
-              decoration: BoxDecoration(
-                color: theme.cardTheme.color ?? theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                RiveTeddyWidget(
+                  height: size.height * 0.28,
+                  onControllerReady: (ctrl) {
+                    _teddyCtrl = ctrl;
+                  },
                 ),
-                boxShadow: [
-                  if (!isDark)
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.06),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Icon badge
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.tertiary,
-                        shape: BoxShape.circle,
+                Transform.translate(
+                  offset: const Offset(0, -30),
+                  child: Container(
+                    width: cardWidth,
+                    decoration: BoxDecoration(
+                      color: theme.cardTheme.color ?? theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
                       ),
-                      child: Icon(
-                        Icons.business_rounded,
-                        color: theme.colorScheme.primary,
-                        size: 32,
-                      ),
+                      boxShadow: [
+                        if (!isDark)
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.06),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 16),
                     Text(
                       'Organization Login',
                       style: TextStyle(
@@ -245,6 +282,8 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                     // Org name field
                     TextField(
                       controller: _orgNameController,
+                      focusNode: _orgNameFocusNode,
+                      onChanged: _onOrgNameChanged,
                       decoration: InputDecoration(
                         labelText: 'Organization Name',
                         prefixIcon: Icon(
@@ -266,6 +305,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                     const SizedBox(height: 16),
 
                     IntlPhoneField(
+                      focusNode: _phoneFocusNode,
                       invalidNumberMessage: _enteredLength > 0
                           ? 'Invalid Mobile Number                                   $_enteredLength/10'
                           : 'Invalid Mobile Number',
@@ -297,6 +337,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                       onChanged: (phone) {
                         _phoneNumber = phone.completeNumber;
                         _checkPhoneValidity(phone.number);
+                        _onPhoneChanged(phone.number);
                       },
                       validator: (_) => null,
                     ),
@@ -365,9 +406,12 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
               ),
             ),
           ),
-        ),
+        ],
       ),
-    );
+    ),
+  ),
+),
+);
   }
 
   OutlineInputBorder _buildBorder({bool focused = false, bool hasError = false, required ThemeData theme}) {

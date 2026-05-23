@@ -3,6 +3,7 @@ import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mindsarthi/core/widgets/rive_teddy_widget.dart';
 
 import 'package:lottie/lottie.dart';
 import 'package:mindsarthi/features/professional_user/auth/professional_otp_verification.dart';
@@ -21,6 +22,35 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
   bool _isPhoneValid = false;
   bool _dialogOpen = false;
   int _enteredLength = 0;
+
+  RiveTeddyController? _teddyCtrl;
+  final FocusNode _phoneFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneFocusNode.addListener(_onPhoneFocusChanged);
+  }
+
+  @override
+  void dispose() {
+    _phoneFocusNode.removeListener(_onPhoneFocusChanged);
+    _phoneFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onPhoneFocusChanged() {
+    if (_phoneFocusNode.hasFocus) {
+      _teddyCtrl?.isChecking = true;
+    } else {
+      _teddyCtrl?.isChecking = false;
+    }
+  }
+
+  void _onPhoneChanged(String number) {
+    final length = number.replaceAll(RegExp(r'\D'), '').length;
+    _teddyCtrl?.look = length * 5.0;
+  }
 
   void _dismissDialog() {
     if (_dialogOpen && mounted) {
@@ -43,6 +73,7 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
 
   Future<void> _sendOtp() async {
     if (_phoneNumber == null || !_isPhoneValid) {
+      _teddyCtrl?.triggerFail();
       toastification.show(
         context: context,
         type: ToastificationType.warning,
@@ -52,6 +83,9 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
       );
       return;
     }
+
+    _phoneFocusNode.unfocus();
+    _teddyCtrl?.isChecking = false;
 
     _dialogOpen = true;
     showDialog(
@@ -170,21 +204,32 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
               horizontal: horizontalPadding,
               vertical: 24,
             ),
-            child: Container(
-              width: cardWidth,
-              decoration: BoxDecoration(
-                color: theme.cardTheme.color ?? theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
-                  width: 1,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                RiveTeddyWidget(
+                  height: size.height * 0.28,
+                  onControllerReady: (ctrl) {
+                    _teddyCtrl = ctrl;
+                  },
                 ),
-                boxShadow: isDark
-                    ? []
-                    : const [
-                        BoxShadow(color: Colors.black12, blurRadius: 10),
-                      ],
-              ),
+                Transform.translate(
+                  offset: const Offset(0, -30),
+                  child: Container(
+                    width: cardWidth,
+                    decoration: BoxDecoration(
+                      color: theme.cardTheme.color ?? theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
+                        width: 1,
+                      ),
+                      boxShadow: isDark
+                          ? []
+                          : const [
+                              BoxShadow(color: Colors.black12, blurRadius: 10),
+                            ],
+                    ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -214,6 +259,7 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                     ),
                     const SizedBox(height: 15),
                     IntlPhoneField(
+                      focusNode: _phoneFocusNode,
                       invalidNumberMessage: _enteredLength > 0
                           ? 'Invalid Mobile Number                                   $_enteredLength/10'
                           : 'Invalid Mobile Number',
@@ -249,6 +295,7 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                       onChanged: (phone) {
                         _phoneNumber = phone.completeNumber;
                         _checkPhoneValidity(phone.number);
+                        _onPhoneChanged(phone.number);
                       },
                       validator: (_) => null,
                     ),
@@ -337,9 +384,12 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
               ),
             ),
           ),
-        ),
+        ],
       ),
-    );
+    ),
+  ),
+),
+);
   }
 
   Widget _buildSocialButton({

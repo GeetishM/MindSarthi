@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/widgets/role_router.dart';
+import 'package:mindsarthi/core/widgets/rive_teddy_widget.dart';
 import 'package:pinput/pinput.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -27,9 +28,36 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   String? _error;
   bool _isVerifying = false;
 
+  RiveTeddyController? _teddyCtrl;
+  final FocusNode _otpFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _otpFocusNode.addListener(_onOtpFocusChanged);
+  }
+
+  @override
+  void dispose() {
+    _otpFocusNode.removeListener(_onOtpFocusChanged);
+    _otpFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onOtpFocusChanged() {
+    if (_otpFocusNode.hasFocus) {
+      _teddyCtrl?.isHandsUp = true;
+    } else {
+      _teddyCtrl?.isHandsUp = false;
+    }
+  }
+
   Future<void> _verifyOtp(String otp) async {
     if (_isVerifying) return;
     setState(() => _isVerifying = true);
+
+    _otpFocusNode.unfocus();
+    _teddyCtrl?.isHandsUp = false;
 
     try {
       PhoneAuthCredential credential = PhoneAuthProvider.credential(
@@ -84,6 +112,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             );
           }
         }
+
+        _teddyCtrl?.triggerSuccess();
+        await Future.delayed(const Duration(milliseconds: 1200));
+
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -92,6 +124,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         }
       }
     } catch (e) {
+      _teddyCtrl?.triggerFail();
       setState(() {
         _error = 'Invalid OTP';
         _isVerifying = false;
@@ -144,10 +177,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               child: IntrinsicHeight(
                 child: Align(
                   alignment: Alignment.center,
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    width: 400,
-                    decoration: BoxDecoration(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      RiveTeddyWidget(
+                        height: MediaQuery.of(context).size.height * 0.28,
+                        onControllerReady: (ctrl) {
+                          _teddyCtrl = ctrl;
+                        },
+                      ),
+                      Transform.translate(
+                        offset: const Offset(0, -30),
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          width: 400,
+                          decoration: BoxDecoration(
                       color: theme.cardTheme.color ?? theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
@@ -191,7 +235,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         const SizedBox(height: 24),
                         Pinput(
                           length: 6,
-                          onChanged: (val) => _enteredOtp = val,
+                          focusNode: _otpFocusNode,
+                          onChanged: (val) {
+                            _enteredOtp = val;
+                            if (!_otpFocusNode.hasFocus) {
+                              _teddyCtrl?.look = val.length * 8.0;
+                            }
+                          },
                           onCompleted: (val) => _verifyOtp(val),
                           defaultPinTheme: PinTheme(
                             width: 50,
@@ -256,12 +306,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           ),
                         ),
                       ],
-                    ),
                   ),
                 ),
               ),
-            ),
-          );
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
         },
       ),
     );
