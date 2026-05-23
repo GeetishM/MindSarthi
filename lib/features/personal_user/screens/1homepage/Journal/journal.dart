@@ -10,6 +10,7 @@ import 'entry_dates.dart';
 import 'ai_service.dart';
 import 'journal_insights.dart';
 import 'package:mindsarthi/core/localization/app_localizations.dart';
+import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
 
 class Journal extends StatefulWidget {
   const Journal({super.key});
@@ -23,12 +24,19 @@ class _JournalState extends State<Journal> {
   late Box<JournalEntry> journalBox;
   late Box journalSettingsBox;
   String searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     journalBox = Hive.box<JournalEntry>('journalBox');
     journalSettingsBox = Hive.box('journalSettings');
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   // Dialog to prompt the user for their Gemini API Key if missing
@@ -139,17 +147,20 @@ class _JournalState extends State<Journal> {
           preferredSize: const Size.fromHeight(108),
           child: Column(
             children: [
-              // iOS-Style Search Bar
+              // Premium Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,
                   vertical: 8.0,
                 ),
-                child: CupertinoSearchTextField(
-                  style: TextStyle(color: textPrimary),
-                  placeholder: 'Search by title, tag, or content...',
+                child: PremiumSearchBar(
+                  controller: _searchController,
+                  hintText: 'Search by title, tag, or content...',
                   onChanged: (value) {
                     setState(() => searchQuery = value.toLowerCase());
+                  },
+                  onClear: () {
+                    setState(() => searchQuery = '');
                   },
                 ),
               ),

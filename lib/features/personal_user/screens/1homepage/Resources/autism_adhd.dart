@@ -3,8 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hive/hive.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/widgets/app_dialog.dart';
+import 'package:mindsarthi/core/services/notification_service.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/task.dart';
 
 
 class AutismAdhdScreen extends StatefulWidget {
@@ -37,35 +40,60 @@ class _AutismAdhdScreenState extends State<AutismAdhdScreen> with SingleTickerPr
     super.dispose();
   }
 
+  void _triggerAffirmationNotification() {
+    final affirmations = [
+      "You handled today beautifully. Proud of you! 🌟",
+      "Your mind is unique, creative, and wonderful. 🧠✨",
+      "It is okay to take a break and rest your senses. 🌸",
+      "You are doing enough, and you are worthy just as you are. 💖",
+      "Take a deep breath. You are safe and in control. 🧘",
+      "Every small step you take is a beautiful victory. 🚶‍♂️⭐"
+    ];
+    final random = math.Random();
+    final chosen = affirmations[random.nextInt(affirmations.length)];
+
+    NotificationService.showInstantNotification(
+      id: 20,
+      title: 'Calm & Focus 🧠',
+      body: chosen,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
-      appBar: AppBar(
-        backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
-        title: const Text('Neurodivergent support'),
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pushNamed(context, '/navbar');
-          },
-          icon: Icon(
-            CupertinoIcons.back,
-            size: 22,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-          ),
-        ),
-        actions: [
-          IconButton(
+    return WillPopScope(
+      onWillPop: () async {
+        _triggerAffirmationNotification();
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        appBar: AppBar(
+          backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
+          title: const Text('Neurodivergent support'),
+          leading: IconButton(
+            onPressed: () {
+              _triggerAffirmationNotification();
+              Navigator.pushNamed(context, '/navbar');
+            },
             icon: Icon(
-              CupertinoIcons.info_circle,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              CupertinoIcons.back,
+              size: 22,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
             ),
-            onPressed: () => _showSensoryInfoDialog(context, isDark),
-          )
-        ],
-      ),
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                CupertinoIcons.info_circle,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              ),
+              onPressed: () => _showSensoryInfoDialog(context, isDark),
+            )
+          ],
+        ),
       body: Column(
         children: [
           // iOS Segmented Control
@@ -98,8 +126,9 @@ class _AutismAdhdScreenState extends State<AutismAdhdScreen> with SingleTickerPr
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildTabHeader(String label, IconData icon, bool isDark, int index) {
     final isSelected = _activeTab == index;
@@ -307,10 +336,14 @@ class _BubblePopGameState extends State<BubblePopGame> {
       // Update particles
       for (int i = _particles.length - 1; i >= 0; i--) {
         final p = _particles[i];
+        p.vy += 0.15; // Apply gravity!
+        p.vx += math.sin(p.wobble) * 0.05; // Apply horizontal wobble!
+        p.wobble += p.wobbleSpeed;
         p.x += p.vx;
         p.y += p.vy;
-        p.alpha -= 0.04;
-        if (p.alpha <= 0) {
+        p.rotation += p.rotationSpeed;
+        p.alpha -= 0.02; // Slower fade out to let them fall nicely!
+        if (p.alpha <= 0 || p.y > 1000) {
           _particles.removeAt(i);
         }
       }
@@ -337,19 +370,38 @@ class _BubblePopGameState extends State<BubblePopGame> {
   void _popBubble(BubbleData bubble) {
     HapticFeedback.mediumImpact();
     
-    // Spawn burst particles
-    final int particleCount = 12 + _random.nextInt(8);
+    // Spawn burst particles (confetti)
+    final int particleCount = 20 + _random.nextInt(15); // More particles for a festive confetti feel!
+    final List<String> shapes = ['circle', 'square', 'triangle'];
+    
+    // Confetti colors: popped bubble color mixed with other festive colors!
+    final List<Color> confettiColors = [
+      bubble.color,
+      ..._bubbleColors,
+      Colors.white,
+      Colors.cyanAccent,
+      Colors.lightGreenAccent,
+    ];
+
     for (int i = 0; i < particleCount; i++) {
       final angle = _random.nextDouble() * math.pi * 2;
-      final speed = 2.0 + _random.nextDouble() * 4.0;
+      final speed = 3.0 + _random.nextDouble() * 6.0;
+      final shape = shapes[_random.nextInt(shapes.length)];
+      final color = confettiColors[_random.nextInt(confettiColors.length)];
+      
       _particles.add(
         PopParticle(
           x: bubble.x + bubble.size / 2,
           y: bubble.y + bubble.size / 2,
           vx: math.cos(angle) * speed,
-          vy: math.sin(angle) * speed,
-          size: 3.0 + _random.nextDouble() * 5.0,
-          color: bubble.color,
+          vy: math.sin(angle) * speed - 1.5, // Slight upward push initially
+          size: 6.0 + _random.nextDouble() * 8.0, // Larger size so confetti is clearly visible
+          color: color,
+          shape: shape,
+          rotation: _random.nextDouble() * math.pi * 2,
+          rotationSpeed: (_random.nextDouble() - 0.5) * 0.3,
+          wobble: _random.nextDouble() * math.pi * 2,
+          wobbleSpeed: 0.05 + _random.nextDouble() * 0.1,
         ),
       );
     }
@@ -597,11 +649,16 @@ class BubbleData {
 class PopParticle {
   double x;
   double y;
-  final double vx;
-  final double vy;
+  double vx;
+  double vy;
   double size;
   double alpha = 1.0;
   final Color color;
+  final String shape; // 'circle', 'square', 'triangle'
+  double rotation;
+  final double rotationSpeed;
+  double wobble;
+  final double wobbleSpeed;
 
   PopParticle({
     required this.x,
@@ -610,6 +667,11 @@ class PopParticle {
     required this.vy,
     required this.size,
     required this.color,
+    required this.shape,
+    this.rotation = 0.0,
+    required this.rotationSpeed,
+    this.wobble = 0.0,
+    required this.wobbleSpeed,
   });
 }
 
@@ -623,7 +685,29 @@ class ParticlePainter extends CustomPainter {
       final paint = Paint()
         ..color = p.color.withValues(alpha: p.alpha)
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(Offset(p.x, p.y), p.size, paint);
+
+      canvas.save();
+      canvas.translate(p.x, p.y);
+      canvas.rotate(p.rotation);
+
+      if (p.shape == 'circle') {
+        canvas.drawCircle(Offset.zero, p.size / 2, paint);
+      } else if (p.shape == 'square') {
+        canvas.drawRect(
+          Rect.fromCenter(center: Offset.zero, width: p.size, height: p.size),
+          paint,
+        );
+      } else if (p.shape == 'triangle') {
+        final path = Path();
+        final double r = p.size / 2;
+        path.moveTo(0, -r);
+        path.lineTo(r, r);
+        path.lineTo(-r, r);
+        path.close();
+        canvas.drawPath(path, paint);
+      }
+
+      canvas.restore();
     }
   }
 
@@ -641,6 +725,7 @@ class SensoryChecklistTab extends StatefulWidget {
 }
 
 class _SensoryChecklistTabState extends State<SensoryChecklistTab> {
+  late Box<Task> _tasksBox;
   final List<CopingTask> _tasks = [
     CopingTask(title: 'Put on noise-cancelling headphones', category: 'Audio'),
     CopingTask(title: 'Find a dim, dark, or quiet space', category: 'Visual'),
@@ -649,6 +734,95 @@ class _SensoryChecklistTabState extends State<SensoryChecklistTab> {
     CopingTask(title: 'Drink a cold glass of water slowly', category: 'System'),
     CopingTask(title: 'Focus on one steady physical object nearby', category: 'Focus'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tasksBox = Hive.box<Task>('tasksBox');
+    _syncTasksWithHive();
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  String _getStandardCategory(String title) {
+    switch (title) {
+      case 'Put on noise-cancelling headphones':
+      case 'Find a dim, dark, or quiet space':
+      case 'Wrap in a weighted blanket or hug a pillow':
+        return 'Self-Care';
+      case 'Take 5 slow breaths (Inhale 4s, Exhale 6s)':
+      case 'Focus on one steady physical object nearby':
+        return 'Mindfulness';
+      case 'Drink a cold glass of water slowly':
+        return 'Health';
+      default:
+        return 'Self-Care';
+    }
+  }
+
+  void _syncTasksWithHive() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+
+    for (var task in _tasks) {
+      Task? existingTask;
+      try {
+        existingTask = _tasksBox.values.firstWhere(
+          (t) => t.title == task.title && _isSameDay(t.date, todayStart)
+        );
+      } catch (_) {
+        existingTask = null;
+      }
+
+      if (existingTask != null) {
+        task.isCompleted = existingTask.isCompleted;
+      } else {
+        final newTask = Task(
+          title: task.title,
+          isCompleted: false,
+          date: todayStart,
+          category: _getStandardCategory(task.title),
+        );
+        _tasksBox.add(newTask);
+        task.isCompleted = false;
+      }
+    }
+  }
+
+  void _toggleTask(CopingTask task) {
+    HapticFeedback.lightImpact();
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+
+    setState(() {
+      final newVal = !task.isCompleted;
+      task.isCompleted = newVal;
+
+      Task? existingTask;
+      try {
+        existingTask = _tasksBox.values.firstWhere(
+          (t) => t.title == task.title && _isSameDay(t.date, todayStart)
+        );
+      } catch (_) {
+        existingTask = null;
+      }
+
+      if (existingTask != null) {
+        existingTask.isCompleted = newVal;
+        existingTask.save();
+      } else {
+        final newTask = Task(
+          title: task.title,
+          isCompleted: newVal,
+          date: todayStart,
+          category: _getStandardCategory(task.title),
+        );
+        _tasksBox.add(newTask);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -699,12 +873,7 @@ class _SensoryChecklistTabState extends State<SensoryChecklistTab> {
                     ),
                     child: ListTile(
                       leading: GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          setState(() {
-                            task.isCompleted = !task.isCompleted;
-                          });
-                        },
+                        onTap: () => _toggleTask(task),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           width: 24,

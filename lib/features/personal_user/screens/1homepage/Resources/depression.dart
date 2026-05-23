@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/task.dart';
+import 'package:mindsarthi/core/services/notification_service.dart';
 
 class Depression extends StatefulWidget {
   const Depression({super.key});
@@ -36,40 +39,137 @@ class _DepressionState extends State<Depression> {
     'Reach out to one supportive person (text or call)',
   ];
   final Map<String, bool> _activityStates = {};
+  late Box<Task> _tasksBox;
 
   @override
   void initState() {
     super.initState();
+    _tasksBox = Hive.box<Task>('tasksBox');
+    _loadDailyData();
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  String _getCategoryForActivity(String activity) {
+    switch (activity) {
+      case 'Drink a full glass of water':
+        return 'Health';
+      case 'Open the blinds / let light in':
+        return 'Self-Care';
+      case 'Stretch or walk for 5 minutes':
+        return 'Health';
+      case 'Write down one tiny thing you are grateful for':
+        return 'Mindfulness';
+      case 'Reach out to one supportive person (text or call)':
+        return 'Personal';
+      default:
+        return 'Self-Care';
+    }
+  }
+
+  void _loadDailyData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    final lastResetDate = prefs.getString('dep_last_reset_date') ?? '';
+
+    int affIndex = prefs.getInt('dep_daily_affirmation_index') ?? 0;
+
+    if (lastResetDate != todayStr) {
+      affIndex = (affIndex + 1) % _affirmations.length;
+      await prefs.setString('dep_last_reset_date', todayStr);
+      await prefs.setInt('dep_daily_affirmation_index', affIndex);
+    }
+
+    setState(() {
+      _currentAffirmationIndex = affIndex;
+    });
+
+    await prefs.setBool('has_visited_depression_support', true);
+    NotificationService.scheduleDailyReminders();
+
     _loadActivityChecklist();
   }
 
-  void _loadActivityChecklist() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _loadActivityChecklist() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+
     setState(() {
       for (var activity in _activities) {
-        _activityStates[activity] = prefs.getBool('dep_act_$activity') ?? false;
+        Task? existingTask;
+        try {
+          existingTask = _tasksBox.values.firstWhere(
+            (task) => task.title == activity && _isSameDay(task.date, todayStart)
+          );
+        } catch (_) {
+          existingTask = null;
+        }
+
+        if (existingTask != null) {
+          _activityStates[activity] = existingTask.isCompleted;
+        } else {
+          final category = _getCategoryForActivity(activity);
+          final newTask = Task(
+            title: activity,
+            isCompleted: false,
+            date: todayStart,
+            category: category,
+          );
+          _tasksBox.add(newTask);
+          _activityStates[activity] = false;
+        }
       }
     });
   }
 
-  void _toggleActivity(String activity) async {
+  void _toggleActivity(String activity) {
     HapticFeedback.lightImpact();
-    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+
     setState(() {
       final current = _activityStates[activity] ?? false;
-      _activityStates[activity] = !current;
-      prefs.setBool('dep_act_$activity', !current);
+      final newVal = !current;
+      _activityStates[activity] = newVal;
+
+      Task? existingTask;
+      try {
+        existingTask = _tasksBox.values.firstWhere(
+          (task) => task.title == activity && _isSameDay(task.date, todayStart)
+        );
+      } catch (_) {
+        existingTask = null;
+      }
+
+      if (existingTask != null) {
+        existingTask.isCompleted = newVal;
+        existingTask.save();
+      } else {
+        final newTask = Task(
+          title: activity,
+          isCompleted: newVal,
+          date: todayStart,
+          category: _getCategoryForActivity(activity),
+        );
+        _tasksBox.add(newTask);
+      }
     });
   }
 
-  void _cycleAffirmation() {
+  void _cycleAffirmation() async {
     HapticFeedback.selectionClick();
     setState(() {
       _isFlipped = true;
     });
+    final nextIndex = (_currentAffirmationIndex + 1) % _affirmations.length;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('dep_daily_affirmation_index', nextIndex);
     Future.delayed(const Duration(milliseconds: 200), () {
       setState(() {
-        _currentAffirmationIndex = (_currentAffirmationIndex + 1) % _affirmations.length;
+        _currentAffirmationIndex = nextIndex;
         _isFlipped = false;
       });
     });

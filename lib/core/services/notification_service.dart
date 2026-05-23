@@ -4,6 +4,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:hive/hive.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/Journal/journal_entry.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -115,6 +117,43 @@ class NotificationService {
     }
   }
 
+  static Future<bool> checkIfUserIsDepressed() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hasVisitedDepression = prefs.getBool('has_visited_depression_support') ?? false;
+      if (hasVisitedDepression) return true;
+
+      final journalBox = Hive.box<JournalEntry>('journalBox');
+      final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+      final distressedEntry = journalBox.values.any((entry) {
+        if (entry.createdAt.isBefore(sevenDaysAgo)) return false;
+        if (entry.sentimentScore != null && entry.sentimentScore! <= 4.0) return true;
+        if (entry.crisisFlag == true) return true;
+        if (entry.sentimentEmotions != null) {
+          final depressedEmotions = {
+            'sad',
+            'sadness',
+            'depressed',
+            'depression',
+            'grief',
+            'lonely',
+            'loneliness',
+            'hopeless',
+            'hopelessness'
+          };
+          if (entry.sentimentEmotions!.any((emotion) => depressedEmotions.contains(emotion.toLowerCase()))) {
+            return true;
+          }
+        }
+        return false;
+      });
+      if (distressedEntry) return true;
+    } catch (_) {
+      // In case boxes are not open or other error
+    }
+    return false;
+  }
+
   /// Schedule daily notifications for Mood Check-in and Goal Reflection.
   static Future<void> scheduleDailyReminders() async {
     try {
@@ -161,6 +200,35 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
+
+      // 3. Schedule Daily Depression Support reminder if they are flagged/detected as depressed
+      final isDepressed = await checkIfUserIsDepressed();
+      if (isDepressed) {
+        await _localNotifications.zonedSchedule(
+          10, // Depression support reminder ID
+          'You are not alone 🌟',
+          'Remember to take it one small step at a time today. Open Depression Support for gentle coping tools.',
+          _nextInstanceOfTime(14, 0), // 2:00 PM
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'depression_support_channel',
+              'Depression Support Reminders',
+              channelDescription: 'Sends daily gentle reminders if feeling down',
+              importance: Importance.max,
+              priority: Priority.high,
+            ),
+            iOS: DarwinNotificationDetails(),
+          ),
+          matchDateTimeComponents: DateTimeComponents.time,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        );
+        debugPrint('NotificationService: Depression support daily reminder scheduled at 2:00 PM.');
+      } else {
+        await _localNotifications.cancel(10);
+        debugPrint('NotificationService: Depression support daily reminder cancelled/disabled.');
+      }
       
       debugPrint('NotificationService: Daily reminders scheduled successfully.');
     } catch (e) {
@@ -238,6 +306,40 @@ class NotificationService {
       debugPrint('NotificationService: Streak celebration shown.');
     } catch (e) {
       debugPrint('NotificationService: Failed to show streak celebration - $e');
+    }
+  }
+
+  /// Show an instant notification immediately.
+  static Future<void> showInstantNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    try {
+      await addNotification(title: title, body: body);
+
+      await _localNotifications.show(
+        id,
+        title,
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'instant_reminders_channel',
+            'Instant Reminders',
+            channelDescription: 'Shows immediate supportive notifications',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+      );
+      debugPrint('NotificationService: Instant notification shown.');
+    } catch (e) {
+      debugPrint('NotificationService: Failed to show instant notification - $e');
     }
   }
 }
