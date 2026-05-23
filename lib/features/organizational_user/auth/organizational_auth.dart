@@ -115,6 +115,7 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
       barrierDismissible: false,
       builder: (context) {
         final dialogTheme = Theme.of(context);
+        final isDark = dialogTheme.brightness == Brightness.dark;
         return Dialog(
           backgroundColor: dialogTheme.cardTheme.color ?? dialogTheme.colorScheme.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -128,6 +129,14 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                   height: 120,
                   width: 120,
                   fit: BoxFit.contain,
+                  delegates: LottieDelegates(
+                    values: [
+                      ValueDelegate.color(
+                        const ['**', 'Stroke 1'],
+                        value: isDark ? Colors.white : const Color(0xFF1E1E2C),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Text(

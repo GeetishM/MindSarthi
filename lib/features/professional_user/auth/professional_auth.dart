@@ -106,6 +106,14 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                   height: 120,
                   width: 120,
                   fit: BoxFit.contain,
+                  delegates: LottieDelegates(
+                    values: [
+                      ValueDelegate.color(
+                        const ['**', 'Stroke 1'],
+                        value: isDark ? Colors.white : const Color(0xFF1E1E2C),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Text(

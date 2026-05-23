@@ -415,7 +415,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                                     const TextSpan(
                                         text: "Didn't receive code? "),
                                     TextSpan(
-                                      text: 'Resend',
+                                      text: 'Resend', 
                                       style: TextStyle(
                                         color: isDark
                                             ? AppColors.darkPrimary

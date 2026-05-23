@@ -123,6 +123,14 @@ class _PersonalAuthState extends State<PersonalAuth>
                 'assets/lottie/otp_p.json',
                 height: 100,
                 width: 100,
+                delegates: LottieDelegates(
+                  values: [
+                    ValueDelegate.color(
+                      const ['**', 'Stroke 1'],
+                      value: isDark ? Colors.white : const Color(0xFF1E1E2C),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               Text(
