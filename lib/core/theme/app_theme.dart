@@ -281,6 +281,23 @@ class AppTheme {
       useMaterial3: true,
       brightness: isDark ? Brightness.dark : Brightness.light,
 
+      splashColor: palette.primary.withValues(alpha: 0.15),
+      highlightColor: palette.primary.withValues(alpha: 0.08),
+
+      iconButtonTheme: IconButtonThemeData(
+        style: ButtonStyle(
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return palette.primary.withValues(alpha: 0.25);
+            }
+            if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) {
+              return palette.primary.withValues(alpha: 0.12);
+            }
+            return null;
+          }),
+        ),
+      ),
+
       colorScheme: ColorScheme.fromSeed(
         seedColor: palette.primary,
         brightness: isDark ? Brightness.dark : Brightness.light,
