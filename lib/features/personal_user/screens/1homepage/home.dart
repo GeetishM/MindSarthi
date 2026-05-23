@@ -1837,20 +1837,20 @@ class _PremiumReliefCardState extends State<_PremiumReliefCard> {
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedScale(
-        scale: _isPressed ? 0.94 : 1.0,
+        scale: _isPressed ? 0.95 : 1.0,
         duration: const Duration(milliseconds: 150),
         curve: Curves.easeOutBack,
         child: Container(
-          width: (widget.screenWidth - 60) / 3.3,
-          height: 135,
-          padding: const EdgeInsets.all(12),
+          width: 185,
+          height: 80,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
               colors: gradientColors,
             ),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: widget.isDark
                   ? widget.tintColor.withValues(alpha: 0.25)
@@ -1860,46 +1860,65 @@ class _PremiumReliefCardState extends State<_PremiumReliefCard> {
             boxShadow: [
               if (!widget.isDark)
                 BoxShadow(
-                  color: widget.tintColor.withValues(alpha: 0.1),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
+                  color: widget.tintColor.withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
               if (widget.isDark)
                 BoxShadow(
-                  color: widget.tintColor.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: widget.tintColor.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
             ],
           ),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: widget.tintColor.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   widget.icon,
-                  size: 26,
+                  size: 22,
                   color: widget.tintColor,
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                widget.label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: widget.isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.textPrimary,
-                  height: 1.25,
-                  letterSpacing: -0.3,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      widget.label.replaceAll('\n', ' '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: widget.isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.textPrimary,
+                        height: 1.15,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Relief tools',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: widget.isDark
+                            ? AppColors.darkTextSecondary.withValues(alpha: 0.7)
+                            : AppColors.textSecondary.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

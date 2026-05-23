@@ -10,6 +10,7 @@ import 'package:mindsarthi/features/personal_user/screens/4communitypage/new_pos
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_card.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/hidden_posts_manager.dart';
 import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
+import 'package:mindsarthi/core/widgets/animated_action_menu.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -239,31 +240,49 @@ class _CommunityPageState extends State<CommunityPage> {
           ),
         ),
         actions: [
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            child: Icon(
-              CupertinoIcons.bookmark,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              size: 22,
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Center(
+              child: AnimatedActionMenu(
+                expandLeft: true,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedSegment = 0;
+                        selectedFilter = 'Saved';
+                      });
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _scrollToSelectedChip(3);
+                      });
+                    },
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        CupertinoIcons.bookmark,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        CupertinoIcons.bell,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            onPressed: () {
-              setState(() {
-                _selectedSegment = 0;
-                selectedFilter = 'Saved';
-              });
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _scrollToSelectedChip(3);
-              });
-            },
-          ),
-          CupertinoButton(
-            padding: const EdgeInsets.only(right: 12),
-            child: Icon(
-              CupertinoIcons.bell, 
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-              size: 22,
-            ),
-            onPressed: () {},
           ),
         ],
         bottom: PreferredSize(
@@ -434,23 +453,29 @@ class _CommunityPageState extends State<CommunityPage> {
 
                 if (selectedFilter == 'Popular') {
                   posts.sort((a, b) {
-                    final aLikes = a['likes'] ?? 0;
-                    final bLikes = b['likes'] ?? 0;
-                    final aComments = a['commentCount'] ?? 0;
-                    final bComments = b['commentCount'] ?? 0;
+                    final aData = a.data() as Map<String, dynamic>?;
+                    final bData = b.data() as Map<String, dynamic>?;
+                    final aLikes = aData?['likes'] ?? 0;
+                    final bLikes = bData?['likes'] ?? 0;
+                    final aComments = aData?['commentCount'] ?? 0;
+                    final bComments = bData?['commentCount'] ?? 0;
                     return ((bLikes + bComments) - (aLikes + aComments));
                   });
                 }
 
                 if (selectedFilter == 'My posts') {
                   return _buildFilteredPostList(
-                    posts.where((doc) => doc['uid'] == uid).toList(),
+                    posts.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>?;
+                      return data?['uid'] == uid;
+                    }).toList(),
                   );
                 }
 
                 if (selectedFilter == 'Following') {
                   final followingPosts = posts.where((doc) {
-                    final postUid = doc['uid'];
+                    final data = doc.data() as Map<String, dynamic>?;
+                    final postUid = data?['uid'];
                     return _followingUids.contains(postUid);
                   }).toList();
                   return _buildFilteredPostList(followingPosts);

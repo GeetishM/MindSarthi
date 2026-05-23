@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
-import 'package:mindsarthi/core/theme/theme_provider.dart';
 import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
 import 'package:mindsarthi/core/widgets/premium_showcase.dart';
-import 'package:provider/provider.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 class UserSelection extends StatefulWidget {
@@ -66,16 +64,15 @@ class _UserSelectionState extends State<UserSelection>
       AppToast.warning(context, 'Please select a role to continue');
       return;
     }
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    // We do NOT set the theme provider role here, so that the login/auth screens
+    // always use the default personal (Teal) theme. The actual role-based theme
+    // is set by RoleRouter after successful authentication.
     switch (selectedRole) {
       case 'personal':
-        themeProvider.setRole('personal');
         Navigator.pushNamed(context, '/personalauth');
       case 'professional':
-        themeProvider.setRole('professional');
         Navigator.pushNamed(context, '/professionalauth');
       case 'organization':
-        themeProvider.setRole('org');
         Navigator.pushNamed(context, '/organizationalauth');
     }
   }

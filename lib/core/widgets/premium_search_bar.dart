@@ -25,7 +25,6 @@ class PremiumSearchBar extends StatefulWidget {
 class _PremiumSearchBarState extends State<PremiumSearchBar> with SingleTickerProviderStateMixin {
   late FocusNode _focusNode;
   late AnimationController _animationController;
-  late Animation<double> _iconRotationAnimation;
   bool _isFocused = false;
 
   @override
@@ -39,26 +38,35 @@ class _PremiumSearchBarState extends State<PremiumSearchBar> with SingleTickerPr
       duration: const Duration(milliseconds: 300),
     );
 
-    _iconRotationAnimation = Tween<double>(begin: 0.0, end: 0.25).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
-    );
-
     widget.controller.addListener(_onTextChanged);
+
+    // Set initial state
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _syncAnimation();
+      }
+    });
   }
 
-  void _handleFocusChange() {
-    setState(() {
-      _isFocused = _focusNode.hasFocus;
-    });
-    if (_isFocused) {
+  void _syncAnimation() {
+    final shouldShowX = _isFocused || widget.controller.text.isNotEmpty;
+    if (shouldShowX) {
       _animationController.forward();
     } else {
       _animationController.reverse();
     }
   }
 
+  void _handleFocusChange() {
+    setState(() {
+      _isFocused = _focusNode.hasFocus;
+    });
+    _syncAnimation();
+  }
+
   void _onTextChanged() {
     setState(() {});
+    _syncAnimation();
   }
 
   @override
@@ -104,17 +112,9 @@ class _PremiumSearchBarState extends State<PremiumSearchBar> with SingleTickerPr
                   : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02)),
               width: _isFocused ? 1.5 : 0.8,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.only(left: 16, right: 12),
             child: Row(
               children: [
-                RotationTransition(
-                  turns: _iconRotationAnimation,
-                  child: Icon(
-                    CupertinoIcons.search,
-                    color: _isFocused ? primaryColor : (isDark ? Colors.grey[400] : Colors.grey[600]),
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: widget.controller,
@@ -128,6 +128,8 @@ class _PremiumSearchBarState extends State<PremiumSearchBar> with SingleTickerPr
                       hintStyle: theme.textTheme.bodyMedium?.copyWith(
                         color: isDark ? Colors.grey[500] : Colors.grey[500],
                       ),
+                      filled: false,
+                      fillColor: Colors.transparent,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -138,31 +140,60 @@ class _PremiumSearchBarState extends State<PremiumSearchBar> with SingleTickerPr
                     ),
                   ),
                 ),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (child, animation) => ScaleTransition(
-                    scale: animation,
-                    child: child,
-                  ),
-                  child: (_isFocused || widget.controller.text.isNotEmpty)
-                      ? GestureDetector(
-                          key: const ValueKey('clear_btn'),
-                          onTap: () {
-                            final hadText = widget.controller.text.isNotEmpty;
-                            widget.controller.clear();
-                            if (widget.onClear != null) widget.onClear!();
-                            if (widget.onChanged != null) widget.onChanged!('');
-                            if (!hadText) {
-                              _focusNode.unfocus();
-                            }
-                          },
-                          child: Icon(
-                            CupertinoIcons.clear_circled_solid,
-                            size: 20,
-                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                GestureDetector(
+                  onTap: () {
+                    final isActionState = _isFocused || widget.controller.text.isNotEmpty;
+                    if (isActionState) {
+                      final hadText = widget.controller.text.isNotEmpty;
+                      widget.controller.clear();
+                      if (widget.onClear != null) widget.onClear!();
+                      if (widget.onChanged != null) widget.onChanged!('');
+                      if (!hadText) {
+                        _focusNode.unfocus();
+                      }
+                    } else {
+                      _focusNode.requestFocus();
+                    }
+                  },
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    color: Colors.transparent, // Expand tap area
+                    alignment: Alignment.center,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Transform.rotate(
+                          angle: _animationController.value * (3.14159 / 2),
+                          child: Opacity(
+                            opacity: (1.0 - _animationController.value).clamp(0.0, 1.0),
+                            child: Transform.scale(
+                              scale: (1.0 - _animationController.value).clamp(0.4, 1.0),
+                              child: Icon(
+                                CupertinoIcons.search,
+                                size: 22,
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              ),
+                            ),
                           ),
-                        )
-                      : const SizedBox.shrink(key: ValueKey('empty')),
+                        ),
+                        Transform.rotate(
+                          angle: (_animationController.value - 1.0) * (3.14159 / 2),
+                          child: Opacity(
+                            opacity: _animationController.value.clamp(0.0, 1.0),
+                            child: Transform.scale(
+                              scale: _animationController.value.clamp(0.4, 1.0),
+                              child: Icon(
+                                CupertinoIcons.clear_circled_solid,
+                                size: 20,
+                                color: _isFocused ? primaryColor : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
