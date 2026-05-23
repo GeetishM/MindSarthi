@@ -341,6 +341,11 @@ class _PersonalAuthState extends State<PersonalAuth>
                                       : AppColors.textSecondary,
                                   fontSize: 14,
                                 ),
+                                floatingLabelStyle: TextStyle(
+                                  color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
                                 filled: true,
                                 fillColor: isDark
                                     ? AppColors.darkBackground

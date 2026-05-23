@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/user_selector/user_selection.dart';
+import 'package:provider/provider.dart';
+import 'package:mindsarthi/core/theme/theme_provider.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -19,6 +21,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<ThemeProvider>(context, listen: false).setRole('personal');
+      }
+    });
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),

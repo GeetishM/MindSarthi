@@ -286,6 +286,17 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                       onChanged: _onOrgNameChanged,
                       decoration: InputDecoration(
                         labelText: 'Organization Name',
+                        labelStyle: TextStyle(
+                          color: isDark
+                              ? AppColors.darkTextHint
+                              : AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                        floatingLabelStyle: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                         prefixIcon: Icon(
                           Icons.domain_rounded,
                           color: theme.hintColor,
@@ -326,6 +337,17 @@ class _OrganizationalAuthState extends State<OrganizationalAuth> {
                       ),
                       decoration: InputDecoration(
                         labelText: 'Admin Phone Number',
+                        labelStyle: TextStyle(
+                          color: isDark
+                              ? AppColors.darkTextHint
+                              : AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                        floatingLabelStyle: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                         counterText: '',
                         border: _buildBorder(theme: theme),
                         enabledBorder: _buildBorder(theme: theme),

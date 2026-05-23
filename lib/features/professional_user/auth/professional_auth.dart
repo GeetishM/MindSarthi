@@ -280,6 +280,17 @@ class _ProfessionalAuthState extends State<ProfessionalAuth> {
                       ),
                       decoration: InputDecoration(
                         labelText: 'Phone Number',
+                        labelStyle: TextStyle(
+                          color: isDark
+                              ? AppColors.darkTextHint
+                              : AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                        floatingLabelStyle: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                         filled: true,
                         fillColor: isDark
                             ? theme.colorScheme.surfaceContainerHighest
