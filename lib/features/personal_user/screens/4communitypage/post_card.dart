@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
@@ -466,13 +467,79 @@ class _PostCardState extends State<PostCard>
 
           const SizedBox(height: 12),
 
+          // Title / Header
+          if (data['title'] != null && data['title'].toString().trim().isNotEmpty) ...[
+            Text(
+              data['title'].toString().trim(),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+
           // Post Content
-          Text(
-            data['content'] ?? '',
-            style: TextStyle(
-              fontSize: 15,
-              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-              height: 1.4,
+          MarkdownBody(
+            data: data['content'] ?? '',
+            selectable: true,
+            styleSheet: MarkdownStyleSheet(
+              p: TextStyle(
+                fontSize: 15,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                height: 1.4,
+              ),
+              strong: TextStyle(
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+              em: TextStyle(
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
+              listBullet: TextStyle(
+                color: isDark ? AppColors.darkPrimary : AppColors.primary,
+              ),
+              h1: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+              h2: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+              h3: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+              ),
+              code: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 14,
+                color: isDark ? AppColors.accent : AppColors.primaryDark,
+                backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+              ),
+              codeblockDecoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border, width: 0.8),
+              ),
+              blockquote: TextStyle(
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
+              blockquoteDecoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                    width: 4,
+                  ),
+                ),
+              ),
             ),
           ),
           if (data['mediaUrl'] != null && data['mediaUrl'].toString().isNotEmpty) ...[

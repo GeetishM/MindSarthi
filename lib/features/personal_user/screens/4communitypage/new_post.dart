@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -17,6 +18,8 @@ class NewPostScreen extends StatefulWidget {
 
 class _NewPostScreenState extends State<NewPostScreen> {
   final TextEditingController _postController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final FocusNode _contentFocusNode = FocusNode();
   bool _isPosting = false;
   bool _isAnonymous = false;
 
@@ -83,12 +86,13 @@ class _NewPostScreenState extends State<NewPostScreen> {
   Future<void> _submitPost() async {
     final user = FirebaseAuth.instance.currentUser;
     final content = _postController.text.trim();
+    final title = _titleController.text.trim();
 
     if (user == null) {
       AppToast.error(context, 'You must be logged in to post');
       return;
     }
-    if (content.isEmpty && _mediaFile == null) {
+    if (content.isEmpty && title.isEmpty && _mediaFile == null) {
       AppToast.warning(context, 'Post cannot be completely empty');
       return;
     }
@@ -103,6 +107,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
 
       await FirebaseFirestore.instance.collection('posts').add({
         'uid': user.uid,
+        'title': title,
         'content': content,
         'timestamp': FieldValue.serverTimestamp(),
         'likes': 0,
@@ -135,6 +140,8 @@ class _NewPostScreenState extends State<NewPostScreen> {
   @override
   void dispose() {
     _postController.dispose();
+    _titleController.dispose();
+    _contentFocusNode.dispose();
     super.dispose();
   }
 
@@ -206,6 +213,42 @@ class _NewPostScreenState extends State<NewPostScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Title/Header text input container
+              Container(
+                decoration: BoxDecoration(
+                  color: surfaceColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderCol, width: 1.2),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: TextField(
+                  controller: _titleController,
+                  maxLines: 1,
+                  enabled: !_isPosting,
+                  textInputAction: TextInputAction.next,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: "Add a title (optional)",
+                    hintStyle: TextStyle(
+                      color: hintColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    filled: false,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
               // Post text input container
               Container(
                 decoration: BoxDecoration(
@@ -214,27 +257,40 @@ class _NewPostScreenState extends State<NewPostScreen> {
                   border: Border.all(color: borderCol, width: 1.2),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: TextField(
-                  controller: _postController,
-                  maxLines: 6,
-                  enabled: !_isPosting,
-                  keyboardType: TextInputType.multiline,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 16,
-                    height: 1.5,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: _isAnonymous
-                        ? "Share your thoughts anonymously in a judgment-free space..."
-                        : "What's on your mind?",
-                    hintStyle: TextStyle(color: hintColor),
-                    filled: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _postController,
+                      focusNode: _contentFocusNode,
+                      maxLines: 6,
+                      enabled: !_isPosting,
+                      keyboardType: TextInputType.multiline,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 16,
+                        height: 1.5,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: _isAnonymous
+                            ? "Share your thoughts anonymously in a judgment-free space..."
+                            : "What's on your mind?",
+                        hintStyle: TextStyle(color: hintColor),
+                        filled: false,
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildFormatToolbar(
+                      isDark,
+                      primaryColor,
+                      isDark ? AppColors.darkSurface2 : AppColors.background,
+                      borderCol,
+                      isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    ),
+                  ],
                 ),
               ),
 
@@ -418,6 +474,192 @@ class _NewPostScreenState extends State<NewPostScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _applyFormat(String prefix, String suffix) {
+    _contentFocusNode.requestFocus();
+    final text = _postController.text;
+    final selection = _postController.selection;
+    
+    if (selection.isValid && !selection.isCollapsed) {
+      final start = selection.start;
+      final end = selection.end;
+      
+      final selectedText = text.substring(start, end);
+      final newText = text.replaceRange(start, end, '$prefix$selectedText$suffix');
+      
+      _postController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection(
+          baseOffset: start + prefix.length,
+          extentOffset: end + prefix.length,
+        ),
+      );
+    } else {
+      final start = selection.isValid ? selection.start : text.length;
+      final newText = text.replaceRange(start, start, '$prefix$suffix');
+      _postController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: start + prefix.length),
+      );
+    }
+  }
+
+  void _applyLinePrefix(String prefix) {
+    _contentFocusNode.requestFocus();
+    final text = _postController.text;
+    final selection = _postController.selection;
+    
+    final start = selection.isValid ? selection.start : text.length;
+    final end = selection.isValid ? selection.end : text.length;
+    
+    int lineStart = start;
+    while (lineStart > 0 && text[lineStart - 1] != '\n') {
+      lineStart--;
+    }
+    
+    final beforeText = text.substring(0, lineStart);
+    final selectionText = text.substring(lineStart, end);
+    final afterText = text.substring(end);
+    
+    final lines = selectionText.split('\n');
+    final formattedLines = lines.map((line) {
+      if (line.startsWith(prefix)) {
+        return line.substring(prefix.length);
+      }
+      return '$prefix$line';
+    }).join('\n');
+    
+    final newText = '$beforeText$formattedLines$afterText';
+    
+    _postController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection(
+        baseOffset: lineStart,
+        extentOffset: lineStart + formattedLines.length,
+      ),
+    );
+  }
+
+  Widget _buildFormatToolbar(
+    bool isDark,
+    Color primaryColor,
+    Color surfaceColor,
+    Color borderCol,
+    Color textSecondary,
+  ) {
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderCol, width: 0.8),
+      ),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        children: [
+          _buildFormatButton(
+            icon: CupertinoIcons.bold,
+            tooltip: "Bold",
+            onTap: () => _applyFormat("**", "**"),
+            color: primaryColor,
+          ),
+          _buildFormatButton(
+            icon: CupertinoIcons.italic,
+            tooltip: "Italic",
+            onTap: () => _applyFormat("*", "*"),
+            color: primaryColor,
+          ),
+          _buildFormatButton(
+            icon: CupertinoIcons.underline,
+            tooltip: "Underline",
+            onTap: () => _applyFormat("__", "__"),
+            color: primaryColor,
+          ),
+          _buildFormatButton(
+            icon: CupertinoIcons.strikethrough,
+            tooltip: "Strikethrough",
+            onTap: () => _applyFormat("~~", "~~"),
+            color: primaryColor,
+          ),
+          _buildDivider(borderCol),
+          _buildFormatButton(
+            icon: Icons.title,
+            tooltip: "Heading",
+            onTap: () => _applyLinePrefix("### "),
+            color: primaryColor,
+          ),
+          _buildFormatButton(
+            icon: CupertinoIcons.list_bullet,
+            tooltip: "Bullet List",
+            onTap: () => _applyLinePrefix("- "),
+            color: primaryColor,
+          ),
+          _buildFormatButton(
+            icon: CupertinoIcons.list_number,
+            tooltip: "Numbered List",
+            onTap: () => _applyLinePrefix("1. "),
+            color: primaryColor,
+          ),
+          _buildFormatButton(
+            icon: CupertinoIcons.square_list,
+            tooltip: "Checklist",
+            onTap: () => _applyLinePrefix("- [ ] "),
+            color: primaryColor,
+          ),
+          _buildFormatButton(
+            icon: CupertinoIcons.quote_bubble,
+            tooltip: "Quote",
+            onTap: () => _applyLinePrefix("> "),
+            color: primaryColor,
+          ),
+          _buildFormatButton(
+            icon: Icons.code,
+            tooltip: "Code Block",
+            onTap: () => _applyFormat("```\n", "\n```"),
+            color: primaryColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormatButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+    required Color color,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Icon(
+              icon,
+              size: 18,
+              color: color,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider(Color borderCol) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      width: 1,
+      color: borderCol,
     );
   }
 }
