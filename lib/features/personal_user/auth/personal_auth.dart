@@ -335,17 +335,6 @@ class _PersonalAuthState extends State<PersonalAuth>
                               ),
                               decoration: InputDecoration(
                                 labelText: 'Phone Number',
-                                labelStyle: TextStyle(
-                                  color: isDark
-                                      ? AppColors.darkTextHint
-                                      : AppColors.textSecondary,
-                                  fontSize: 14,
-                                ),
-                                floatingLabelStyle: TextStyle(
-                                  color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
                                 filled: true,
                                 fillColor: isDark
                                     ? AppColors.darkBackground
