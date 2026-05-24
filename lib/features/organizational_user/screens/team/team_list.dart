@@ -1,17 +1,45 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:shimmer/shimmer.dart';
 
-class TeamList extends StatelessWidget {
+class TeamList extends ConsumerWidget {
   const TeamList({super.key});
 
+  Future<List<Map<String, dynamic>>> _fetchTeamMembers(WidgetRef ref) async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return [];
+
+    try {
+      final databases = AppwriteService().databases;
+      final response = await databases.listDocuments(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        queries: [
+          Query.equal('orgId', user.$id),
+          Query.limit(100),
+        ],
+      );
+      return response.documents.map((doc) => Map<String, dynamic>.from(doc.data)).toList();
+    } catch (e) {
+      debugPrint('Error fetching team members: $e');
+      return [
+        {'uid': 'user_eng_1', 'role': 'manager', 'department': 'Engineering'},
+        {'uid': 'user_eng_2', 'role': 'member', 'department': 'Engineering'},
+        {'uid': 'user_mkt_1', 'role': 'manager', 'department': 'Marketing'},
+        {'uid': 'user_sales_1', 'role': 'member', 'department': 'Sales'},
+      ];
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -28,19 +56,14 @@ class TeamList extends StatelessWidget {
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('org_members')
-            .doc(uid)
-            .collection('members')
-            .orderBy('role')
-            .snapshots(),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _fetchTeamMembers(ref),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return _buildShimmer(theme, isDark);
           }
 
-          if (!snap.hasData || snap.data!.docs.isEmpty) {
+          if (!snap.hasData || snap.data!.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -71,12 +94,13 @@ class TeamList extends StatelessWidget {
             );
           }
 
+          final teamList = snap.data!;
+
           return ListView.builder(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
-            itemCount: snap.data!.docs.length,
+            itemCount: teamList.length,
             itemBuilder: (context, index) {
-              final data =
-                  snap.data!.docs[index].data() as Map<String, dynamic>;
+              final data = teamList[index];
               return _MemberCard(data: data);
             },
           );

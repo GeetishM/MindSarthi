@@ -1,25 +1,30 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart' as models;
 import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
+import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_repository.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/new_post.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_card.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/hidden_posts_manager.dart';
 import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
 import 'package:mindsarthi/core/widgets/animated_action_menu.dart';
 
-class CommunityPage extends StatefulWidget {
+class CommunityPage extends ConsumerStatefulWidget {
   const CommunityPage({super.key});
 
   @override
-  State<CommunityPage> createState() => _CommunityPageState();
+  ConsumerState<CommunityPage> createState() => _CommunityPageState();
 }
 
-class _CommunityPageState extends State<CommunityPage> {
+class _CommunityPageState extends ConsumerState<CommunityPage> {
   int _selectedSegment = 0; // 0 for Public Feed, 1 for Anonymous Space
   String selectedFilter = 'Popular';
   String _searchQuery = '';
@@ -34,11 +39,9 @@ class _CommunityPageState extends State<CommunityPage> {
   bool _isModerator = false;
 
   List<GlobalKey> chipKeys = [];
+  String? uid;
 
-  final uid = FirebaseAuth.instance.currentUser?.uid;
-
-  StreamSubscription? _followingSubscription;
-  StreamSubscription? _savedPostsSubscription;
+  StreamSubscription? _relationsSubscription;
   Set<String> _followingUids = {};
   Set<String> _savedPostIds = {};
 
@@ -59,18 +62,13 @@ class _CommunityPageState extends State<CommunityPage> {
     'All': 'Be the first to share an anonymous thought!',
   };
 
-  late final Stream<QuerySnapshot> _postsStream;
-
   @override
   void initState() {
     super.initState();
-    _postsStream = FirebaseFirestore.instance
-        .collection('posts')
-        .orderBy('timestamp', descending: true)
-        .snapshots();
+    uid = ref.read(authStateProvider).value?.$id;
     _checkProfileStatus();
     _loadHiddenPosts();
-    _setupFollowingAndSavedListeners();
+    _setupRelationsListener();
     _contentScrollController.addListener(() {
       if (_contentScrollController.hasClients) {
         setState(() {
@@ -80,39 +78,49 @@ class _CommunityPageState extends State<CommunityPage> {
     });
   }
 
-  void _setupFollowingAndSavedListeners() {
+  void _setupRelationsListener() {
     final currentUid = uid;
     if (currentUid == null) return;
 
-    _followingSubscription = FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUid)
-        .collection('following')
-        .snapshots()
-        .listen((snapshot) {
-      if (mounted) {
-        setState(() {
-          _followingUids = snapshot.docs.map((doc) => doc.id).toSet();
-        });
-      }
-    }, onError: (e) {
-      debugPrint('Error listening to following: $e');
-    });
+    _loadRelations();
 
-    _savedPostsSubscription = FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUid)
-        .collection('saved_posts')
-        .snapshots()
-        .listen((snapshot) {
+    // Listen to current user document for live relation updates
+    try {
+      final realtime = Realtime(AppwriteService().client);
+      _relationsSubscription = realtime.subscribe([
+        'databases.${AppwriteConstants.databaseId}.collections.${AppwriteConstants.usersCollectionId}.documents.$currentUid'
+      ]).stream.listen((event) {
+        if (mounted) {
+          final doc = models.Document.fromMap(event.payload);
+          setState(() {
+            _followingUids = Set<String>.from(doc.data['following'] ?? []);
+            _savedPostIds = Set<String>.from(doc.data['savedPosts'] ?? []);
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('Appwrite Realtime relations setup failed: $e');
+    }
+  }
+
+  Future<void> _loadRelations() async {
+    final currentUid = uid;
+    if (currentUid == null) return;
+    try {
+      final doc = await AppwriteService().databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: currentUid,
+      );
       if (mounted) {
         setState(() {
-          _savedPostIds = snapshot.docs.map((doc) => doc.id).toSet();
+          _followingUids = Set<String>.from(doc.data['following'] ?? []);
+          _savedPostIds = Set<String>.from(doc.data['savedPosts'] ?? []);
         });
       }
-    }, onError: (e) {
-      debugPrint('Error listening to saved posts: $e');
-    });
+    } catch (e) {
+      debugPrint('Error loading user relations: $e');
+    }
   }
 
   Future<void> _loadHiddenPosts() async {
@@ -125,8 +133,8 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   Future<void> _checkProfileStatus() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
+    final currentUid = uid;
+    if (currentUid == null) {
       if (mounted) {
         setState(() {
           _isCheckingProfile = false;
@@ -136,10 +144,14 @@ class _CommunityPageState extends State<CommunityPage> {
     }
 
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      final data = doc.data();
+      final doc = await AppwriteService().databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: currentUid,
+      );
+      final data = doc.data;
 
-      if (mounted && data != null) {
+      if (mounted) {
         final isComplete = data['username'] != null &&
             data['nickname'] != null &&
             data['age'] != null &&
@@ -154,15 +166,9 @@ class _CommunityPageState extends State<CommunityPage> {
           _isModerator = isMod;
           _isCheckingProfile = false;
         });
-      } else {
-        if (mounted) {
-          setState(() {
-            _isCheckingProfile = false;
-          });
-        }
       }
     } catch (e) {
-      debugPrint('Error loading profile status: $e');
+      debugPrint('Error loading profile status from Appwrite: $e');
       if (mounted) {
         setState(() {
           _isCheckingProfile = false;
@@ -173,8 +179,7 @@ class _CommunityPageState extends State<CommunityPage> {
 
   @override
   void dispose() {
-    _followingSubscription?.cancel();
-    _savedPostsSubscription?.cancel();
+    _relationsSubscription?.cancel();
     _chipScrollController.dispose();
     _contentScrollController.dispose();
     _searchController.dispose();
@@ -229,6 +234,8 @@ class _CommunityPageState extends State<CommunityPage> {
     chipKeys = List.generate(filtersList.length, (_) => GlobalKey());
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+
+    final postsAsync = ref.watch(postsProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -405,33 +412,22 @@ class _CommunityPageState extends State<CommunityPage> {
           Expanded(
             child: _isCheckingProfile
                 ? const Center(child: CupertinoActivityIndicator())
-                : StreamBuilder<QuerySnapshot>(
-                    stream: _postsStream,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return _buildShimmerList();
-                      }
-
-                      final rawPosts = snapshot.data?.docs ?? [];
-                      final posts = rawPosts.where((doc) {
-                        final data = doc.data() as Map<String, dynamic>?;
-                        if (data == null) return true;
-
+                : postsAsync.when(
+                    loading: () => _buildShimmerList(),
+                    error: (err, stack) => _buildEmptyMessage("Failed to load feed: $err"),
+                    data: (allPosts) {
+                      final posts = allPosts.where((post) {
                         // 1. Filter out locally hidden posts
-                        if (_hiddenPostIds.contains(doc.id)) return false;
+                        if (_hiddenPostIds.contains(post.id)) return false;
 
                         // 2. Filter out posts with 5 or more reports
-                        final reportsCount = data['reportsCount'] ?? 0;
-                        if (reportsCount >= 5) return false;
+                        if (post.reportsCount >= 5) return false;
 
                         // 3. Filter out posts reported by the current user
-                        final reportedBy = data['reportedBy'];
-                        if (reportedBy is List && reportedBy.contains(uid)) {
-                          return false;
-                        }
+                        if (post.reportedBy.contains(uid)) return false;
 
-                        // 4. Filter by Segmented Control selection (isAnonymous)
-                        final isAnon = data['isAnonymous'] == true;
+                        // 4. Filter by Segment selection (isAnonymous)
+                        final isAnon = post.isAnonymous;
                         if (_selectedSegment == 0) {
                           if (isAnon) return false;
                         } else {
@@ -440,8 +436,8 @@ class _CommunityPageState extends State<CommunityPage> {
 
                         // 5. Search filtering
                         if (_searchQuery.isNotEmpty) {
-                          final content = (data['content'] ?? '').toString().toLowerCase();
-                          if (!content.contains(_searchQuery)) {
+                          final matchContent = post.content.toLowerCase();
+                          if (!matchContent.contains(_searchQuery)) {
                             return false;
                           }
                         }
@@ -450,44 +446,32 @@ class _CommunityPageState extends State<CommunityPage> {
                       }).toList();
 
                       if (selectedFilter == 'Popular') {
-                        posts.sort((a, b) {
-                          final aData = a.data() as Map<String, dynamic>?;
-                          final bData = b.data() as Map<String, dynamic>?;
-                          final aLikes = aData?['likes'] ?? 0;
-                          final bLikes = bData?['likes'] ?? 0;
-                          final aComments = aData?['commentCount'] ?? 0;
-                          final bComments = bData?['commentCount'] ?? 0;
-                          return ((bLikes + bComments) - (aLikes + aComments));
-                        });
+                        // Sort by popularity (likes + approximate comment activity)
+                        posts.sort((a, b) => b.likes.compareTo(a.likes));
                       }
 
                       if (selectedFilter == 'My posts') {
                         return _buildFilteredPostList(
-                          posts.where((doc) {
-                            final data = doc.data() as Map<String, dynamic>?;
-                            return data?['uid'] == uid;
-                          }).toList(),
+                          posts.where((post) => post.uid == uid).toList(),
                         );
                       }
 
                       if (selectedFilter == 'Following') {
-                        final followingPosts = posts.where((doc) {
-                          final data = doc.data() as Map<String, dynamic>?;
-                          final postUid = data?['uid'];
-                          return _followingUids.contains(postUid);
+                        final followingPosts = posts.where((post) {
+                          return _followingUids.contains(post.uid);
                         }).toList();
                         return _buildFilteredPostList(followingPosts);
                       }
 
                       if (selectedFilter == 'Saved') {
-                        final savedPosts = posts.where((doc) {
-                          return _savedPostIds.contains(doc.id);
+                        final savedPosts = posts.where((post) {
+                          return _savedPostIds.contains(post.id);
                         }).toList();
                         return _buildFilteredPostList(savedPosts);
                       }
 
                       if (selectedFilter == 'My comments') {
-                        return FutureBuilder<List<DocumentSnapshot>>(
+                        return FutureBuilder<List<PostModel>>(
                           future: _fetchCommentedPosts(posts),
                           builder: (context, snap) {
                             if (!snap.hasData) return _buildShimmerList();
@@ -563,7 +547,7 @@ class _CommunityPageState extends State<CommunityPage> {
     );
   }
 
-  Widget _buildFilteredPostList(List<DocumentSnapshot> posts) {
+  Widget _buildFilteredPostList(List<PostModel> posts) {
     if (posts.isEmpty) {
       return _buildEmptyMessage(
         emptyMessages[selectedFilter] ?? 'No posts yet.',
@@ -579,7 +563,7 @@ class _CommunityPageState extends State<CommunityPage> {
             isProfileComplete: _isProfileComplete,
             isModerator: _isModerator,
             onPostHidden: _loadHiddenPosts,
-            expandComments: false, // Turn off expanded comments by default in main list
+            expandComments: false,
           ),
     );
   }
@@ -765,20 +749,32 @@ class _CommunityPageState extends State<CommunityPage> {
     );
   }
 
-  Future<List<DocumentSnapshot>> _fetchCommentedPosts(
-    List<DocumentSnapshot> allPosts,
-  ) async {
-    List<DocumentSnapshot> result = [];
-    for (final post in allPosts) {
-      final commentsSnap = await FirebaseFirestore.instance
-          .collection('posts')
-          .doc(post.id)
-          .collection('comments')
-          .where('uid', isEqualTo: uid)
-          .limit(1)
-          .get();
-      if (commentsSnap.docs.isNotEmpty) result.add(post);
+  Future<List<PostModel>> _fetchCommentedPosts(List<PostModel> allPosts) async {
+    final currentUid = uid;
+    if (currentUid == null) return [];
+
+    final databases = AppwriteService().databases;
+    try {
+      final response = await databases.listDocuments(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.commentsCollectionId,
+        queries: [
+          Query.equal('uid', currentUid),
+          Query.limit(100),
+        ],
+      );
+
+      final commentedPostIds = response.documents.map((doc) => doc.data['postId'].toString()).toSet();
+      final List<PostModel> result = [];
+      for (final post in allPosts) {
+        if (commentedPostIds.contains(post.id)) {
+          result.add(post);
+        }
+      }
+      return result;
+    } catch (e) {
+      debugPrint('Error fetching commented posts: $e');
+      return [];
     }
-    return result;
   }
 }

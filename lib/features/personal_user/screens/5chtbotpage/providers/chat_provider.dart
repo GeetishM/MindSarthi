@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:mindsarthi/core/services/groq_service.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/api/api_service.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/constants.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/boxes.dart';
@@ -19,10 +18,7 @@ class ChatProvider extends ChangeNotifier {
   List<XFile>? _imagesFileList = [];
   int _currentIndex = 0;
   String _currentChatId = '';
-  GenerativeModel? _model;
-  GenerativeModel? _textModel;
-  GenerativeModel? _visionModel;
-  String _modelType = 'gemini-pro';
+  String _modelType = 'llama3-8b-8192';
   bool _isLoading = false;
 
   List<Message> get inChatMessages => _inChatMessages;
@@ -30,9 +26,6 @@ class ChatProvider extends ChangeNotifier {
   List<XFile>? get imagesFileList => _imagesFileList;
   int get currentIndex => _currentIndex;
   String get currentChatId => _currentChatId;
-  GenerativeModel? get model => _model;
-  GenerativeModel? get textModel => _textModel;
-  GenerativeModel? get visionModel => _visionModel;
   String get modelType => _modelType;
   bool get isLoading => _isLoading;
 
@@ -62,7 +55,15 @@ class ChatProvider extends ChangeNotifier {
     return newModel;
   }
 
-  String getApiKey() => ApiService.apiKey;
+  String getApiKey() {
+    // 1. Check static API key in ApiService
+    if (ApiService.apiKey.isNotEmpty) {
+      return ApiService.apiKey;
+    }
+    // 2. Fallback to settings box
+    final box = Hive.box('journalSettings');
+    return box.get('GROQ_API_KEY', defaultValue: '') as String;
+  }
 
   String getChatId() =>
       _currentChatId.isEmpty ? const Uuid().v4() : _currentChatId;
@@ -71,58 +72,6 @@ class ChatProvider extends ChangeNotifier {
     return !isTextOnly && _imagesFileList != null
         ? _imagesFileList!.map((img) => img.path).toList()
         : [];
-  }
-
-  Future<Content> getContent({
-    required String message,
-    required bool isTextOnly,
-  }) async {
-    if (isTextOnly) return Content.text(message);
-
-    final imageFutures =
-        _imagesFileList?.map((image) => image.readAsBytes()).toList();
-    final imageBytes = await Future.wait(imageFutures!);
-    final prompt = TextPart(message);
-    final imageParts =
-        imageBytes
-            .map((bytes) => DataPart('image/jpeg', Uint8List.fromList(bytes)))
-            .toList();
-    return Content.multi([prompt, ...imageParts]);
-  }
-
-  Future<void> setModel({required bool isTextOnly}) async {
-    log('Using API key: ${getApiKey()}');
-    _model =
-        isTextOnly
-            ? (_textModel ??= GenerativeModel(
-              model: setCurrentModel(newModel: 'gemini-2.0-flash'),
-              apiKey: getApiKey(),
-              generationConfig: GenerationConfig(
-                temperature: 0.4,
-                topK: 32,
-                topP: 1,
-                maxOutputTokens: 4096,
-              ),
-              safetySettings: [
-                SafetySetting(HarmCategory.harassment, HarmBlockThreshold.high),
-                SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.high),
-              ],
-            ))
-            : (_visionModel ??= GenerativeModel(
-              model: setCurrentModel(newModel: 'gemini-1.5-flash'),
-              apiKey: getApiKey(),
-              generationConfig: GenerationConfig(
-                temperature: 0.4,
-                topK: 32,
-                topP: 1,
-                maxOutputTokens: 4096,
-              ),
-              safetySettings: [
-                SafetySetting(HarmCategory.harassment, HarmBlockThreshold.high),
-                SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.high),
-              ],
-            ));
-    notifyListeners();
   }
 
   Future<List<Message>> loadMessagesFromDB({required String chatId}) async {
@@ -147,21 +96,6 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<Content>> getHistory({required String chatId}) async {
-    final List<Content> history = [];
-    if (_currentChatId.isNotEmpty) {
-      await setInChatMessages(chatId: chatId);
-      for (var msg in _inChatMessages) {
-        history.add(
-          msg.role == Role.user
-              ? Content.text(msg.message.toString())
-              : Content.model([TextPart(msg.message.toString())]),
-        );
-      }
-    }
-    return history;
-  }
-
   Future<void> prepareChatRoom({
     required bool isNewChat,
     required String chatID,
@@ -178,15 +112,16 @@ class ChatProvider extends ChangeNotifier {
     required String message,
     required bool isTextOnly,
   }) async {
-    await setModel(isTextOnly: isTextOnly);
     setLoading(value: true);
 
     final chatId = getChatId();
-    final history = await getHistory(chatId: chatId);
     final imagesUrls = getImagesUrls(isTextOnly: isTextOnly);
     final messagesBox = await Hive.openBox(
       '${Constants.chatMessagesBox}$chatId',
     );
+
+    // Get current chat history copy before adding new user message
+    final List<Message> history = List.from(_inChatMessages);
 
     final userMessage = Message(
       messageId: messagesBox.length.toString(),
@@ -208,7 +143,7 @@ class ChatProvider extends ChangeNotifier {
       message: message,
       chatId: chatId,
       isTextOnly: isTextOnly,
-      history: history,
+      historyMessages: history,
       userMessage: userMessage,
       modelMessageId: assistantMessageId,
       messagesBox: messagesBox,
@@ -219,16 +154,11 @@ class ChatProvider extends ChangeNotifier {
     required String message,
     required String chatId,
     required bool isTextOnly,
-    required List<Content> history,
+    required List<Message> historyMessages,
     required Message userMessage,
     required String modelMessageId,
     required Box messagesBox,
   }) async {
-    final chatSession = _model!.startChat(
-      history: history.isEmpty || !isTextOnly ? null : history,
-    );
-    final content = await getContent(message: message, isTextOnly: isTextOnly);
-
     final assistantMessage = userMessage.copyWith(
       messageId: modelMessageId,
       role: Role.assistant,
@@ -239,34 +169,42 @@ class ChatProvider extends ChangeNotifier {
     _inChatMessages.add(assistantMessage);
     notifyListeners();
 
-    chatSession
-        .sendMessageStream(content)
-        .listen(
-          (event) {
-            _inChatMessages
-                .firstWhere(
-                  (m) =>
-                      m.messageId == assistantMessage.messageId &&
-                      m.role.name == Role.assistant.name,
-                )
-                .message
-                .write(event.text);
-            notifyListeners();
-          },
-          onDone: () async {
-            await saveMessagesToDB(
-              chatID: chatId,
-              userMessage: userMessage,
-              assistantMessage: assistantMessage,
-              messagesBox: messagesBox,
-            );
-            setLoading(value: false);
-          },
-          onError: (e) {
-            log('Gemini error: $e');
-            setLoading(value: false);
-          },
-        );
+    try {
+      // Format history messages for Groq API
+      final List<Map<String, String>> history = [];
+      for (var msg in historyMessages) {
+        history.add({
+          "role": msg.role == Role.user ? "user" : "assistant",
+          "content": msg.message.toString(),
+        });
+      }
+
+      final apiKey = getApiKey();
+      final response = await GroqService.getChatResponse(
+        history: history,
+        userMessage: message,
+        apiKey: apiKey,
+      );
+
+      // Append response to the assistant message
+      assistantMessage.message.write(response);
+      notifyListeners();
+
+      await saveMessagesToDB(
+        chatID: chatId,
+        userMessage: userMessage,
+        assistantMessage: assistantMessage,
+        messagesBox: messagesBox,
+      );
+      setLoading(value: false);
+    } catch (e) {
+      log('Groq error: $e');
+      assistantMessage.message.write(
+        'Sorry, I encountered an error while communicating with Groq: $e'
+      );
+      notifyListeners();
+      setLoading(value: false);
+    }
   }
 
   Future<void> saveMessagesToDB({

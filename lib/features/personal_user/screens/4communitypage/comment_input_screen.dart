@@ -1,18 +1,20 @@
-// comment_input_screen.dart
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
+import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_repository.dart';
 
-class CommentInputScreen extends StatefulWidget {
+class CommentInputScreen extends ConsumerStatefulWidget {
   final String postId;
 
   const CommentInputScreen({super.key, required this.postId});
 
   @override
-  State<CommentInputScreen> createState() => _CommentInputScreenState();
+  ConsumerState<CommentInputScreen> createState() => _CommentInputScreenState();
 }
 
-class _CommentInputScreenState extends State<CommentInputScreen> {
+class _CommentInputScreenState extends ConsumerState<CommentInputScreen> {
   final TextEditingController _controller = TextEditingController();
   bool _isPosting = false;
 
@@ -23,29 +25,34 @@ class _CommentInputScreenState extends State<CommentInputScreen> {
       _isPosting = true;
     });
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    final username = userDoc['username'] ?? 'Anonymous';
+    try {
+      final uid = ref.read(authStateProvider).value?.$id;
+      if (uid != null) {
+        final userDoc = await AppwriteService().databases.getDocument(
+          databaseId: AppwriteConstants.databaseId,
+          collectionId: AppwriteConstants.usersCollectionId,
+          documentId: uid,
+        );
+        final username = userDoc.data['username'] ?? 'Anonymous';
 
-    await FirebaseFirestore.instance
-        .collection('posts')
-        .doc(widget.postId)
-        .collection('comments')
-        .add({
-      'uid': uid,
-      'username': username,
-      'text': _controller.text.trim(),
-      'timestamp': FieldValue.serverTimestamp(),
-      'likes': 0,
-    });
+        await ref.read(postRepositoryProvider).createComment(
+          postId: widget.postId,
+          uid: uid,
+          username: username,
+          text: _controller.text.trim(),
+        );
 
-    _controller.clear();
-    setState(() {
-      _isPosting = false;
-    });
-
-    if (mounted) {
-      Navigator.pop(context); // Close comment input screen
+        _controller.clear();
+      }
+    } catch (e) {
+      debugPrint('Error posting comment: $e');
+    } finally {
+      setState(() {
+        _isPosting = false;
+      });
+      if (mounted) {
+        Navigator.pop(context); // Close comment input screen
+      }
     }
   }
 

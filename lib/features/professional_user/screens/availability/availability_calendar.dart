@@ -1,21 +1,22 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 
 /// Availability calendar showing a weekly grid of time slots.
 /// The professional can toggle slots on/off; state is persisted to
-/// Firestore at `professionals/{uid}.availability`.
-class AvailabilityCalendar extends StatefulWidget {
+/// Appwrite in the users collection.
+class AvailabilityCalendar extends ConsumerStatefulWidget {
   const AvailabilityCalendar({super.key});
 
   @override
-  State<AvailabilityCalendar> createState() => _AvailabilityCalendarState();
+  ConsumerState<AvailabilityCalendar> createState() => _AvailabilityCalendarState();
 }
 
-class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
-  final _uid = FirebaseAuth.instance.currentUser?.uid;
+class _AvailabilityCalendarState extends ConsumerState<AvailabilityCalendar> {
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -45,14 +46,19 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
   }
 
   Future<void> _loadAvailability() async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('professionals')
-          .doc(_uid)
-          .get();
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return;
 
-      if (doc.exists && doc.data()?['availability'] != null) {
-        final raw = doc.data()!['availability'] as Map<String, dynamic>;
+    try {
+      final databases = AppwriteService().databases;
+      final doc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+      );
+
+      if (doc.data['availability'] != null) {
+        final raw = jsonDecode(doc.data['availability'] as String) as Map<String, dynamic>;
         for (var day in _days) {
           if (raw[day.toLowerCase()] != null) {
             _availability[day] =
@@ -78,6 +84,9 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
   }
 
   Future<void> _saveAvailability() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return;
+
     setState(() => _isSaving = true);
     try {
       final data = <String, dynamic>{};
@@ -85,10 +94,15 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
         data[day.toLowerCase()] = _availability[day]!.toList()..sort();
       }
 
-      await FirebaseFirestore.instance
-          .collection('professionals')
-          .doc(_uid)
-          .set({'availability': data}, SetOptions(merge: true));
+      final databases = AppwriteService().databases;
+      await databases.updateDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+        data: {
+          'availability': jsonEncode(data),
+        },
+      );
 
       if (mounted) AppToast.success(context, 'Availability saved');
     } catch (e) {

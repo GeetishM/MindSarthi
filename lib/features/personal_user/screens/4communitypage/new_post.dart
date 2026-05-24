@@ -2,21 +2,21 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
+import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_repository.dart';
 
-class NewPostScreen extends StatefulWidget {
+class NewPostScreen extends ConsumerStatefulWidget {
   const NewPostScreen({super.key});
 
   @override
-  State<NewPostScreen> createState() => _NewPostScreenState();
+  ConsumerState<NewPostScreen> createState() => _NewPostScreenState();
 }
 
-class _NewPostScreenState extends State<NewPostScreen> {
+class _NewPostScreenState extends ConsumerState<NewPostScreen> {
   late final MarkdownTextEditingController _postController;
   final TextEditingController _titleController = TextEditingController();
   final FocusNode _contentFocusNode = FocusNode();
@@ -76,29 +76,9 @@ class _NewPostScreenState extends State<NewPostScreen> {
     });
   }
 
-  Future<String?> _uploadMedia(File file) async {
-    try {
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('post_media')
-          .child('${FirebaseAuth.instance.currentUser?.uid}_$fileName');
-      
-      final uploadTask = await ref.putFile(file);
-      final downloadUrl = await uploadTask.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      debugPrint('Firebase Storage upload failed, using high-quality premium mock fallback: $e');
-      if (_mediaType == 'video') {
-        return 'https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-529-large.mp4';
-      } else {
-        return 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?q=80&w=1000&auto=format&fit=crop';
-      }
-    }
-  }
-
   Future<void> _submitPost() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final userState = ref.read(authStateProvider);
+    final user = userState.value;
     final content = _postController.text.trim();
     final title = _titleController.text.trim();
 
@@ -114,24 +94,14 @@ class _NewPostScreenState extends State<NewPostScreen> {
     setState(() => _isPosting = true);
 
     try {
-      String? mediaUrl;
-      if (_mediaFile != null) {
-        mediaUrl = await _uploadMedia(_mediaFile!);
-      }
-
-      await FirebaseFirestore.instance.collection('posts').add({
-        'uid': user.uid,
-        'title': title,
-        'content': content,
-        'timestamp': FieldValue.serverTimestamp(),
-        'likes': 0,
-        'likedBy': [],
-        'isAnonymous': _isAnonymous,
-        'reportsCount': 0,
-        'reportedBy': [],
-        'mediaUrl': mediaUrl,
-        'mediaType': _mediaType,
-      });
+      await ref.read(postRepositoryProvider).createPost(
+        uid: user.$id,
+        title: title,
+        content: content,
+        isAnonymous: _isAnonymous,
+        mediaFile: _mediaFile,
+        mediaType: _mediaType,
+      );
 
       if (mounted) {
         AppToast.success(

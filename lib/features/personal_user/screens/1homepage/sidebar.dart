@@ -1,7 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/theme/theme_provider.dart';
@@ -13,15 +12,18 @@ import 'package:mindsarthi/features/app_lock/app_lock_settings_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/profile.dart';
 import 'package:mindsarthi/core/localization/locale_provider.dart';
 import 'package:mindsarthi/core/localization/app_localizations.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 
-class Sidebar extends StatefulWidget {
+class Sidebar extends ConsumerStatefulWidget {
   const Sidebar({super.key});
 
   @override
-  State<Sidebar> createState() => _SidebarState();
+  ConsumerState<Sidebar> createState() => _SidebarState();
 }
 
-class _SidebarState extends State<Sidebar> with SingleTickerProviderStateMixin {
+class _SidebarState extends ConsumerState<Sidebar> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
 
   @override
@@ -41,11 +43,19 @@ class _SidebarState extends State<Sidebar> with SingleTickerProviderStateMixin {
   }
 
   Future<Map<String, dynamic>?> _fetchUserProfile() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return null;
-    final doc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    return doc.data();
+    final user = ref.watch(authStateProvider).value;
+    if (user == null) return null;
+    try {
+      final databases = AppwriteService().databases;
+      final doc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+      );
+      return doc.data;
+    } catch (_) {
+      return null;
+    }
   }
 
   String _initial(String? nickname) {
@@ -175,7 +185,7 @@ class _SidebarState extends State<Sidebar> with SingleTickerProviderStateMixin {
                         iconColor: AppColors.error,
                         onTap: (ctx) async {
                           try {
-                            await FirebaseAuth.instance.signOut();
+                            await ref.read(authRepositoryProvider).signOut();
                             if (ctx.mounted) {
                               Navigator.pushAndRemoveUntil(
                                 ctx,

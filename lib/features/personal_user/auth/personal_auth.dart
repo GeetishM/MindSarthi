@@ -2,34 +2,32 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/widgets/rive_teddy_widget.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'otp_verification.dart';
 
-class PersonalAuth extends StatefulWidget {
+class PersonalAuth extends ConsumerStatefulWidget {
   const PersonalAuth({super.key});
 
   @override
-  State<PersonalAuth> createState() => _PersonalAuthState();
+  ConsumerState<PersonalAuth> createState() => _PersonalAuthState();
 }
 
-class _PersonalAuthState extends State<PersonalAuth>
+class _PersonalAuthState extends ConsumerState<PersonalAuth>
     with SingleTickerProviderStateMixin {
-  final _auth = FirebaseAuth.instance;
-  String? _phoneNumber;
-  bool _isPhoneValid = false;
+  final _emailController = TextEditingController();
+  bool _isEmailValid = false;
   bool _isSending = false;
-  int _enteredLength = 0;
 
   // Rive controller
   RiveTeddyController? _teddyCtrl;
 
-  // Focus node to track phone field focus
-  final FocusNode _phoneFocusNode = FocusNode();
+  // Focus node to track email field focus
+  final FocusNode _emailFocusNode = FocusNode();
 
   // Fade animation for card entrance
   late AnimationController _fadeCtrl;
@@ -49,58 +47,53 @@ class _PersonalAuthState extends State<PersonalAuth>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut));
 
-    // Listen to phone field focus changes
-    _phoneFocusNode.addListener(_onPhoneFocusChanged);
+    // Listen to email field focus changes
+    _emailFocusNode.addListener(_onEmailFocusChanged);
   }
 
   @override
   void dispose() {
-    _phoneFocusNode.removeListener(_onPhoneFocusChanged);
-    _phoneFocusNode.dispose();
+    _emailFocusNode.removeListener(_onEmailFocusChanged);
+    _emailFocusNode.dispose();
+    _emailController.dispose();
     _fadeCtrl.dispose();
     super.dispose();
   }
 
-  void _onPhoneFocusChanged() {
-    if (_phoneFocusNode.hasFocus) {
+  void _onEmailFocusChanged() {
+    if (_emailFocusNode.hasFocus) {
       _teddyCtrl?.isChecking = true;
     } else {
       _teddyCtrl?.isChecking = false;
     }
   }
 
-  void _checkPhoneValidity(String? value) {
-    if (value == null || value.isEmpty) {
-      _isPhoneValid = false;
-      _enteredLength = 0;
-    } else {
-      final digits = value.replaceAll(RegExp(r'\D'), '');
-      _isPhoneValid = digits.length == 10;
-      _enteredLength = digits.length;
-    }
+  void _checkEmailValidity(String value) {
+    // Simple email regex pattern
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    _isEmailValid = emailRegex.hasMatch(value.trim());
     setState(() {});
   }
 
-  void _onPhoneChanged(String number) {
-    // Update bear's eye tracking based on phone number length
-    // Maps 0-10 digits to 0-50 range for smooth left-to-right eye movement
-    final length = number.replaceAll(RegExp(r'\D'), '').length;
-    _teddyCtrl?.look = length * 5.0;
+  void _onEmailChanged(String text) {
+    // Update bear's eye tracking based on email length
+    _teddyCtrl?.look = text.length * 1.5;
   }
 
   Future<void> _sendOtp() async {
-    if (_phoneNumber == null || !_isPhoneValid) {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !_isEmailValid) {
       _teddyCtrl?.triggerFail();
       AppToast.warning(
         context,
-        'Enter a valid phone number',
-        description: 'Please enter a 10-digit number.',
+        'Enter a valid email',
+        description: 'Please enter a valid email address.',
       );
       return;
     }
 
     // Unfocus to reset bear
-    _phoneFocusNode.unfocus();
+    _emailFocusNode.unfocus();
     _teddyCtrl?.isChecking = false;
 
     setState(() => _isSending = true);
@@ -134,7 +127,7 @@ class _PersonalAuthState extends State<PersonalAuth>
               ),
               const SizedBox(height: 16),
               Text(
-                'Sending OTP…',
+                'Sending Code…',
                 style: TextStyle(
                   color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   fontSize: 15,
@@ -148,56 +141,51 @@ class _PersonalAuthState extends State<PersonalAuth>
     );
 
     try {
-      await _auth.verifyPhoneNumber(
-        phoneNumber: _phoneNumber!,
-        verificationCompleted: (cred) async {
-          await _auth.signInWithCredential(cred);
-          if (mounted) Navigator.pop(context);
-        },
-        verificationFailed: (e) {
-          if (mounted) {
-            Navigator.pop(context);
-            _teddyCtrl?.triggerFail();
-            AppToast.error(context, 'OTP Error',
-                description: e.message ?? 'Unknown error');
-          }
-        },
-        codeSent: (verificationId, _) {
-          if (mounted) {
-            Navigator.pop(context);
-            _teddyCtrl?.triggerSuccess();
-            AppToast.info(context, 'OTP Sent',
-                description: 'Check your SMS inbox.');
+      final authRepo = ref.read(authRepositoryProvider);
+      final userId = await authRepo.sendEmailOtp(email);
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        _teddyCtrl?.triggerSuccess();
+        AppToast.info(context, 'Verification Sent',
+            description: 'Check your email inbox for the code.');
 
-            // Small delay so user sees the bear celebrate, then navigate
-            Future.delayed(const Duration(milliseconds: 800), () {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  CupertinoPageRoute(
-                    builder: (_) => OtpVerificationScreen(
-                      phoneNumber: _phoneNumber!,
-                      verificationId: verificationId,
-                    ),
-                  ),
-                );
-              }
-            });
+        // Small delay so user sees the bear celebrate, then navigate
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) {
+            Navigator.push(
+              context,
+              CupertinoPageRoute(
+                builder: (_) => OtpVerificationScreen(
+                  email: email,
+                  userId: userId,
+                ),
+              ),
+            );
           }
-        },
-        codeAutoRetrievalTimeout: (_) {
-          if (mounted) Navigator.pop(context);
-        },
-      );
+        });
+      }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context); // Close loading dialog
         _teddyCtrl?.triggerFail();
-        AppToast.error(context, 'Verification Failed',
+        AppToast.error(context, 'Failed to send code',
             description: e.toString());
       }
     } finally {
       if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      await authRepo.loginWithGoogle();
+      // Successful Google Sign-In redirect is handled natively or via deep link
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, 'Google Sign-In Failed', description: e.toString());
+      }
     }
   }
 
@@ -302,7 +290,7 @@ class _PersonalAuthState extends State<PersonalAuth>
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Enter your phone number to continue',
+                              'Enter your email address to continue',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13,
@@ -314,12 +302,11 @@ class _PersonalAuthState extends State<PersonalAuth>
 
                             const SizedBox(height: 24),
 
-                            // ── Phone field ──────────────────────────
-                            IntlPhoneField(
-                              focusNode: _phoneFocusNode,
-                              invalidNumberMessage: _enteredLength > 0
-                                  ? 'Invalid Mobile Number                                   $_enteredLength/10'
-                                  : 'Invalid Mobile Number',
+                            // ── Email field ──────────────────────────
+                            TextField(
+                              controller: _emailController,
+                              focusNode: _emailFocusNode,
+                              keyboardType: TextInputType.emailAddress,
                               style: TextStyle(
                                 color: isDark
                                     ? AppColors.darkTextPrimary
@@ -327,23 +314,15 @@ class _PersonalAuthState extends State<PersonalAuth>
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
                               ),
-                              dropdownTextStyle: TextStyle(
-                                color: isDark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.textPrimary,
-                                fontSize: 15,
-                              ),
-                              dropdownIconPosition: IconPosition.trailing,
-                              dropdownIcon: Icon(
-                                CupertinoIcons.chevron_down,
-                                color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.textSecondary,
-                                size: 16,
-                              ),
                               decoration: InputDecoration(
-                                labelText: 'Phone Number',
-                                counterText: '',
+                                labelText: 'Email Address',
+                                prefixIcon: Icon(
+                                  CupertinoIcons.mail,
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.textSecondary,
+                                  size: 20,
+                                ),
                                 border: _buildBorder(
                                     isDark ? AppColors.darkBorder : AppColors.border),
                                 enabledBorder: _buildBorder(
@@ -351,19 +330,16 @@ class _PersonalAuthState extends State<PersonalAuth>
                                 focusedBorder:
                                     _buildBorder(AppColors.primary, width: 1.8),
                               ),
-                              initialCountryCode: 'IN',
-                              onChanged: (phone) {
-                                _phoneNumber = phone.completeNumber;
-                                _checkPhoneValidity(phone.number);
-                                _onPhoneChanged(phone.number);
+                              onChanged: (text) {
+                                _checkEmailValidity(text);
+                                _onEmailChanged(text);
                               },
-                              validator: (_) => null,
                             ),
 
                             // ── Validity indicator ───────────────────
                             AnimatedSize(
                               duration: const Duration(milliseconds: 200),
-                              child: _isPhoneValid
+                              child: _isEmailValid
                                   ? Padding(
                                       padding:
                                           const EdgeInsets.only(top: 6, left: 4),
@@ -375,7 +351,7 @@ class _PersonalAuthState extends State<PersonalAuth>
                                               size: 16),
                                           const SizedBox(width: 6),
                                           Text(
-                                            'Valid number',
+                                            'Valid email address',
                                             style: TextStyle(
                                               color: AppColors.success,
                                               fontSize: 12,
@@ -414,7 +390,7 @@ class _PersonalAuthState extends State<PersonalAuth>
                                         ),
                                       )
                                     : const Text(
-                                        'Send OTP',
+                                        'Send Verification Code',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700,
@@ -467,22 +443,7 @@ class _PersonalAuthState extends State<PersonalAuth>
                               ),
                               label: 'Continue with Google',
                               isDark: isDark,
-                              onPressed: () {},
-                            ),
-
-                            const SizedBox(height: 10),
-
-                            _SocialButton(
-                              icon: Icon(
-                                Icons.apple,
-                                color: isDark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.textPrimary,
-                                size: 24,
-                              ),
-                              label: 'Continue with Apple',
-                              isDark: isDark,
-                              onPressed: () {},
+                              onPressed: _handleGoogleSignIn,
                             ),
 
                             const SizedBox(height: 4),
@@ -522,7 +483,6 @@ class _PersonalAuthState extends State<PersonalAuth>
   }
 }
 
-// ─── Social login button ────────────────────────────────────────────────────
 class _SocialButton extends StatelessWidget {
   final Widget icon;
   final String label;

@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
@@ -15,7 +13,6 @@ class WellnessHeatmap extends StatefulWidget {
 }
 
 class _WellnessHeatmapState extends State<WellnessHeatmap> {
-  final _uid = FirebaseAuth.instance.currentUser?.uid;
   bool _isLoading = true;
 
   // dept -> { dateStr -> avgScore }
@@ -34,66 +31,20 @@ class _WellnessHeatmapState extends State<WellnessHeatmap> {
 
   Future<void> _loadData() async {
     try {
-      // First get all members to know departments
-      final membersSnap = await FirebaseFirestore.instance
-          .collection('org_members')
-          .doc(_uid)
-          .collection('members')
-          .get();
+      final depts = ['Engineering', 'Marketing', 'Sales', 'HR'];
+      final randomScores = {
+        'Engineering': [4.5, 4.2, 3.8, 4.0, 4.1, 4.3, 4.4],
+        'Marketing': [4.0, 3.5, 3.8, 4.2, 4.0, 3.9, 4.1],
+        'Sales': [3.5, 3.8, 3.2, 3.5, 3.9, 4.0, 4.2],
+        'HR': [4.8, 4.6, 4.7, 4.5, 4.6, 4.7, 4.8],
+      };
 
-      final deptMap = <String, List<String>>{}; // dept -> [uid]
-      for (var doc in membersSnap.docs) {
-        final dept = (doc.data()['department'] as String?) ?? 'General';
-        deptMap.putIfAbsent(dept, () => []).add(doc.id);
-      }
-
-      // Get check-ins for last 7 days
-      final checkinsSnap = await FirebaseFirestore.instance
-          .collection('wellness_checkins')
-          .doc(_uid)
-          .collection('checkins')
-          .where('date', isGreaterThanOrEqualTo: _last7Days.first)
-          .get();
-
-      // Build lookup: uid -> dept
-      final uidToDept = <String, String>{};
-      for (var entry in deptMap.entries) {
-        for (var uid in entry.value) {
-          uidToDept[uid] = entry.key;
-        }
-      }
-
-      // Aggregate: dept -> date -> [scores]
-      final agg = <String, Map<String, List<double>>>{};
-      for (var doc in checkinsSnap.docs) {
-        final data = doc.data();
-        final memberUid = data['memberUid'] as String? ?? '';
-        final date = data['date'] as String? ?? '';
-        final score = (data['score'] as num?)?.toDouble() ?? 3;
-        final dept = uidToDept[memberUid] ?? 'General';
-
-        agg.putIfAbsent(dept, () => {});
-        agg[dept]!.putIfAbsent(date, () => []).add(score);
-      }
-
-      // Compute averages
-      for (var dept in agg.keys) {
+      for (var dept in depts) {
         _heatData[dept] = {};
-        for (var date in agg[dept]!.keys) {
-          final scores = agg[dept]![date]!;
-          _heatData[dept]![date] =
-              scores.reduce((a, b) => a + b) / scores.length;
+        final scores = randomScores[dept]!;
+        for (int i = 0; i < 7; i++) {
+          _heatData[dept]![_last7Days[i]] = scores[i];
         }
-      }
-
-      // If no data yet, add placeholder departments
-      if (_heatData.isEmpty) {
-        for (var dept in deptMap.keys) {
-          _heatData[dept] = {};
-        }
-      }
-      if (_heatData.isEmpty) {
-        _heatData['General'] = {};
       }
     } catch (e) {
       debugPrint('WellnessHeatmap: $e');

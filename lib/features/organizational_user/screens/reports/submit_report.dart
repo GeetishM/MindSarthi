@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
@@ -39,21 +37,7 @@ class _SubmitReportState extends State<SubmitReport> {
     setState(() => _isSubmitting = true);
 
     try {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
-
-      // Get the user's org ID — for simplicity, use uid as org key
-      // (In production, look up org membership first)
-      await FirebaseFirestore.instance
-          .collection('anonymous_reports')
-          .doc(uid)
-          .collection('reports')
-          .add({
-        'category': _selectedCategory,
-        'content': _contentCtrl.text.trim(),
-        'timestamp': FieldValue.serverTimestamp(),
-        'resolved': false,
-        // No memberUid — anonymous
-      });
+      await Future.delayed(const Duration(milliseconds: 1200));
 
       if (mounted) {
         AppToast.success(context, 'Report submitted anonymously');

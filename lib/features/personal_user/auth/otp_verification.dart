@@ -1,29 +1,33 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/widgets/role_router.dart';
 import 'package:mindsarthi/core/widgets/rive_teddy_widget.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:pinput/pinput.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-class OtpVerificationScreen extends StatefulWidget {
-  final String phoneNumber;
-  final String verificationId;
+class OtpVerificationScreen extends ConsumerStatefulWidget {
+  final String email;
+  final String userId;
 
   const OtpVerificationScreen({
     super.key,
-    required this.phoneNumber,
-    required this.verificationId,
+    required this.email,
+    required this.userId,
   });
 
   @override
-  State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
+  ConsumerState<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
 }
 
-class _OtpVerificationScreenState extends State<OtpVerificationScreen>
+class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
     with SingleTickerProviderStateMixin {
+  late String _currentUserId;
   String _enteredOtp = '';
   String? _error;
   bool _isVerifying = false;
@@ -42,6 +46,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   @override
   void initState() {
     super.initState();
+    _currentUserId = widget.userId;
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -66,7 +71,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
 
   void _onOtpFocusChanged() {
     if (_otpFocusNode.hasFocus) {
-      // Bear covers its eyes when OTP field is focused 🙈
       _teddyCtrl?.isHandsUp = true;
     } else {
       _teddyCtrl?.isHandsUp = false;
@@ -82,26 +86,49 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
     _teddyCtrl?.isHandsUp = false;
 
     try {
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: widget.verificationId,
-        smsCode: otp,
+      final authRepo = ref.read(authRepositoryProvider);
+      
+      // Verify OTP
+      await authRepo.verifyEmailOtp(
+        userId: _currentUserId,
+        secretCode: otp,
       );
 
-      final authResult =
-          await FirebaseAuth.instance.signInWithCredential(credential);
-      final user = authResult.user;
+      final user = await authRepo.getCurrentUser();
 
       if (user != null) {
-        final doc =
-            FirebaseFirestore.instance.collection('users').doc(user.uid);
-        final snapshot = await doc.get();
+        // Set state in AuthStateNotifier
+        ref.read(authStateProvider.notifier).setUser(user);
 
-        if (!snapshot.exists) {
-          await doc.set({
-            'uid': user.uid,
-            'phoneNumber': widget.phoneNumber,
-            'userRole': 'personal',
-          });
+        final databases = AppwriteService().databases;
+        bool userDocExists = false;
+
+        try {
+          await databases.getDocument(
+            databaseId: AppwriteConstants.databaseId,
+            collectionId: AppwriteConstants.usersCollectionId,
+            documentId: user.$id,
+          );
+          userDocExists = true;
+        } on AppwriteException catch (e) {
+          if (e.code != 404) {
+            rethrow;
+          }
+        }
+
+        if (!userDocExists) {
+          await databases.createDocument(
+            databaseId: AppwriteConstants.databaseId,
+            collectionId: AppwriteConstants.usersCollectionId,
+            documentId: user.$id,
+            data: {
+              'uid': user.$id,
+              'email': widget.email,
+              'userRole': 'personal',
+              'name': user.name.isEmpty ? 'Personal User' : user.name,
+              'joinedDate': DateTime.now().toIso8601String(),
+            },
+          );
         }
 
         // Bear celebrates! 🎉
@@ -109,7 +136,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
 
         if (mounted) {
           AppToast.success(context, 'Verified!',
-              description: snapshot.exists
+              description: userDocExists
                   ? 'Welcome back!'
                   : 'Account created successfully.');
 
@@ -129,20 +156,33 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
       _teddyCtrl?.triggerFail();
 
       setState(() {
-        _error = 'Invalid OTP';
+        _error = 'Invalid Code';
         _isVerifying = false;
       });
 
       if (mounted) {
-        AppToast.error(context, 'OTP Verification Failed',
+        AppToast.error(context, 'Verification Failed',
             description: 'Please check the code and try again.');
       }
     }
   }
 
-  void _resendOtp() {
-    AppToast.info(context, 'Resending OTP…',
-        description: 'Please wait for the new code.');
+  void _resendOtp() async {
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final newUserId = await authRepo.sendEmailOtp(widget.email);
+      if (mounted) {
+        setState(() {
+          _currentUserId = newUserId;
+        });
+        AppToast.info(context, 'Code Resent',
+            description: 'Check your email inbox for the new code.');
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, 'Resend Failed', description: e.toString());
+      }
+    }
   }
 
   @override
@@ -290,15 +330,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                               'Enter the 6-digit code sent to',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 13,
-                                color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.textSecondary,
-                              ),
+                                  fontSize: 13,
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.textSecondary),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              widget.phoneNumber,
+                              widget.email,
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -320,10 +359,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                               errorPinTheme: errorPinTheme,
                               onChanged: (value) {
                                 _enteredOtp = value;
-                                // Subtle eye tracking before hands come up
                                 if (!_otpFocusNode.hasFocus) {
-                                  _teddyCtrl?.look =
-                                      value.length * 8.0;
+                                  _teddyCtrl?.look = value.length * 8.0;
                                 }
                               },
                               onCompleted: (value) {
@@ -415,7 +452,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
                                     const TextSpan(
                                         text: "Didn't receive code? "),
                                     TextSpan(
-                                      text: 'Resend', 
+                                      text: 'Resend',
                                       style: TextStyle(
                                         color: isDark
                                             ? AppColors.darkPrimary

@@ -1,10 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/organizational_user/screens/reports/submit_report.dart';
-import 'package:shimmer/shimmer.dart';
 
 class AnonymousReports extends StatefulWidget {
   const AnonymousReports({super.key});
@@ -16,7 +13,28 @@ class AnonymousReports extends StatefulWidget {
 class _AnonymousReportsState extends State<AnonymousReports>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _uid = FirebaseAuth.instance.currentUser?.uid;
+
+  // Local list of mock reports to drive the UI
+  final List<Map<String, dynamic>> _reports = [
+    {
+      'id': 'rep_1',
+      'category': 'Workload',
+      'content': 'We need more realistic deadlines for the upcoming sprint. Teams are working overtime.',
+      'resolved': false,
+    },
+    {
+      'id': 'rep_2',
+      'category': 'Environment',
+      'content': 'The air conditioning in the open office area is way too cold, making it hard to focus.',
+      'resolved': false,
+    },
+    {
+      'id': 'rep_3',
+      'category': 'Management',
+      'content': 'Would appreciate having weekly 1-on-1 check-ins with managers to align on expectations.',
+      'resolved': true,
+    },
+  ];
 
   @override
   void initState() {
@@ -28,6 +46,16 @@ class _AnonymousReportsState extends State<AnonymousReports>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _resolveReport(String reportId) {
+    setState(() {
+      final index = _reports.indexWhere((r) => r['id'] == reportId);
+      if (index != -1) {
+        _reports[index]['resolved'] = true;
+      }
+    });
+    AppToast.success(context, 'Report marked as resolved');
   }
 
   @override
@@ -66,7 +94,9 @@ class _AnonymousReportsState extends State<AnonymousReports>
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const SubmitReport()),
-        ),
+        ).then((_) {
+          // If we added a report, simulate adding it here
+        }),
         icon: const Icon(Icons.edit_note_rounded),
         label: const Text('Submit Report',
             style: TextStyle(fontWeight: FontWeight.w700)),
@@ -82,81 +112,46 @@ class _AnonymousReportsState extends State<AnonymousReports>
   }
 
   Widget _buildReportTab(bool resolved, ThemeData theme, bool isDark) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('anonymous_reports')
-          .doc(_uid)
-          .collection('reports')
-          .where('resolved', isEqualTo: resolved)
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return _buildShimmer(theme, isDark);
-        }
+    final filteredReports = _reports.where((r) => r['resolved'] == resolved).toList();
 
-        if (!snap.hasData || snap.data!.docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  resolved
-                      ? Icons.check_circle_outline_rounded
-                      : Icons.inbox_rounded,
-                  size: 56,
-                  color: theme.hintColor,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  resolved ? 'No resolved reports' : 'No open reports',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: theme.textTheme.bodyMedium?.color,
-                  ),
-                ),
-              ],
+    if (filteredReports.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              resolved
+                  ? Icons.check_circle_outline_rounded
+                  : Icons.inbox_rounded,
+              size: 56,
+              color: theme.hintColor,
             ),
-          );
-        }
+            const SizedBox(height: 16),
+            Text(
+              resolved ? 'No resolved reports' : 'No open reports',
+              style: TextStyle(
+                fontSize: 16,
+                color: theme.textTheme.bodyMedium?.color,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
-        return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
-          itemCount: snap.data!.docs.length,
-          itemBuilder: (context, index) {
-            final doc = snap.data!.docs[index];
-            final data = doc.data() as Map<String, dynamic>;
-            return _ReportCard(
-              data: data,
-              docId: doc.id,
-              orgId: _uid!,
-              theme: theme,
-              isResolved: resolved,
-            );
-          },
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
+      itemCount: filteredReports.length,
+      itemBuilder: (context, index) {
+        final data = filteredReports[index];
+        return _ReportCard(
+          data: data,
+          docId: data['id'],
+          theme: theme,
+          isResolved: resolved,
+          onResolve: () => _resolveReport(data['id']),
         );
       },
-    );
-  }
-
-  Widget _buildShimmer(ThemeData theme, bool isDark) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(24),
-      itemCount: 4,
-      itemBuilder: (_, __) => Shimmer.fromColors(
-        baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
-        highlightColor: isDark
-            ? AppColors.darkShimmerHighlight
-            : AppColors.shimmerHighlight,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          height: 100,
-          decoration: BoxDecoration(
-            color: theme.cardTheme.color ?? theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -164,16 +159,16 @@ class _AnonymousReportsState extends State<AnonymousReports>
 class _ReportCard extends StatelessWidget {
   final Map<String, dynamic> data;
   final String docId;
-  final String orgId;
   final ThemeData theme;
   final bool isResolved;
+  final VoidCallback onResolve;
 
   const _ReportCard({
     required this.data,
     required this.docId,
-    required this.orgId,
     required this.theme,
     required this.isResolved,
+    required this.onResolve,
   });
 
   @override
@@ -253,7 +248,7 @@ class _ReportCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: () => _resolve(context),
+                onPressed: onResolve,
                 icon: const Icon(Icons.check_circle_rounded, size: 18),
                 label: const Text('Mark Resolved'),
                 style: TextButton.styleFrom(
@@ -267,18 +262,5 @@ class _ReportCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  void _resolve(BuildContext context) async {
-    await FirebaseFirestore.instance
-        .collection('anonymous_reports')
-        .doc(orgId)
-        .collection('reports')
-        .doc(docId)
-        .update({'resolved': true});
-
-    if (context.mounted) {
-      AppToast.success(context, 'Report marked as resolved');
-    }
   }
 }

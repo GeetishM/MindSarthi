@@ -1,22 +1,24 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:mindsarthi/features/professional_user/screens/sessions/add_session_sheet.dart';
 import 'package:shimmer/shimmer.dart';
 
-class SessionList extends StatefulWidget {
+class SessionList extends ConsumerStatefulWidget {
   const SessionList({super.key});
 
   @override
-  State<SessionList> createState() => _SessionListState();
+  ConsumerState<SessionList> createState() => _SessionListState();
 }
 
-class _SessionListState extends State<SessionList>
+class _SessionListState extends ConsumerState<SessionList>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _uid = FirebaseAuth.instance.currentUser?.uid;
 
   @override
   void initState() {
@@ -91,24 +93,48 @@ class _SessionListState extends State<SessionList>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const AddSessionSheet(),
-    );
+    ).then((_) {
+      setState(() {});
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchSessions(String status) async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return [];
+
+    try {
+      final databases = AppwriteService().databases;
+      final response = await databases.listDocuments(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.sessionsCollectionId,
+        queries: [
+          Query.equal('professionalUid', user.$id),
+          Query.equal('status', status),
+          Query.orderDesc('date'),
+          Query.limit(100),
+        ],
+      );
+      return response.documents.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data);
+        data['id'] = doc.$id;
+        return data;
+      }).toList();
+    } catch (e) {
+      debugPrint('Error fetching sessions: $e');
+      return [];
+    }
   }
 
   Widget _buildSessionTab(String status, bool isDark) {
     final theme = Theme.of(context);
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('sessions')
-          .where('professionalUid', isEqualTo: _uid)
-          .where('status', isEqualTo: status)
-          .orderBy('date', descending: status == 'completed')
-          .snapshots(),
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _fetchSessions(status),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return _buildShimmer(isDark);
         }
 
-        if (!snap.hasData || snap.data!.docs.isEmpty) {
+        if (!snap.hasData || snap.data!.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -135,13 +161,14 @@ class _SessionListState extends State<SessionList>
           );
         }
 
+        final sessions = snap.data!;
+
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
-          itemCount: snap.data!.docs.length,
+          itemCount: sessions.length,
           itemBuilder: (context, index) {
-            final data =
-                snap.data!.docs[index].data() as Map<String, dynamic>;
-            final docId = snap.data!.docs[index].id;
+            final data = sessions[index];
+            final docId = data['id'];
             return _SessionCard(
               data: data,
               docId: docId,
@@ -157,12 +184,22 @@ class _SessionListState extends State<SessionList>
   }
 
   Future<void> _updateStatus(String docId, String newStatus) async {
-    await FirebaseFirestore.instance
-        .collection('sessions')
-        .doc(docId)
-        .update({'status': newStatus});
-    if (mounted) {
-      AppToast.success(context, 'Session marked as $newStatus');
+    try {
+      final databases = AppwriteService().databases;
+      await databases.updateDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.sessionsCollectionId,
+        documentId: docId,
+        data: {'status': newStatus},
+      );
+      setState(() {});
+      if (mounted) {
+        AppToast.success(context, 'Session marked as $newStatus');
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, 'Failed to update status', description: e.toString());
+      }
     }
   }
 

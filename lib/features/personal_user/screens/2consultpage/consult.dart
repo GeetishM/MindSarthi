@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
 import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 
 class Therapist {
   final String id;
@@ -105,7 +108,7 @@ const List<Therapist> kTherapists = [
   ),
 ];
 
-class ConsultPage extends StatefulWidget {
+class ConsultPage extends ConsumerStatefulWidget {
   static bool isTestingMode = false;
   static List<Session> testSessionsList = [];
   static List<Therapist> testTherapistsList = [];
@@ -113,10 +116,10 @@ class ConsultPage extends StatefulWidget {
   const ConsultPage({super.key});
 
   @override
-  State<ConsultPage> createState() => _ConsultPageState();
+  ConsumerState<ConsultPage> createState() => _ConsultPageState();
 }
 
-class _ConsultPageState extends State<ConsultPage> {
+class _ConsultPageState extends ConsumerState<ConsultPage> {
   String _selectedCategory = 'All';
   String _selectedSort = 'Rating';
   final TextEditingController _searchController = TextEditingController();
@@ -147,28 +150,31 @@ class _ConsultPageState extends State<ConsultPage> {
   Future<void> _seedProfessionalsIfEmpty() async {
     if (ConsultPage.isTestingMode) return;
     try {
-      final firestore = FirebaseFirestore.instance;
-      final snapshot = await firestore.collection('professionals').limit(1).get();
-      if (snapshot.docs.isEmpty) {
-        final batch = firestore.batch();
+      final databases = AppwriteService().databases;
+      final response = await databases.listDocuments(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        queries: [
+          Query.equal('userRole', 'professional'),
+          Query.limit(1),
+        ],
+      );
+      if (response.documents.isEmpty) {
         for (var t in kTherapists) {
-          final docRef = firestore.collection('professionals').doc(t.id);
-          batch.set(docRef, {
-            'uid': t.id,
-            'displayName': t.name,
-            'role': t.role,
-            'experience': t.experience,
-            'rating': t.rating,
-            'reviewsCount': t.reviewsCount,
-            'startingPrice': t.startingPrice,
-            'specializations': t.expertiseTags,
-            'bio': t.biography,
-            'availableSlots': t.availableSlots,
-            'avatarColorValue': t.avatarColor.value,
-          });
+          await databases.createDocument(
+            databaseId: AppwriteConstants.databaseId,
+            collectionId: AppwriteConstants.usersCollectionId,
+            documentId: t.id,
+            data: {
+              'uid': t.id,
+              'email': '${t.name.replaceAll(' ', '').toLowerCase()}@mindsarthi.com',
+              'name': t.name,
+              'userRole': 'professional',
+              'joinedDate': DateTime.now().toIso8601String(),
+            },
+          );
         }
-        await batch.commit();
-        debugPrint("Professionals successfully seeded to Firestore!");
+        debugPrint("Professionals successfully seeded to Appwrite Users Collection!");
       }
     } catch (e) {
       debugPrint("Error seeding professionals: $e");
@@ -179,58 +185,81 @@ class _ConsultPageState extends State<ConsultPage> {
     if (ConsultPage.isTestingMode) {
       return Stream.value(ConsultPage.testSessionsList);
     }
-    final currentUid = FirebaseAuth.instance.currentUser?.uid;
-    var query = FirebaseFirestore.instance.collection('sessions');
-    Query actualQuery;
-    if (currentUid != null) {
-      actualQuery = query.where('clientUid', isEqualTo: currentUid);
-    } else {
-      actualQuery = query;
-    }
-    return actualQuery.snapshots().map((snapshot) {
-      final list = snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        Timestamp? ts = data['dateTime'] as Timestamp?;
-        DateTime dt = ts != null ? ts.toDate() : DateTime.now();
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return Stream.value([]);
+
+    final databases = AppwriteService().databases;
+    final future = databases.listDocuments(
+      databaseId: AppwriteConstants.databaseId,
+      collectionId: AppwriteConstants.sessionsCollectionId,
+      queries: [
+        Query.equal('clientUid', user.$id),
+      ],
+    ).then((response) {
+      final list = response.documents.map((doc) {
+        final data = doc.data;
+        DateTime dt = DateTime.tryParse(data['dateTime'] ?? '') ?? DateTime.now();
         return Session(
-          id: doc.id,
+          id: doc.$id,
           therapistName: data['therapistName'] ?? 'Therapist',
           status: data['status'] ?? 'Upcoming',
           dateTime: dt,
           type: data['type'] ?? 'Video',
         );
       }).toList();
-      // Sort sessions by date (newest first)
       list.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       return list;
     });
+    return Stream.fromFuture(future);
   }
 
   Stream<List<Therapist>> _therapistsStream() {
     if (ConsultPage.isTestingMode) {
       return Stream.value(ConsultPage.testTherapistsList);
     }
-    return FirebaseFirestore.instance.collection('professionals').snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        final List<String> slots = List<String>.from(data['availableSlots'] ?? ['09:00 AM', '12:00 PM', '03:00 PM', '06:00 PM']);
-        final List<String> specs = List<String>.from(data['specializations'] ?? data['expertiseTags'] ?? ['Therapy']);
-        final int colorValue = data['avatarColorValue'] ?? data['avatarColor'] ?? Colors.indigo.value;
+    final databases = AppwriteService().databases;
+    final future = databases.listDocuments(
+      databaseId: AppwriteConstants.databaseId,
+      collectionId: AppwriteConstants.usersCollectionId,
+      queries: [
+        Query.equal('userRole', 'professional'),
+      ],
+    ).then((response) {
+      return response.documents.map((doc) {
+        final data = doc.data;
+        final name = data['name'] ?? 'Certified Professional';
+        final match = kTherapists.firstWhere(
+          (t) => t.name == name || t.id == doc.$id,
+          orElse: () => Therapist(
+            id: doc.$id,
+            name: name,
+            role: data['role'] ?? 'Therapist',
+            experience: data['experience'] ?? '5 years',
+            rating: (data['rating'] as num?)?.toDouble() ?? 4.8,
+            reviewsCount: (data['reviewsCount'] as num?)?.toInt() ?? 50,
+            startingPrice: (data['startingPrice'] as num?)?.toInt() ?? 500,
+            expertiseTags: List<String>.from(data['specializations'] ?? data['expertiseTags'] ?? ['Anxiety', 'Stress']),
+            biography: data['bio'] ?? data['biography'] ?? 'Certified therapist ready to assist.',
+            availableSlots: List<String>.from(data['availableSlots'] ?? ['09:00 AM', '12:00 PM', '03:00 PM']),
+            avatarColor: Colors.indigo,
+          ),
+        );
         return Therapist(
-          id: doc.id,
-          name: data['displayName'] ?? data['name'] ?? 'Certified Professional',
-          role: data['role'] ?? 'Therapist',
-          experience: data['experience'] ?? '5 years',
-          rating: (data['rating'] as num?)?.toDouble() ?? 5.0,
-          reviewsCount: (data['reviewsCount'] as num?)?.toInt() ?? 1,
-          startingPrice: (data['startingPrice'] as num?)?.toInt() ?? 500,
-          expertiseTags: specs,
-          biography: data['bio'] ?? data['biography'] ?? 'No biography details provided yet.',
-          availableSlots: slots,
-          avatarColor: Color(colorValue),
+          id: doc.$id,
+          name: name,
+          role: data['role'] ?? match.role,
+          experience: data['experience'] ?? match.experience,
+          rating: (data['rating'] as num?)?.toDouble() ?? match.rating,
+          reviewsCount: (data['reviewsCount'] as num?)?.toInt() ?? match.reviewsCount,
+          startingPrice: (data['startingPrice'] as num?)?.toInt() ?? match.startingPrice,
+          expertiseTags: List<String>.from(data['specializations'] ?? data['expertiseTags'] ?? match.expertiseTags),
+          biography: data['bio'] ?? data['biography'] ?? match.biography,
+          availableSlots: List<String>.from(data['availableSlots'] ?? match.availableSlots),
+          avatarColor: match.avatarColor,
         );
       }).toList();
     });
+    return Stream.fromFuture(future);
   }
 
   int _parseSlotHour(String slot) {
@@ -301,9 +330,12 @@ class _ConsultPageState extends State<ConsultPage> {
                 }
                 return;
               }
-              final currentUid = FirebaseAuth.instance.currentUser?.uid;
+              final user = ref.read(authStateProvider).value;
+              if (user == null) {
+                throw Exception("You must be logged in to book a session.");
+              }
               final sessionData = {
-                'clientUid': currentUid,
+                'clientUid': user.$id,
                 'therapistName': therapist.name,
                 'therapistId': therapist.id,
                 'status': 'Upcoming',
@@ -313,11 +345,17 @@ class _ConsultPageState extends State<ConsultPage> {
                   selectedDate.day,
                   _parseSlotHour(selectedSlot),
                   _parseSlotMinute(selectedSlot),
-                ),
+                ).toIso8601String(),
                 'type': medium,
-                'createdAt': FieldValue.serverTimestamp(),
+                'createdAt': DateTime.now().toIso8601String(),
               };
-              await FirebaseFirestore.instance.collection('sessions').add(sessionData);
+              final databases = AppwriteService().databases;
+              await databases.createDocument(
+                databaseId: AppwriteConstants.databaseId,
+                collectionId: AppwriteConstants.sessionsCollectionId,
+                documentId: ID.unique(),
+                data: sessionData,
+              );
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(

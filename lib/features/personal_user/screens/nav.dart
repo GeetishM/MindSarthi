@@ -1,7 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
@@ -28,14 +30,14 @@ import 'package:mindsarthi/core/widgets/premium_showcase.dart';
 import 'package:mindsarthi/core/widgets/app_dialog.dart';
 import 'package:mindsarthi/core/widgets/app_action_sheet.dart';
 
-class NavBar extends StatefulWidget {
+class NavBar extends ConsumerStatefulWidget {
   const NavBar({super.key});
 
   @override
-  State<NavBar> createState() => _NavBarState();
+  ConsumerState<NavBar> createState() => _NavBarState();
 }
 
-class _NavBarState extends State<NavBar> {
+class _NavBarState extends ConsumerState<NavBar> {
   int _currentIndex = 0;
   DateTime? _lastBackPressed;
   String _chatSearchQuery = '';
@@ -125,10 +127,20 @@ class _NavBarState extends State<NavBar> {
   ];
 
   Future<Map<String, dynamic>?> _fetchUserProfile() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return null;
-    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    return doc.data();
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) return null;
+      final databases = AppwriteService().databases;
+      final doc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+      );
+      return doc.data;
+    } catch (e) {
+      debugPrint('NavBar: Failed to fetch profile: $e');
+      return null;
+    }
   }
 
   String _initial(String? nickname) {
@@ -173,7 +185,7 @@ class _NavBarState extends State<NavBar> {
     );
     if (confirm == true) {
       try {
-        await FirebaseAuth.instance.signOut();
+        await ref.read(authStateProvider.notifier).signOut();
         if (context.mounted) {
           Navigator.pushAndRemoveUntil(
             context,

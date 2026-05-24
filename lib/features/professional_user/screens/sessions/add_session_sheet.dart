@@ -1,18 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:intl/intl.dart';
-
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 
-class AddSessionSheet extends StatefulWidget {
+class AddSessionSheet extends ConsumerStatefulWidget {
   const AddSessionSheet({super.key});
 
   @override
-  State<AddSessionSheet> createState() => _AddSessionSheetState();
+  ConsumerState<AddSessionSheet> createState() => _AddSessionSheetState();
 }
 
-class _AddSessionSheetState extends State<AddSessionSheet> {
+class _AddSessionSheetState extends ConsumerState<AddSessionSheet> {
   final _formKey = GlobalKey<FormState>();
   final _clientNameCtrl = TextEditingController();
   final _clientPhoneCtrl = TextEditingController();
@@ -60,22 +62,31 @@ class _AddSessionSheetState extends State<AddSessionSheet> {
   Future<void> _saveSession() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return;
+
     setState(() => _isSaving = true);
 
     try {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
-      await FirebaseFirestore.instance.collection('sessions').add({
-        'professionalUid': uid,
-        'clientName': _clientNameCtrl.text.trim(),
-        'clientPhone': _clientPhoneCtrl.text.trim(),
-        'clientUid': _clientPhoneCtrl.text.trim(), // Use phone as client ID
-        'date': DateFormat('yyyy-MM-dd').format(_selectedDate),
-        'startTime': _startTime.format(context),
-        'endTime': _endTime.format(context),
-        'notes': _notesCtrl.text.trim(),
-        'status': 'upcoming',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      final databases = AppwriteService().databases;
+      final docId = ID.unique();
+      await databases.createDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.sessionsCollectionId,
+        documentId: docId,
+        data: {
+          'professionalUid': user.$id,
+          'clientName': _clientNameCtrl.text.trim(),
+          'clientPhone': _clientPhoneCtrl.text.trim(),
+          'clientUid': _clientPhoneCtrl.text.trim(), // Use phone as client ID
+          'date': DateFormat('yyyy-MM-dd').format(_selectedDate),
+          'startTime': _startTime.format(context),
+          'endTime': _endTime.format(context),
+          'notes': _notesCtrl.text.trim(),
+          'status': 'upcoming',
+          'createdAt': DateTime.now().toIso8601String(),
+        },
+      );
 
       if (mounted) {
         AppToast.success(context, 'Session added');

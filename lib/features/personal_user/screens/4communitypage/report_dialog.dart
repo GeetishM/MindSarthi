@@ -1,12 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
+import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_repository.dart';
 
 /// Shows a bottom sheet with report reason chips.
-/// Writes to `reports/{postId}/reporters/{uid}` in Firestore.
 Future<void> showReportSheet(BuildContext context, String postId) {
   return showModalBottomSheet(
     context: context,
@@ -16,15 +16,15 @@ Future<void> showReportSheet(BuildContext context, String postId) {
   );
 }
 
-class _ReportSheet extends StatefulWidget {
+class _ReportSheet extends ConsumerStatefulWidget {
   final String postId;
   const _ReportSheet({required this.postId});
 
   @override
-  State<_ReportSheet> createState() => _ReportSheetState();
+  ConsumerState<_ReportSheet> createState() => _ReportSheetState();
 }
 
-class _ReportSheetState extends State<_ReportSheet> {
+class _ReportSheetState extends ConsumerState<_ReportSheet> {
   static const _reasons = [
     'Harassment or bullying',
     'Misinformation',
@@ -47,32 +47,12 @@ class _ReportSheetState extends State<_ReportSheet> {
     setState(() => _isSubmitting = true);
 
     try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) throw Exception('Not signed in');
+      final user = ref.read(authStateProvider).value;
+      if (user == null) throw Exception('Not signed in');
+      final uid = user.$id;
 
-      final firestore = FirebaseFirestore.instance;
-      final batch = firestore.batch();
-
-      final reportRef = firestore
-          .collection('reports')
-          .doc(widget.postId)
-          .collection('reporters')
-          .doc(uid);
-
-      batch.set(reportRef, {
-        'uid': uid,
-        'reason': _selectedReason,
-        'postId': widget.postId,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      final postRef = firestore.collection('posts').doc(widget.postId);
-      batch.update(postRef, {
-        'reportsCount': FieldValue.increment(1),
-        'reportedBy': FieldValue.arrayUnion([uid]),
-      });
-
-      await batch.commit();
+      final postRepo = ref.read(postRepositoryProvider);
+      await postRepo.reportPost(widget.postId, uid);
 
       if (mounted) {
         Navigator.pop(context);

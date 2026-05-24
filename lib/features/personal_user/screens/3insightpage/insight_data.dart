@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 class Insight {
@@ -6,46 +5,14 @@ class Insight {
   static List<Insight> testInsightsList = [];
 
   static Future<void> seedInsights() async {
-    if (isTestingMode) {
-      testInsightsList = List.from(insightsList);
-      return;
-    }
-    try {
-      final firestore = FirebaseFirestore.instance;
-      final snapshot = await firestore.collection('insights').limit(1).get();
-      if (snapshot.docs.isEmpty) {
-        final batch = firestore.batch();
-        for (var insight in insightsList) {
-          final docRef = firestore.collection('insights').doc(insight.id);
-          batch.set(docRef, {
-            'heading': insight.heading,
-            'content': insight.content,
-            'author': insight.author,
-            'date': insight.date,
-            'category': insight.category,
-            'ratingSum': insight.ratingSum,
-            'ratingCount': insight.ratingCount,
-          });
-        }
-        await batch.commit();
-        debugPrint("Insights successfully seeded to Firestore!");
-      }
-    } catch (e) {
-      debugPrint("Error seeding insights: $e");
-    }
+    testInsightsList = List.from(insightsList);
   }
 
   static Stream<List<Insight>> insightsStream() {
-    if (isTestingMode) {
-      // In testing mode, return a Stream that emits the current state of testInsightsList
-      return Stream.periodic(const Duration(milliseconds: 100), (_) => List<Insight>.from(testInsightsList)).distinct();
-    }
-    return FirebaseFirestore.instance
-        .collection('insights')
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) => Insight.fromFirestore(doc)).toList();
-    });
+    return Stream.periodic(
+      const Duration(milliseconds: 300),
+      (_) => List<Insight>.from(testInsightsList.isEmpty ? insightsList : testInsightsList),
+    ).distinct();
   }
 
   final String id;
@@ -94,73 +61,32 @@ class Insight {
     );
   }
 
-  /// Create an [Insight] from a Firestore [DocumentSnapshot].
-  factory Insight.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>? ?? {};
-    return Insight(
-      id: doc.id,
-      heading: data['heading'] ?? '',
-      content: data['content'] ?? '',
-      author: data['author'] ?? '',
-      date: data['date'] ?? '',
-      category: data['category'] ?? '',
-      ratingSum: (data['ratingSum'] as num?)?.toDouble() ?? 0.0,
-      ratingCount: data['ratingCount'] ?? 0,
-    );
-  }
-
   static Future<void> addInsight(Insight insight) async {
-    if (isTestingMode) {
-      testInsightsList.insert(0, insight);
-      return;
+    if (testInsightsList.isEmpty) {
+      testInsightsList = List.from(insightsList);
     }
-    final firestore = FirebaseFirestore.instance;
-    final docRef = insight.id.isEmpty 
-        ? firestore.collection('insights').doc() 
-        : firestore.collection('insights').doc(insight.id);
-    await docRef.set({
-      'heading': insight.heading,
-      'content': insight.content,
-      'author': insight.author,
-      'date': insight.date,
-      'category': insight.category,
-      'ratingSum': insight.ratingSum,
-      'ratingCount': insight.ratingCount,
-    });
+    testInsightsList.insert(0, insight);
   }
 
   static Future<void> updateInsight(Insight insight) async {
-    if (isTestingMode) {
-      final index = testInsightsList.indexWhere((i) => i.id == insight.id);
-      if (index != -1) {
-        testInsightsList[index] = insight;
-      }
-      return;
+    if (testInsightsList.isEmpty) {
+      testInsightsList = List.from(insightsList);
     }
-    final firestore = FirebaseFirestore.instance;
-    await firestore.collection('insights').doc(insight.id).update({
-      'heading': insight.heading,
-      'content': insight.content,
-      'author': insight.author,
-      'date': insight.date,
-      'category': insight.category,
-      'ratingSum': insight.ratingSum,
-      'ratingCount': insight.ratingCount,
-    });
+    final index = testInsightsList.indexWhere((i) => i.id == insight.id);
+    if (index != -1) {
+      testInsightsList[index] = insight;
+    }
   }
 
   static Future<void> deleteInsight(String id) async {
-    if (isTestingMode) {
-      testInsightsList.removeWhere((i) => i.id == id);
-      return;
+    if (testInsightsList.isEmpty) {
+      testInsightsList = List.from(insightsList);
     }
-    final firestore = FirebaseFirestore.instance;
-    await firestore.collection('insights').doc(id).delete();
+    testInsightsList.removeWhere((i) => i.id == id);
   }
 }
 
-
-// Static fallback list (used when Firestore `insights` collection is empty)
+// Static fallback list
 final List<Insight> insightsList = [
   Insight(
     id: 'panic_1',
@@ -184,6 +110,6 @@ final List<Insight> insightsList = [
     content: 'What is Depression?\nImagine waking up and feeling very sad, tired, or uninterested in things you usually enjoy. You might feel like this for weeks, even when nothing bad has happened. That is what we call "depression."\n\nDepression is like carrying a heavy backpack that makes everything feel harder. It\'s a medical condition that affects your mood, thoughts, and daily activities, but it can be treated with the right help and support.\n\nHow Does It Feel?\nHere are some common feelings and symptoms of depression:\n\n - Persistent Sadness: Feeling sad or empty most of the time.\n - Loss of Interest: Not wanting to do activities you used to enjoy.\n - Fatigue: Feeling tired all the time, even after a good nights sleep.\n - Changes in Sleep: Sleeping too much or having trouble sleeping.\n - Changes in Appetite: Eating too much or not wanting to eat at all.\n - Difficulty Concentrating: Finding it hard to focus or make decisions.\n\nRemember, feeling this way does not mean you are weak. It is okay to seek help.',
     author: 'Team MindSarthi',
     date: 'Aug 8, 2024',
-    category: '',
+    category: 'Depression',
   ),
 ];

@@ -1,65 +1,58 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:appwrite/appwrite.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
 import 'mood_entry.dart';
 
 class MoodProvider extends ChangeNotifier {
   List<MoodEntry> _entries = [];
   bool _isLoading = false;
-  StreamSubscription<QuerySnapshot>? _moodSubscription;
 
   List<MoodEntry> get entries => _entries;
   bool get isLoading => _isLoading;
 
   MoodProvider() {
-    _initListener();
+    _loadUserAndFetchMoods();
   }
 
-  void _initListener() {
-    FirebaseAuth.instance.authStateChanges().listen((user) {
-      if (user != null) {
-        _startListening(user.uid);
-      } else {
-        _stopListening();
-      }
-    });
+  Future<void> _loadUserAndFetchMoods() async {
+    try {
+      final user = await AppwriteService().account.get();
+      await fetchMoods(user.$id);
+    } catch (_) {
+      // Not logged in or error
+    }
   }
 
-  void _startListening(String uid) {
-    _stopListening();
+  Future<void> fetchMoods(String uid) async {
     _isLoading = true;
     notifyListeners();
 
-    _moodSubscription = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('mood_inputs')
-        .orderBy('timestamp', descending: true)
-        .limit(100)
-        .snapshots()
-        .listen((snapshot) {
-      _entries = snapshot.docs.map((doc) => MoodEntry.fromFirestore(doc)).toList();
+    try {
+      final databases = AppwriteService().databases;
+      final response = await databases.listDocuments(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.moodsCollectionId,
+        queries: [
+          Query.equal('userId', uid),
+          Query.orderDesc('timestamp'),
+          Query.limit(100),
+        ],
+      );
+
+      _entries = response.documents.map((doc) => MoodEntry.fromAppwrite(doc.data, doc.$id)).toList();
+    } catch (e) {
+      debugPrint('Error fetching moods: $e');
+    } finally {
       _isLoading = false;
       notifyListeners();
-    }, onError: (error) {
-      debugPrint('MoodProvider error: $error');
-      _isLoading = false;
-      notifyListeners();
-    });
+    }
   }
 
-  void _stopListening() {
-    _moodSubscription?.cancel();
-    _moodSubscription = null;
+  void clearEntries() {
     _entries = [];
-    _isLoading = false;
-  }
-
-  @override
-  void dispose() {
-    _moodSubscription?.cancel();
-    super.dispose();
+    notifyListeners();
   }
 
   // --- Sentiment and Analytics Math ---
@@ -111,7 +104,7 @@ class MoodProvider extends ChangeNotifier {
     }
   }
 
-  // --- Firestore Write ---
+  // --- Appwrite Write ---
 
   Future<void> saveMoodEntry({
     required String mood,
@@ -119,27 +112,28 @@ class MoodProvider extends ChangeNotifier {
     required List<String> activities,
     required String notes,
   }) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception("User must be logged in to track mood");
-    }
-
-    final docRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('mood_inputs')
-        .doc();
+    final user = await AppwriteService().account.get();
+    final databases = AppwriteService().databases;
+    final docId = ID.unique();
 
     final newEntry = MoodEntry(
-      id: docRef.id,
+      id: docId,
       mood: mood,
       emotions: emotions,
       activities: activities,
       notes: notes,
       timestamp: DateTime.now(),
+      userId: user.$id,
     );
 
-    // Save to Firestore. Offline cache will instantly write locally.
-    await docRef.set(newEntry.toFirestore());
+    await databases.createDocument(
+      databaseId: AppwriteConstants.databaseId,
+      collectionId: AppwriteConstants.moodsCollectionId,
+      documentId: docId,
+      data: newEntry.toAppwrite(),
+    );
+
+    _entries.insert(0, newEntry);
+    notifyListeners();
   }
 }

@@ -1,14 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
+import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_repository.dart';
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_card.dart';
 
-class CommentScreen extends StatefulWidget {
+class CommentScreen extends ConsumerStatefulWidget {
   final String postId;
-  final DocumentSnapshot post;
+  final PostModel post;
 
   const CommentScreen({
     super.key,
@@ -17,18 +21,40 @@ class CommentScreen extends StatefulWidget {
   });
 
   @override
-  State<CommentScreen> createState() => _CommentScreenState();
+  ConsumerState<CommentScreen> createState() => _CommentScreenState();
 }
 
-class _CommentScreenState extends State<CommentScreen> {
+class _CommentScreenState extends ConsumerState<CommentScreen> {
   final TextEditingController _commentController = TextEditingController();
   String selectedTab = 'Top';
   bool _isProfileComplete = false;
+  List<CommentModel> _allComments = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _checkProfileStatus();
+    _fetchComments();
+  }
+
+  Future<void> _fetchComments() async {
+    try {
+      final comments = await ref.read(postRepositoryProvider).getComments(widget.postId);
+      if (mounted) {
+        setState(() {
+          _allComments = comments;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching comments: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _checkProfileStatus() async {
@@ -40,19 +66,26 @@ class _CommentScreenState extends State<CommentScreen> {
   }
 
   Future<bool> isProfileComplete() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = ref.read(authStateProvider).value?.$id;
     if (uid == null) return false;
 
-    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    final data = doc.data();
+    try {
+      final doc = await AppwriteService().databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: uid,
+      );
+      final data = doc.data;
 
-    return data != null &&
-        data['username'] != null &&
-        data['nickname'] != null &&
-        data['age'] != null &&
-        data['username'].toString().isNotEmpty &&
-        data['nickname'].toString().isNotEmpty &&
-        data['age'].toString().isNotEmpty;
+      return data['username'] != null &&
+          data['nickname'] != null &&
+          data['age'] != null &&
+          data['username'].toString().isNotEmpty &&
+          data['nickname'].toString().isNotEmpty &&
+          data['age'].toString().isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> addComment() async {
@@ -65,42 +98,43 @@ class _CommentScreenState extends State<CommentScreen> {
       return;
     }
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    final userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    final username = userDoc['username'] ?? 'Anonymous';
+    final uid = ref.read(authStateProvider).value?.$id;
+    if (uid == null) return;
 
-    final text = _commentController.text.trim();
-    if (text.isNotEmpty) {
-      await FirebaseFirestore.instance
-          .collection('posts')
-          .doc(widget.postId)
-          .collection('comments')
-          .add({
-        'uid': uid,
-        'username': username,
-        'text': text,
-        'timestamp': FieldValue.serverTimestamp(),
-        'likes': 0,
-      });
-      _commentController.clear();
-      if (mounted) {
-        AppToast.success(context, 'Comment added');
+    try {
+      final userDoc = await AppwriteService().databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: uid,
+      );
+      final username = userDoc.data['username'] ?? 'Anonymous';
+
+      final text = _commentController.text.trim();
+      if (text.isNotEmpty) {
+        await ref.read(postRepositoryProvider).createComment(
+          postId: widget.postId,
+          uid: uid,
+          username: username,
+          text: text,
+        );
+        _commentController.clear();
+        _fetchComments(); // Refresh list
+        if (mounted) {
+          AppToast.success(context, 'Comment added');
+        }
       }
+    } catch (e) {
+      debugPrint('Error adding comment: $e');
     }
   }
 
   Future<void> likeComment(String commentId) async {
-    final ref = FirebaseFirestore.instance
-        .collection('posts')
-        .doc(widget.postId)
-        .collection('comments')
-        .doc(commentId);
-    await FirebaseFirestore.instance.runTransaction((transaction) async {
-      final snapshot = await transaction.get(ref);
-      final currentLikes = snapshot['likes'] ?? 0;
-      transaction.update(ref, {'likes': currentLikes + 1});
-    });
+    try {
+      await ref.read(postRepositoryProvider).likeComment(commentId);
+      _fetchComments(); // Refresh list
+    } catch (e) {
+      debugPrint('Error liking comment: $e');
+    }
   }
 
   void showReplyDialog(String commentId) {
@@ -167,7 +201,6 @@ class _CommentScreenState extends State<CommentScreen> {
                 child: TextField(
                   controller: replyController,
                   maxLines: 3,
-                  autofocus: true,
                   style: TextStyle(color: textColor),
                   decoration: InputDecoration(
                     hintText: "Write a reply...",
@@ -192,30 +225,34 @@ class _CommentScreenState extends State<CommentScreen> {
                     return;
                   }
 
-                  final uid = FirebaseAuth.instance.currentUser?.uid;
-                  final userDoc = await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(uid)
-                      .get();
-                  final username = userDoc['username'] ?? 'Anonymous';
+                  final uid = ref.read(authStateProvider).value?.$id;
+                  if (uid == null) return;
 
-                  if (replyController.text.trim().isNotEmpty) {
-                    await FirebaseFirestore.instance
-                        .collection('posts')
-                        .doc(widget.postId)
-                        .collection('comments')
-                        .doc(commentId)
-                        .collection('replies')
-                        .add({
-                      'uid': uid,
-                      'username': username,
-                      'text': replyController.text.trim(),
-                      'timestamp': FieldValue.serverTimestamp(),
-                    });
-                    if (mounted) {
-                      Navigator.pop(context);
-                      AppToast.success(context, 'Reply posted');
+                  try {
+                    final userDoc = await AppwriteService().databases.getDocument(
+                      databaseId: AppwriteConstants.databaseId,
+                      collectionId: AppwriteConstants.usersCollectionId,
+                      documentId: uid,
+                    );
+                    final username = userDoc.data['username'] ?? 'Anonymous';
+
+                    final text = replyController.text.trim();
+                    if (text.isNotEmpty) {
+                      await ref.read(postRepositoryProvider).createComment(
+                        postId: widget.postId,
+                        uid: uid,
+                        username: username,
+                        text: text,
+                        parentCommentId: commentId,
+                      );
+                      _fetchComments(); // Refresh list
+                      if (mounted) {
+                        Navigator.pop(context);
+                        AppToast.success(context, 'Reply posted');
+                      }
                     }
+                  } catch (e) {
+                    debugPrint('Error adding reply: $e');
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -239,20 +276,22 @@ class _CommentScreenState extends State<CommentScreen> {
     );
   }
 
-  Stream<QuerySnapshot> getCommentStream() {
-    final base = FirebaseFirestore.instance
-        .collection('posts')
-        .doc(widget.postId)
-        .collection('comments');
+  List<CommentModel> getFilteredComments() {
+    final uid = ref.read(authStateProvider).value?.$id;
+    final topLevel = _allComments.where((c) => c.parentCommentId == null || c.parentCommentId!.isEmpty).toList();
 
     if (selectedTab == 'Top') {
-      return base.orderBy('likes', descending: true).snapshots();
+      topLevel.sort((a, b) => b.likes.compareTo(a.likes));
     } else if (selectedTab == 'Newest') {
-      return base.orderBy('timestamp', descending: true).snapshots();
+      topLevel.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     } else {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      return base.where('uid', isEqualTo: uid).snapshots();
+      return topLevel.where((c) => c.uid == uid).toList();
     }
+    return topLevel;
+  }
+
+  List<CommentModel> getReplies(String commentId) {
+    return _allComments.where((c) => c.parentCommentId == commentId).toList();
   }
 
   @override
@@ -262,6 +301,8 @@ class _CommentScreenState extends State<CommentScreen> {
     final surfaceColor = isDark ? AppColors.darkSurface : AppColors.surface;
     final borderCol = isDark ? AppColors.darkBorder : AppColors.border;
     final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+
+    final displayedComments = getFilteredComments();
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
@@ -336,86 +377,62 @@ class _CommentScreenState extends State<CommentScreen> {
                     ),
                   ),
                 ),
-                StreamBuilder<QuerySnapshot>(
-                  stream: getCommentStream(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const SliverFillRemaining(
+                _isLoading
+                    ? const SliverFillRemaining(
                         child: Center(child: CupertinoActivityIndicator()),
-                      );
-                    }
-
-                    final commentDocs = snapshot.data!.docs;
-                    if (commentDocs.isEmpty) {
-                      return SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(32.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  CupertinoIcons.chat_bubble_2,
-                                  size: 48,
-                                  color: isDark ? Colors.grey[700] : Colors.grey[400],
+                      )
+                    : displayedComments.isEmpty
+                        ? SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(32.0),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      CupertinoIcons.chat_bubble_2,
+                                      size: 48,
+                                      color: isDark ? Colors.grey[700] : Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'No comments here yet.',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'No comments here yet.',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    }
+                          )
+                        : SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final comment = displayedComments[index];
+                                final replies = getReplies(comment.id);
 
-                    return SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final doc = commentDocs[index];
-                          final data = doc.data() as Map<String, dynamic>;
-
-                          return _CommentTile(
-                            data: data,
-                            isDark: isDark,
-                            onLike: () => likeComment(doc.id),
-                            onReply: () => showReplyDialog(doc.id),
-                            repliesWidget: StreamBuilder<QuerySnapshot>(
-                              stream: FirebaseFirestore.instance
-                                  .collection('posts')
-                                  .doc(widget.postId)
-                                  .collection('comments')
-                                  .doc(doc.id)
-                                  .collection('replies')
-                                  .orderBy('timestamp', descending: false)
-                                  .snapshots(),
-                              builder: (context, replySnap) {
-                                if (!replySnap.hasData || replySnap.data!.docs.isEmpty) {
-                                  return const SizedBox.shrink();
-                                }
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: replySnap.data!.docs.map((replyDoc) {
-                                    final reply = replyDoc.data() as Map<String, dynamic>;
-                                    return _ReplyTile(data: reply, isDark: isDark);
-                                  }).toList(),
+                                return _CommentTile(
+                                  comment: comment,
+                                  isDark: isDark,
+                                  onLike: () => likeComment(comment.id),
+                                  onReply: () => showReplyDialog(comment.id),
+                                  repliesWidget: replies.isEmpty
+                                      ? const SizedBox.shrink()
+                                      : Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: replies.map((reply) {
+                                            return _ReplyTile(reply: reply, isDark: isDark);
+                                          }).toList(),
+                                        ),
                                 );
                               },
+                              childCount: displayedComments.length,
                             ),
-                          );
-                        },
-                        childCount: commentDocs.length,
-                      ),
-                    );
-                  },
-                ),
+                          ),
               ],
             ),
           ),
@@ -484,14 +501,14 @@ class _CommentScreenState extends State<CommentScreen> {
 }
 
 class _CommentTile extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final CommentModel comment;
   final VoidCallback onLike;
   final VoidCallback onReply;
   final Widget? repliesWidget;
   final bool isDark;
 
   const _CommentTile({
-    required this.data,
+    required this.comment,
     required this.onLike,
     required this.onReply,
     this.repliesWidget,
@@ -500,10 +517,8 @@ class _CommentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final username = data['username'] ?? 'Anonymous';
+    final username = comment.username.isNotEmpty ? comment.username : 'Anonymous';
     final initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
-    final text = data['text'] ?? '';
-    final likes = data['likes'] ?? 0;
 
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final subtitleColor = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
@@ -552,7 +567,7 @@ class _CommentTile extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 4.0),
             child: Text(
-              text,
+              comment.text,
               style: TextStyle(
                 fontSize: 14,
                 color: textColor,
@@ -574,7 +589,7 @@ class _CommentTile extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      likes.toString(),
+                      comment.likes.toString(),
                       style: TextStyle(
                         fontSize: 13,
                         color: subtitleColor,
@@ -616,19 +631,18 @@ class _CommentTile extends StatelessWidget {
 }
 
 class _ReplyTile extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final CommentModel reply;
   final bool isDark;
 
   const _ReplyTile({
-    required this.data,
+    required this.reply,
     required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final username = data['username'] ?? 'Anonymous';
+    final username = reply.username.isNotEmpty ? reply.username : 'Anonymous';
     final initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
-    final text = data['text'] ?? '';
 
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final bubbleBg = isDark ? AppColors.darkSurface2 : AppColors.background;
@@ -674,7 +688,7 @@ class _ReplyTile extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 20.0),
             child: Text(
-              text,
+              reply.text,
               style: TextStyle(
                 fontSize: 13,
                 color: textColor,

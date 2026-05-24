@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -18,10 +17,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mindsarthi/core/localization/app_localizations.dart';
 import 'package:mindsarthi/core/localization/locale_provider.dart';
 import 'package:mindsarthi/core/services/notification_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider;
 import 'package:toastification/toastification.dart';
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/insight_data.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/MoodInputs/models/mood_provider.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_wrapper.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,14 +60,16 @@ void main() async {
   Insight.seedInsights();
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
-        ChangeNotifierProvider(create: (_) => MoodProvider()),
-      ],
-      child: const MindSarthi(),
+    ProviderScope(
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ChangeNotifierProvider(create: (_) => LocaleProvider()),
+          ChangeNotifierProvider(create: (_) => ChatProvider()),
+          ChangeNotifierProvider(create: (_) => MoodProvider()),
+        ],
+        child: const MindSarthi(),
+      ),
     ),
   );
 }
@@ -128,46 +131,34 @@ class MindSarthi extends StatelessWidget {
 
 /// Auth gate extracted as a standalone widget so it can be used
 /// with [onGenerateRoute] instead of [MaterialApp.home].
-class _AuthGate extends StatefulWidget {
+class _AuthGate extends ConsumerWidget {
   const _AuthGate();
 
   @override
-  State<_AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<_AuthGate> {
-  late final Stream<User?> _authStream;
-
-  @override
-  void initState() {
-    super.initState();
-    _authStream = FirebaseAuth.instance.authStateChanges();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return StreamBuilder<User?>(
-      stream: _authStream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            backgroundColor:
-                isDark ? AppColors.darkBackground : AppColors.background,
-            body: Center(
-              child: CircularProgressIndicator(
-                color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                strokeWidth: 2.5,
-              ),
-            ),
-          );
-        }
-        if (snapshot.hasData) {
+    return authState.when(
+      data: (user) {
+        if (user != null) {
           return const AppLockWrapper(child: RoleRouter());
         } else {
           return const WelcomeScreen();
         }
+      },
+      loading: () => Scaffold(
+        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: isDark ? AppColors.darkPrimary : AppColors.primary,
+            strokeWidth: 2.5,
+          ),
+        ),
+      ),
+      error: (err, stack) {
+        debugPrint('AuthGate Error: $err');
+        return const WelcomeScreen();
       },
     );
   }

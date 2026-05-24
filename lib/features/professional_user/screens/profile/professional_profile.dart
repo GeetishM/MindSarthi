@@ -1,7 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_settings_screen.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
@@ -10,16 +10,18 @@ import 'package:mindsarthi/core/widgets/theme_toggle.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/insight_cms.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 
-class ProfessionalProfile extends StatefulWidget {
+class ProfessionalProfile extends ConsumerStatefulWidget {
   const ProfessionalProfile({super.key});
 
   @override
-  State<ProfessionalProfile> createState() => _ProfessionalProfileState();
+  ConsumerState<ProfessionalProfile> createState() => _ProfessionalProfileState();
 }
 
-class _ProfessionalProfileState extends State<ProfessionalProfile> {
-  final _uid = FirebaseAuth.instance.currentUser?.uid;
+class _ProfessionalProfileState extends ConsumerState<ProfessionalProfile> {
   final _nameCtrl = TextEditingController();
   final _bioCtrl = TextEditingController();
   final _experienceCtrl = TextEditingController();
@@ -45,19 +47,20 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
 
   Future<void> _loadProfile() async {
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('professionals')
-          .doc(_uid)
-          .get();
+      final user = ref.read(authStateProvider).value;
+      if (user == null) return;
+      final databases = AppwriteService().databases;
+      final doc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+      );
 
-      if (doc.exists) {
-        final data = doc.data()!;
-        _nameCtrl.text = data['displayName'] ?? '';
-        _bioCtrl.text = data['bio'] ?? '';
-        _experienceCtrl.text = data['experience'] ?? '';
-        _specializations =
-            List<String>.from(data['specializations'] ?? []);
-      }
+      final data = doc.data;
+      _nameCtrl.text = data['name'] ?? data['displayName'] ?? '';
+      _bioCtrl.text = data['bio'] ?? '';
+      _experienceCtrl.text = data['experience'] ?? '';
+      _specializations = List<String>.from(data['specializations'] ?? []);
     } catch (e) {
       debugPrint('Error loading profile: $e');
     } finally {
@@ -68,17 +71,20 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
   Future<void> _saveProfile() async {
     setState(() => _isSaving = true);
     try {
-      await FirebaseFirestore.instance
-          .collection('professionals')
-          .doc(_uid)
-          .set({
-        'uid': _uid,
-        'displayName': _nameCtrl.text.trim(),
-        'bio': _bioCtrl.text.trim(),
-        'experience': _experienceCtrl.text.trim(),
-        'specializations': _specializations,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      final user = ref.read(authStateProvider).value;
+      if (user == null) return;
+      final databases = AppwriteService().databases;
+      await databases.updateDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+        data: {
+          'name': _nameCtrl.text.trim(),
+          'bio': _bioCtrl.text.trim(),
+          'experience': _experienceCtrl.text.trim(),
+          'specializations': _specializations,
+        },
+      );
 
       if (mounted) AppToast.success(context, 'Profile saved');
     } catch (e) {
@@ -102,7 +108,7 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
 
   Future<void> _logout() async {
     try {
-      await FirebaseAuth.instance.signOut();
+      await ref.read(authStateProvider.notifier).signOut();
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
@@ -298,7 +304,7 @@ class _ProfessionalProfileState extends State<ProfessionalProfile> {
                         'Insights CMS',
                         style: TextStyle(
                           fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       subtitle: const Text(

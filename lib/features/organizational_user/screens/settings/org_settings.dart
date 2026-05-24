@@ -1,24 +1,26 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_settings_screen.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/theme/theme_provider.dart';
 import 'package:mindsarthi/core/widgets/theme_toggle.dart';
 import 'package:mindsarthi/features/welcome.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:provider/provider.dart';
 
-class OrgSettings extends StatefulWidget {
+class OrgSettings extends ConsumerStatefulWidget {
   const OrgSettings({super.key});
 
   @override
-  State<OrgSettings> createState() => _OrgSettingsState();
+  ConsumerState<OrgSettings> createState() => _OrgSettingsState();
 }
 
-class _OrgSettingsState extends State<OrgSettings> {
-  final _uid = FirebaseAuth.instance.currentUser?.uid;
+class _OrgSettingsState extends ConsumerState<OrgSettings> {
   final _orgNameCtrl = TextEditingController();
   bool _anonymousReporting = true;
   bool _mandatoryCheckin = false;
@@ -37,18 +39,23 @@ class _OrgSettingsState extends State<OrgSettings> {
   }
 
   Future<void> _loadSettings() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('organizations')
-          .doc(_uid)
-          .get();
+      final databases = AppwriteService().databases;
+      final doc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+      );
 
-      if (doc.exists) {
-        final data = doc.data()!;
-        _orgNameCtrl.text = data['orgName'] ?? '';
-        _anonymousReporting = data['anonymousReporting'] ?? true;
-        _mandatoryCheckin = data['mandatoryCheckin'] ?? false;
-      }
+      final data = doc.data;
+      _orgNameCtrl.text = data['orgName'] ?? '';
+      _anonymousReporting = data['anonymousReporting'] ?? true;
+      _mandatoryCheckin = data['mandatoryCheckin'] ?? false;
     } catch (e) {
       debugPrint('OrgSettings: $e');
     } finally {
@@ -57,15 +64,20 @@ class _OrgSettingsState extends State<OrgSettings> {
   }
 
   Future<void> _saveSettings() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return;
     try {
-      await FirebaseFirestore.instance
-          .collection('organizations')
-          .doc(_uid)
-          .update({
-        'orgName': _orgNameCtrl.text.trim(),
-        'anonymousReporting': _anonymousReporting,
-        'mandatoryCheckin': _mandatoryCheckin,
-      });
+      final databases = AppwriteService().databases;
+      await databases.updateDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+        data: {
+          'orgName': _orgNameCtrl.text.trim(),
+          'anonymousReporting': _anonymousReporting,
+          'mandatoryCheckin': _mandatoryCheckin,
+        },
+      );
 
       if (mounted) AppToast.success(context, 'Settings saved');
     } catch (e) {
@@ -77,7 +89,7 @@ class _OrgSettingsState extends State<OrgSettings> {
 
   Future<void> _logout() async {
     try {
-      await FirebaseAuth.instance.signOut();
+      await ref.read(authRepositoryProvider).signOut();
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,

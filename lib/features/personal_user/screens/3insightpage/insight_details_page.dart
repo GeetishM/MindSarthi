@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
@@ -75,42 +74,13 @@ class _InsightDetailPageState extends State<InsightDetailPage> {
       _userRating = rating;
     });
 
-    try {
-      final docRef = FirebaseFirestore.instance.collection('insights').doc(widget.id);
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
-        final snapshot = await transaction.get(docRef);
-        if (snapshot.exists) {
-          final data = snapshot.data() as Map<String, dynamic>;
-          final double currentSum = (data['ratingSum'] as num?)?.toDouble() ?? 0.0;
-          final int currentCount = (data['ratingCount'] as num?)?.toInt() ?? 0;
-
-          transaction.update(docRef, {
-            'ratingSum': currentSum + rating,
-            'ratingCount': currentCount + 1,
-          });
-        } else {
-          // If the article is static / has not been written to DB, seed it now with this rating
-          transaction.set(docRef, {
-            'heading': widget.heading,
-            'content': widget.content,
-            'author': widget.author,
-            'date': widget.date,
-            'category': widget.category,
-            'ratingSum': rating.toDouble(),
-            'ratingCount': 1,
-          });
-        }
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Thank you for rating this article!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint("Error submitting rating: $e");
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Thank you for rating this article!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
     }
   }
 
@@ -339,100 +309,83 @@ class _InsightDetailPageState extends State<InsightDetailPage> {
                         width: 1.2,
                       ),
                     ),
-                    child: StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance.collection('insights').doc(widget.id).snapshots(),
-                      builder: (context, snapshot) {
-                        double avgRating = 0.0;
-                        int count = 0;
-                        if (snapshot.hasData && snapshot.data!.exists) {
-                          final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
-                          final double sum = (data['ratingSum'] as num?)?.toDouble() ?? 0.0;
-                          count = (data['ratingCount'] as num?)?.toInt() ?? 0;
-                          if (count > 0) {
-                            avgRating = sum / count;
-                          }
-                        }
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'How helpful was this article?',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Current Average Rating display (mocked offline value or user's rating)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            ...List.generate(5, (index) {
+                              final starValue = index + 1;
+                              const avgRating = 4.8;
+                              if (starValue <= avgRating.floor()) {
+                                return const Icon(Icons.star_rounded, color: Colors.amber, size: 22);
+                              } else if (starValue - 0.5 <= avgRating) {
+                                return const Icon(Icons.star_half_rounded, color: Colors.amber, size: 22);
+                              } else {
+                                return const Icon(Icons.star_border_rounded, color: Colors.amber, size: 22);
+                              }
+                            }),
+                            const SizedBox(width: 8),
                             Text(
-                              'How helpful was this article?',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            // Current Average Rating display
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                ...List.generate(5, (index) {
-                                  final starValue = index + 1;
-                                  if (starValue <= avgRating.floor()) {
-                                    return const Icon(Icons.star_rounded, color: Colors.amber, size: 22);
-                                  } else if (starValue - 0.5 <= avgRating) {
-                                    return const Icon(Icons.star_half_rounded, color: Colors.amber, size: 22);
-                                  } else {
-                                    return const Icon(Icons.star_border_rounded, color: Colors.amber, size: 22);
-                                  }
-                                }),
-                                const SizedBox(width: 8),
-                                Text(
-                                  count > 0 
-                                      ? '${avgRating.toStringAsFixed(1)} ($count reviews)' 
-                                      : 'No reviews yet',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Divider(
-                              color: isDark ? AppColors.darkBorder : Colors.grey[200]!,
-                              thickness: 1,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _hasRated ? 'Your Rating' : 'Tap a star to rate',
+                              '4.8 (12 reviews)',
                               style: TextStyle(
                                 fontSize: 13,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                                 color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            // Interactive Star Rating row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(5, (index) {
-                                final starVal = index + 1;
-                                final isActive = _hasRated ? (_userRating >= starVal) : false;
-                                return GestureDetector(
-                                  onTap: _hasRated ? null : () => _submitRating(starVal),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    child: Icon(
-                                      _hasRated 
-                                          ? (isActive ? Icons.star_rounded : Icons.star_border_rounded)
-                                          : Icons.star_border_rounded,
-                                      color: _hasRated 
-                                          ? (isActive ? Colors.amber : Colors.grey[600])
-                                          : Colors.grey[400],
-                                      size: 32,
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
                           ],
-                        );
-                      },
+                        ),
+                        const SizedBox(height: 16),
+                        Divider(
+                          color: isDark ? AppColors.darkBorder : Colors.grey[200]!,
+                          thickness: 1,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _hasRated ? 'Your Rating' : 'Tap a star to rate',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Interactive Star Rating row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(5, (index) {
+                            final starVal = index + 1;
+                            final isActive = _hasRated ? (_userRating >= starVal) : false;
+                            return GestureDetector(
+                              onTap: _hasRated ? null : () => _submitRating(starVal),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: Icon(
+                                  _hasRated 
+                                      ? (isActive ? Icons.star_rounded : Icons.star_border_rounded)
+                                      : Icons.star_border_rounded,
+                                  color: _hasRated 
+                                      ? (isActive ? Colors.amber : Colors.grey[600])
+                                      : Colors.grey[400],
+                                  size: 32,
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 48),

@@ -1,6 +1,8 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:mindsarthi/core/widgets/premium_showcase.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -19,19 +21,18 @@ import 'package:toastification/toastification.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   final GlobalKey? menuKey;
   const HomePage({super.key, this.menuKey});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
+class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   String? savedPreference;
@@ -391,16 +392,26 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<void> _saveUserPreference(String preference, String value) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
     await _storage.write(key: 'sos_preference', value: preference);
     await _storage.write(key: 'sos_value', value: value);
 
-    await _firestore.collection('users').doc(user.uid).set({
-      'sos_preference': preference,
-      'sos_value': value,
-    }, SetOptions(merge: true));
+    try {
+      final databases = AppwriteService().databases;
+      await databases.updateDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+        data: {
+          'sos_preference': preference,
+          'sos_value': value,
+        },
+      );
+    } catch (e) {
+      debugPrint('Error saving SOS preference: $e');
+    }
 
     setState(() {
       savedPreference = preference;
@@ -413,14 +424,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Future<String?> _fetchNickname() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return null;
 
-    final doc = await _firestore.collection('users').doc(user.uid).get();
-    if (doc.exists) {
-      return doc.data()?['nickname'] as String?;
+    try {
+      final databases = AppwriteService().databases;
+      final doc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+      );
+      return doc.data['nickname'] as String?;
+    } catch (_) {
+      return null;
     }
-    return null;
   }
 
   Future<void> _makePhoneCall(String number) async {

@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
@@ -11,18 +10,21 @@ import 'package:mindsarthi/features/app_lock/app_lock_storage.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/core/widgets/app_dialog.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 
 
-class AppLockScreen extends StatefulWidget {
+class AppLockScreen extends ConsumerStatefulWidget {
   final VoidCallback onSuccess;
 
   const AppLockScreen({super.key, required this.onSuccess});
 
   @override
-  State<AppLockScreen> createState() => _AppLockScreenState();
+  ConsumerState<AppLockScreen> createState() => _AppLockScreenState();
 }
 
-class _AppLockScreenState extends State<AppLockScreen> with TickerProviderStateMixin {
+class _AppLockScreenState extends ConsumerState<AppLockScreen> with TickerProviderStateMixin {
   String _enteredPin = '';
   String? _correctPin;
   bool _isAnimatingError = false;
@@ -92,19 +94,22 @@ class _AppLockScreenState extends State<AppLockScreen> with TickerProviderStateM
 
   Future<void> _fetchUserProfile() async {
     try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
         if (mounted) setState(() => _loadingProfile = false);
         return;
       }
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      if (doc.exists && mounted) {
+      final databases = AppwriteService().databases;
+      final doc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+      );
+      if (mounted) {
         setState(() {
-          _nickname = doc.data()?['nickname'] ?? 'User';
+          _nickname = doc.data['nickname'] ?? 'User';
           _loadingProfile = false;
         });
-      } else {
-        if (mounted) setState(() => _loadingProfile = false);
       }
     } catch (e) {
       debugPrint('Error fetching profile: $e');
@@ -192,7 +197,7 @@ class _AppLockScreenState extends State<AppLockScreen> with TickerProviderStateM
 
     if (result == true && mounted) {
       try {
-        await FirebaseAuth.instance.signOut();
+        await ref.read(authRepositoryProvider).signOut();
         await AppLockStorage.clearAll();
         if (mounted) {
           Navigator.pushAndRemoveUntil(

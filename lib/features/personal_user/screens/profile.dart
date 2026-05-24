@@ -1,17 +1,19 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/localization/app_localizations.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 
-class ProfilePage extends StatefulWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _ProfilePageState extends ConsumerState<ProfilePage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
@@ -21,8 +23,6 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _profileInitial;
 
   final List<String> _genders = ['Male', 'Female', 'Other'];
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _isLoading = true;
   bool _isSaving = false;
@@ -42,21 +42,38 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUserData() async {
-    final user = _auth.currentUser;
+    final user = ref.read(authStateProvider).value;
     if (user != null) {
-      final doc = await _firestore.collection('users').doc(user.uid).get();
-      final data = doc.data();
+      try {
+        final databases = AppwriteService().databases;
+        final doc = await databases.getDocument(
+          databaseId: AppwriteConstants.databaseId,
+          collectionId: AppwriteConstants.usersCollectionId,
+          documentId: user.$id,
+        );
+        final data = doc.data;
 
+        setState(() {
+          _phoneNumber = data['phoneNumber'] ?? '';
+          _usernameController.text = data['username'] ?? '';
+          _nicknameController.text = data['nickname'] ?? '';
+          _selectedGender = data['gender'] ?? 'Male';
+          _ageController.text = data['age'] ?? '';
+          _profileInitial = data['profileInitial'] ??
+              (_usernameController.text.isNotEmpty
+                  ? _usernameController.text[0].toUpperCase()
+                  : null);
+          _isLoading = false;
+        });
+      } catch (e) {
+        setState(() {
+          _phoneNumber = '';
+          _isLoading = false;
+        });
+        debugPrint('Error loading user profile: $e');
+      }
+    } else {
       setState(() {
-        _phoneNumber = data?['phoneNumber'] ?? user.phoneNumber ?? '';
-        _usernameController.text = data?['username'] ?? '';
-        _nicknameController.text = data?['nickname'] ?? '';
-        _selectedGender = data?['gender'] ?? 'Male';
-        _ageController.text = data?['age'] ?? '';
-        _profileInitial = data?['profileInitial'] ??
-            (_usernameController.text.isNotEmpty
-                ? _usernameController.text[0].toUpperCase()
-                : null);
         _isLoading = false;
       });
     }
@@ -75,7 +92,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    final user = _auth.currentUser;
+    final user = ref.read(authStateProvider).value;
     if (user == null) return;
 
     setState(() => _isSaving = true);
@@ -83,7 +100,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final initial = _usernameController.text.trim()[0].toUpperCase();
 
     final data = {
-      'uid': user.uid,
+      'uid': user.$id,
       'phoneNumber': _phoneNumber,
       'username': _usernameController.text.trim(),
       'nickname': _nicknameController.text.trim(),
@@ -92,18 +109,28 @@ class _ProfilePageState extends State<ProfilePage> {
       'profileInitial': initial,
     };
 
-    await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .set(data, SetOptions(merge: true));
+    try {
+      final databases = AppwriteService().databases;
+      await databases.updateDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+        data: data,
+      );
 
-    setState(() {
-      _profileInitial = initial;
-      _isSaving = false;
-    });
+      setState(() {
+        _profileInitial = initial;
+        _isSaving = false;
+      });
 
-    if (mounted) {
-      AppToast.success(context, context.tr('prof_saved'));
+      if (mounted) {
+        AppToast.success(context, context.tr('prof_saved'));
+      }
+    } catch (e) {
+      setState(() => _isSaving = false);
+      if (mounted) {
+        AppToast.error(context, 'Failed to save profile', description: e.toString());
+      }
     }
   }
 

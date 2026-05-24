@@ -1,29 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/widgets/role_router.dart';
 import 'package:mindsarthi/core/widgets/rive_teddy_widget.dart';
 import 'package:pinput/pinput.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:toastification/toastification.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 
-class OrgOtpVerification extends StatefulWidget {
-  final String phoneNumber;
-  final String verificationId;
-  final String orgName;
+class OtpVerificationScreen extends ConsumerStatefulWidget {
+  final String email;
+  final String userId;
+  final bool isOrg;
 
-  const OrgOtpVerification({
+  const OtpVerificationScreen({
     super.key,
-    required this.phoneNumber,
-    required this.verificationId,
-    required this.orgName,
+    required this.email,
+    required this.userId,
+    this.isOrg = true,
   });
 
   @override
-  State<OrgOtpVerification> createState() => _OrgOtpVerificationState();
+  ConsumerState<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
 }
 
-class _OrgOtpVerificationState extends State<OrgOtpVerification> {
+class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
+  late String _currentUserId;
   String _enteredOtp = '';
   String? _error;
   bool _isVerifying = false;
@@ -34,6 +38,7 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
   @override
   void initState() {
     super.initState();
+    _currentUserId = widget.userId;
     _otpFocusNode.addListener(_onOtpFocusChanged);
   }
 
@@ -52,113 +57,131 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
     }
   }
 
-  Future<void> _verifyOtp(String otp) async {
-    if (_isVerifying) return;
+  Future<_UserSessionResult> _verifyOtp(String otp) async {
+    if (_isVerifying) return const _UserSessionResult(success: false);
     setState(() => _isVerifying = true);
 
     _otpFocusNode.unfocus();
     _teddyCtrl?.isHandsUp = false;
 
     try {
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: widget.verificationId,
-        smsCode: otp,
+      final authRepo = ref.read(authRepositoryProvider);
+      
+      // Verify OTP via Appwrite
+      await authRepo.verifyEmailOtp(
+        userId: _currentUserId,
+        secretCode: otp,
       );
 
-      final authResult =
-          await FirebaseAuth.instance.signInWithCredential(credential);
-      final user = authResult.user;
+      final user = await authRepo.getCurrentUser();
 
       if (user != null) {
-        // Write to organizations collection
-        final orgDoc = FirebaseFirestore.instance
-            .collection('organizations')
-            .doc(user.uid);
-        final orgSnapshot = await orgDoc.get();
+        // Set user in Riverpod AuthStateNotifier
+        ref.read(authStateProvider.notifier).setUser(user);
 
-        if (!orgSnapshot.exists) {
-          await orgDoc.set({
-            'orgId': user.uid,
-            'orgName': widget.orgName,
-            'adminUid': user.uid,
-            'phoneNumber': widget.phoneNumber,
-            'plan': 'free',
-            'createdAt': FieldValue.serverTimestamp(),
-            'anonymousReporting': true,
-            'mandatoryCheckin': false,
-          });
+        final databases = AppwriteService().databases;
+        bool userDocExists = false;
 
-          // Add admin as first member
-          await FirebaseFirestore.instance
-              .collection('org_members')
-              .doc(user.uid)
-              .collection('members')
-              .doc(user.uid)
-              .set({
-            'uid': user.uid,
-            'role': 'admin',
-            'department': 'Management',
-            'joinedAt': FieldValue.serverTimestamp(),
-          });
+        try {
+          await databases.getDocument(
+            databaseId: AppwriteConstants.databaseId,
+            collectionId: AppwriteConstants.usersCollectionId,
+            documentId: user.$id,
+          );
+          userDocExists = true;
+        } on AppwriteException catch (e) {
+          if (e.code != 404) {
+            rethrow;
+          }
         }
 
-        // Write to unified users collection for RoleRouter
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .set({
-          'uid': user.uid,
-          'phoneNumber': widget.phoneNumber,
-          'userRole': 'org',
-          'orgName': widget.orgName,
-        }, SetOptions(merge: true));
+        if (!userDocExists) {
+          await databases.createDocument(
+            databaseId: AppwriteConstants.databaseId,
+            collectionId: AppwriteConstants.usersCollectionId,
+            documentId: user.$id,
+            data: {
+              'uid': user.$id,
+              'email': widget.email,
+              'userRole': 'org',
+              'name': user.name.isEmpty ? 'Organizational User' : user.name,
+              'joinedDate': DateTime.now().toIso8601String(),
+            },
+          );
+        }
+
+        _teddyCtrl?.triggerSuccess();
 
         if (mounted) {
           toastification.show(
             context: context,
             type: ToastificationType.success,
-            title: Text(orgSnapshot.exists ? 'Welcome back!' : 'Organization created'),
+            title: Text(userDocExists ? "Welcome back!" : "Account created successfully"),
             autoCloseDuration: const Duration(seconds: 2),
           );
+        }
 
-          _teddyCtrl?.triggerSuccess();
-          await Future.delayed(const Duration(milliseconds: 1200));
+        await Future.delayed(const Duration(milliseconds: 1200));
 
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const RoleRouter()),
-            );
-          }
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const RoleRouter()),
+          );
         }
       }
+      return const _UserSessionResult(success: true);
     } catch (e) {
       _teddyCtrl?.triggerFail();
       setState(() {
         _error = 'Invalid OTP';
         _isVerifying = false;
       });
-      toastification.show(
-        context: context,
-        type: ToastificationType.error,
-        title: const Text('OTP Verification Failed'),
-        description: Text(e.toString()),
-        autoCloseDuration: const Duration(seconds: 3),
-      );
+      if (mounted) {
+        toastification.show(
+          context: context,
+          type: ToastificationType.error,
+          title: const Text("Verification Failed"),
+          description: Text(e.toString()),
+          autoCloseDuration: const Duration(seconds: 3),
+        );
+      }
+      return const _UserSessionResult(success: false);
     }
   }
 
-  void _resendOtp() {
-    toastification.show(
-      context: context,
-      type: ToastificationType.info,
-      title: const Text('Resend OTP tapped'),
-      autoCloseDuration: const Duration(seconds: 2),
-    );
+  void _resendOtp() async {
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final newUserId = await authRepo.sendEmailOtp(widget.email);
+      if (mounted) {
+        setState(() {
+          _currentUserId = newUserId;
+        });
+        toastification.show(
+          context: context,
+          type: ToastificationType.info,
+          title: const Text("Code Resent"),
+          description: const Text("Please check your email inbox for the new code."),
+          autoCloseDuration: const Duration(seconds: 3),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        toastification.show(
+          context: context,
+          type: ToastificationType.error,
+          title: const Text("Resend Failed"),
+          description: Text(e.toString()),
+          autoCloseDuration: const Duration(seconds: 3),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final fontScale = MediaQuery.of(context).size.width / 375;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final palette = ThemePalette.forRole('org', isDark: isDark);
@@ -168,186 +191,178 @@ class _OrgOtpVerificationState extends State<OrgOtpVerification> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: theme.textTheme.bodyLarge?.color,
-            size: 20,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          color: theme.textTheme.bodyLarge?.color ?? AppColors.textPrimary,
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              RiveTeddyWidget(
-                height: MediaQuery.of(context).size.height * 0.28,
-                onControllerReady: (ctrl) {
-                  _teddyCtrl = ctrl;
-                },
-              ),
-              Transform.translate(
-                offset: const Offset(0, -30),
-                child: Container(
-                  width: 400,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: theme.cardTheme.color ?? theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
-                    ),
-                  ),
+      body: LayoutBuilder(
+        builder: (_, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Align(
+                  alignment: Alignment.center,
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 16),
-                Text(
-                  'Verification Required',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: theme.textTheme.bodyLarge?.color,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Enter the code sent to',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: theme.textTheme.bodyMedium?.color,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.phoneNumber,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: theme.textTheme.bodyLarge?.color,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Pinput(
-                  length: 6,
-                  focusNode: _otpFocusNode,
-                  onChanged: (val) {
-                    _enteredOtp = val;
-                    if (!_otpFocusNode.hasFocus) {
-                      _teddyCtrl?.look = val.length * 8.0;
-                    }
-                  },
-                  onCompleted: (val) => _verifyOtp(val),
-                  defaultPinTheme: PinTheme(
-                    width: 50,
-                    height: 56,
-                    textStyle: TextStyle(
-                      fontSize: 20,
-                      color: theme.textTheme.bodyLarge?.color,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.inputDecorationTheme.fillColor ?? theme.scaffoldBackgroundColor,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
+                      RiveTeddyWidget(
+                        height: MediaQuery.of(context).size.height * 0.28,
+                        onControllerReady: (ctrl) {
+                          _teddyCtrl = ctrl;
+                        },
                       ),
-                    ),
-                  ),
-                  focusedPinTheme: PinTheme(
-                    width: 50,
-                    height: 56,
-                    textStyle: TextStyle(
-                      fontSize: 20,
-                      color: theme.textTheme.bodyLarge?.color,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.inputDecorationTheme.fillColor ?? theme.scaffoldBackgroundColor,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.colorScheme.primary,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-                if (_error != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    _error!,
-                    style: const TextStyle(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _isVerifying ? null : () => _verifyOtp(_enteredOtp),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: _isVerifying
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                      Transform.translate(
+                        offset: const Offset(0, -30),
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          width: 400,
+                          decoration: BoxDecoration(
+                            color: theme.cardTheme.color ?? theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
+                              width: 1,
                             ),
-                          )
-                        : const Text(
-                            'Continue',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
+                            boxShadow: isDark
+                                ? []
+                                : const [
+                                    BoxShadow(color: Colors.black12, blurRadius: 10),
+                                  ],
                           ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: _resendOtp,
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: palette.textSecondary,
-                      ),
-                      children: [
-                        const TextSpan(text: "Didn't receive code? "),
-                        TextSpan(
-                          text: 'Resend',
-                          style: TextStyle(
-                            color: palette.primary,
-                            fontWeight: FontWeight.w700,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Verification Required",
+                                style: TextStyle(
+                                  fontSize: 18 * fontScale,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                "Enter the verification code sent via Email",
+                                style: TextStyle(
+                                  fontSize: 14 * fontScale,
+                                  color: theme.textTheme.bodyMedium?.color,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                widget.email,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16 * fontScale,
+                                  color: theme.textTheme.bodyLarge?.color,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              Pinput(
+                                length: 6,
+                                focusNode: _otpFocusNode,
+                                onChanged: (val) {
+                                  _enteredOtp = val;
+                                  if (!_otpFocusNode.hasFocus) {
+                                    _teddyCtrl?.look = val.length * 8.0;
+                                  }
+                                },
+                                onCompleted: (val) => _verifyOtp(val),
+                                defaultPinTheme: PinTheme(
+                                  width: 50,
+                                  height: 56,
+                                  textStyle: TextStyle(
+                                    fontSize: 20 * fontScale,
+                                    color: theme.textTheme.bodyLarge?.color,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? theme.colorScheme.surfaceContainerHighest
+                                        : const Color(0xFFF2F2F2),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_error != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12),
+                                  child: Text(
+                                    _error!,
+                                    style: const TextStyle(
+                                      color: Colors.amber,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 24),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () => _verifyOtp(_enteredOtp),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: theme.colorScheme.primary,
+                                    foregroundColor: theme.colorScheme.onPrimary,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    "Continue",
+                                    style: TextStyle(
+                                      fontSize: 16 * fontScale,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextButton(
+                                onPressed: _resendOtp,
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: TextStyle(
+                                      fontSize: 13 * fontScale,
+                                      color: palette.textSecondary,
+                                    ),
+                                    children: [
+                                      const TextSpan(text: "Didn't receive code? "),
+                                      TextSpan(
+                                        text: 'Resend',
+                                        style: TextStyle(
+                                          color: palette.primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ],
-    ),
-  ),
-),
-);
+          );
+        },
+      ),
+    );
   }
+}
+
+class _UserSessionResult {
+  final bool success;
+  const _UserSessionResult({required this.success});
 }

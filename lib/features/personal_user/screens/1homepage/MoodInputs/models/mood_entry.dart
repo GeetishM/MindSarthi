@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class MoodEntry {
   final String id;
   final String mood;
@@ -7,6 +5,7 @@ class MoodEntry {
   final List<String> activities;
   final String notes;
   final DateTime timestamp;
+  final String userId;
 
   MoodEntry({
     required this.id,
@@ -15,27 +14,29 @@ class MoodEntry {
     required this.activities,
     required this.notes,
     required this.timestamp,
+    required this.userId,
   });
 
-  factory MoodEntry.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>?;
+  factory MoodEntry.fromAppwrite(Map<String, dynamic> data, String id) {
     return MoodEntry(
-      id: doc.id,
-      mood: data?['mood'] ?? '',
-      emotions: List<String>.from(data?['emotions'] ?? []),
-      activities: List<String>.from(data?['activities'] ?? []),
-      notes: data?['notes'] ?? '',
-      timestamp: (data?['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      id: id,
+      mood: data['mood'] ?? '',
+      emotions: List<String>.from(data['emotions'] ?? []),
+      activities: List<String>.from(data['activities'] ?? []),
+      notes: data['notes'] ?? '',
+      timestamp: DateTime.tryParse(data['timestamp'] ?? '') ?? DateTime.now(),
+      userId: data['userId'] ?? '',
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toAppwrite() {
     return {
       'mood': mood,
       'emotions': emotions,
       'activities': activities,
       'notes': notes,
-      'timestamp': FieldValue.serverTimestamp(),
+      'timestamp': timestamp.toIso8601String(),
+      'userId': userId,
     };
   }
 }

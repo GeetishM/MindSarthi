@@ -1,18 +1,67 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:shimmer/shimmer.dart';
 
-class ClientList extends StatelessWidget {
+class ClientList extends ConsumerWidget {
   const ClientList({super.key});
 
+  Future<List<_ClientInfo>> _fetchClients(WidgetRef ref) async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return [];
+
+    try {
+      final databases = AppwriteService().databases;
+      final response = await databases.listDocuments(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.sessionsCollectionId,
+        queries: [
+          Query.equal('professionalUid', user.$id),
+          Query.limit(100),
+        ],
+      );
+
+      final Map<String, _ClientInfo> clients = {};
+      for (var doc in response.documents) {
+        final data = doc.data;
+        final clientId = data['clientUid'] ?? data['clientName'] ?? 'unknown';
+        final name = data['clientName'] ?? 'Client';
+        final phone = data['clientPhone'] ?? '';
+
+        if (!clients.containsKey(clientId)) {
+          clients[clientId] = _ClientInfo(
+            name: name,
+            phone: phone,
+            totalSessions: 0,
+            lastDate: '',
+          );
+        }
+        clients[clientId]!.totalSessions++;
+
+        final date = data['date'] ?? '';
+        if (date.compareTo(clients[clientId]!.lastDate) > 0) {
+          clients[clientId]!.lastDate = date;
+        }
+      }
+
+      final clientList = clients.values.toList()
+        ..sort((a, b) => b.lastDate.compareTo(a.lastDate));
+
+      return clientList;
+    } catch (e) {
+      debugPrint('Error fetching clients: $e');
+      return [];
+    }
+  }
+
   @override
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -29,17 +78,14 @@ class ClientList extends StatelessWidget {
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('sessions')
-            .where('professionalUid', isEqualTo: uid)
-            .snapshots(),
+      body: FutureBuilder<List<_ClientInfo>>(
+        future: _fetchClients(ref),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return _buildShimmer(theme, isDark);
           }
 
-          if (!snap.hasData || snap.data!.docs.isEmpty) {
+          if (!snap.hasData || snap.data!.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -70,32 +116,7 @@ class ClientList extends StatelessWidget {
             );
           }
 
-          // Group sessions by client
-          final Map<String, _ClientInfo> clients = {};
-          for (var doc in snap.data!.docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            final clientId = data['clientUid'] ?? data['clientName'] ?? 'unknown';
-            final name = data['clientName'] ?? 'Client';
-            final phone = data['clientPhone'] ?? '';
-
-            if (!clients.containsKey(clientId)) {
-              clients[clientId] = _ClientInfo(
-                name: name,
-                phone: phone,
-                totalSessions: 0,
-                lastDate: '',
-              );
-            }
-            clients[clientId]!.totalSessions++;
-
-            final date = data['date'] ?? '';
-            if (date.compareTo(clients[clientId]!.lastDate) > 0) {
-              clients[clientId]!.lastDate = date;
-            }
-          }
-
-          final clientList = clients.values.toList()
-            ..sort((a, b) => b.lastDate.compareTo(a.lastDate));
+          final clientList = snap.data!;
 
           return ListView.builder(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),

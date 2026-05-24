@@ -1,22 +1,116 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/appwrite.dart';
 import 'package:intl/intl.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:shimmer/shimmer.dart';
 
-class ProfessionalHome extends StatefulWidget {
+class ProfessionalHome extends ConsumerStatefulWidget {
   const ProfessionalHome({super.key});
 
   @override
-  State<ProfessionalHome> createState() => _ProfessionalHomeState();
+  ConsumerState<ProfessionalHome> createState() => _ProfessionalHomeState();
 }
 
-class _ProfessionalHomeState extends State<ProfessionalHome> {
-  final _uid = FirebaseAuth.instance.currentUser?.uid;
-  final _firestore = FirebaseFirestore.instance;
+class _ProfessionalHomeState extends ConsumerState<ProfessionalHome> {
+  late Future<Map<String, dynamic>> _dataFuture;
+  late Future<String> _nameFuture;
 
   @override
+  void initState() {
+    super.initState();
+    _refreshData();
+  }
+
+  void _refreshData() {
+    _dataFuture = _fetchStatsAndSessions();
+    _nameFuture = _fetchDoctorName();
+  }
+
+  Future<String> _fetchDoctorName() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return 'Doctor';
+    try {
+      final databases = AppwriteService().databases;
+      final doc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+      );
+      return doc.data['nickname'] ?? doc.data['username'] ?? 'Doctor';
+    } catch (_) {
+      return 'Doctor';
+    }
+  }
+
+  Future<Map<String, dynamic>> _fetchStatsAndSessions() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) {
+      return {
+        'todayCount': 0,
+        'totalClients': 0,
+        'completedCount': 0,
+        'todaySessions': <Map<String, dynamic>>[],
+      };
+    }
+
+    try {
+      final databases = AppwriteService().databases;
+      final allResponse = await databases.listDocuments(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.sessionsCollectionId,
+        queries: [
+          Query.equal('professionalUid', user.$id),
+          Query.limit(100),
+        ],
+      );
+
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      int todayCount = 0;
+      int completedCount = 0;
+      Set<String> clientIds = {};
+      final List<Map<String, dynamic>> todaySessions = [];
+
+      for (var doc in allResponse.documents) {
+        final data = Map<String, dynamic>.from(doc.data);
+        data['id'] = doc.$id;
+
+        if (data['date'] == today) {
+          todaySessions.add(data);
+          if (data['status'] == 'upcoming') {
+            todayCount++;
+          }
+        }
+        if (data['status'] == 'completed') {
+          completedCount++;
+        }
+        if (data['clientUid'] != null) {
+          clientIds.add(data['clientUid']);
+        }
+      }
+
+      todaySessions.sort((a, b) => (a['startTime'] ?? '').compareTo(b['startTime'] ?? ''));
+
+      return {
+        'todayCount': todayCount,
+        'totalClients': clientIds.length,
+        'completedCount': completedCount,
+        'todaySessions': todaySessions,
+      };
+    } catch (e) {
+      debugPrint('Error fetching professional home data: $e');
+      return {
+        'todayCount': 0,
+        'totalClients': 0,
+        'completedCount': 0,
+        'todaySessions': <Map<String, dynamic>>[],
+      };
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -25,90 +119,139 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // ── Header ─────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                child: FutureBuilder<DocumentSnapshot>(
-                  future: _firestore.collection('professionals').doc(_uid).get(),
-                  builder: (context, snap) {
-                    final name = snap.data?.data() != null
-                        ? (snap.data!.data() as Map)['displayName'] ?? 'Doctor'
-                        : 'Doctor';
+        child: RefreshIndicator(
+          onRefresh: () async {
+            setState(() {
+              _refreshData();
+            });
+          },
+          child: CustomScrollView(
+            slivers: [
+              // ── Header ─────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  child: FutureBuilder<String>(
+                    future: _nameFuture,
+                    builder: (context, snap) {
+                      final name = snap.data ?? 'Doctor';
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Good ${_greeting()},',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: theme.textTheme.bodyMedium?.color,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Good ${_greeting()},',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: theme.textTheme.bodyMedium?.color,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Dr. $name 👋',
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            color: theme.textTheme.bodyLarge?.color,
-                            letterSpacing: -0.5,
+                          const SizedBox(height: 4),
+                          Text(
+                            'Dr. $name 👋',
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: theme.textTheme.bodyLarge?.color,
+                              letterSpacing: -0.5,
+                            ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
 
-            // ── Stats Row ──────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                child: _buildStatsRow(theme, isDark),
-              ),
-            ),
+              // ── Stats Row ──────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  child: FutureBuilder<Map<String, dynamic>>(
+                    future: _dataFuture,
+                    builder: (context, snap) {
+                      final todayCount = snap.data?['todayCount'] ?? 0;
+                      final totalClients = snap.data?['totalClients'] ?? 0;
+                      final completedCount = snap.data?['completedCount'] ?? 0;
 
-            // ── Today's Schedule Header ────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 28, 24, 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Today's Schedule",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: theme.textTheme.bodyLarge?.color,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    Text(
-                      DateFormat('MMM d').format(DateTime.now()),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ],
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _StatCard(
+                              label: "Today's Sessions",
+                              value: '$todayCount',
+                              icon: Icons.today_rounded,
+                              color: theme.colorScheme.primary,
+                              theme: theme,
+                              isDark: isDark,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _StatCard(
+                              label: 'Total Clients',
+                              value: '$totalClients',
+                              icon: Icons.people_rounded,
+                              color: theme.colorScheme.secondary,
+                              theme: theme,
+                              isDark: isDark,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _StatCard(
+                              label: 'Completed',
+                              value: '$completedCount',
+                              icon: Icons.check_circle_rounded,
+                              color: AppColors.success,
+                              theme: theme,
+                              isDark: isDark,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
 
-            // ── Today's Sessions Stream ────────────────────────
-            _buildTodaySessions(theme, isDark),
+              // ── Today's Schedule Header ────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Today's Schedule",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: theme.textTheme.bodyLarge?.color,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      Text(
+                        DateFormat('MMM d').format(DateTime.now()),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
-            // ── Bottom padding for nav bar ─────────────────────
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
-          ],
+              // ── Today's Sessions Stream ────────────────────────
+              _buildTodaySessions(theme, isDark),
+
+              // ── Bottom padding for nav bar ─────────────────────
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
+          ),
         ),
       ),
     );
@@ -121,89 +264,17 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
     return 'Evening';
   }
 
-  Widget _buildStatsRow(ThemeData theme, bool isDark) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestore
-          .collection('sessions')
-          .where('professionalUid', isEqualTo: _uid)
-          .snapshots(),
-      builder: (context, snap) {
-        int todayCount = 0;
-        int totalClients = 0;
-        Set<String> clientIds = {};
-
-        if (snap.hasData) {
-          final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-          for (var doc in snap.data!.docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            if (data['date'] == today && data['status'] == 'upcoming') {
-              todayCount++;
-            }
-            if (data['clientUid'] != null) {
-              clientIds.add(data['clientUid']);
-            }
-          }
-          totalClients = clientIds.length;
-        }
-
-        return Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                label: "Today's Sessions",
-                value: '$todayCount',
-                icon: Icons.today_rounded,
-                color: theme.colorScheme.primary,
-                theme: theme,
-                isDark: isDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCard(
-                label: 'Total Clients',
-                value: '$totalClients',
-                icon: Icons.people_rounded,
-                color: theme.colorScheme.secondary,
-                theme: theme,
-                isDark: isDark,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCard(
-                label: 'Completed',
-                value: snap.hasData
-                    ? '${snap.data!.docs.where((d) => (d.data() as Map)['status'] == 'completed').length}'
-                    : '0',
-                icon: Icons.check_circle_rounded,
-                color: AppColors.success,
-                theme: theme,
-                isDark: isDark,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildTodaySessions(ThemeData theme, bool isDark) {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestore
-          .collection('sessions')
-          .where('professionalUid', isEqualTo: _uid)
-          .where('date', isEqualTo: today)
-          .orderBy('startTime')
-          .snapshots(),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _dataFuture,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return SliverToBoxAdapter(child: _buildShimmer(theme, isDark));
         }
 
-        if (!snap.hasData || snap.data!.docs.isEmpty) {
+        final sessions = snap.data?['todaySessions'] as List<Map<String, dynamic>>?;
+
+        if (sessions == null || sessions.isEmpty) {
           return SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
@@ -240,11 +311,9 @@ class _ProfessionalHomeState extends State<ProfessionalHome> {
         return SliverList(
           delegate: SliverChildBuilderDelegate(
             (context, index) {
-              final data =
-                  snap.data!.docs[index].data() as Map<String, dynamic>;
-              return _SessionCard(data: data, theme: theme, isDark: isDark);
+              return _SessionCard(data: sessions[index], theme: theme, isDark: isDark);
             },
-            childCount: snap.data!.docs.length,
+            childCount: sessions.length,
           ),
         );
       },

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:appwrite/models.dart' as models;
 import 'package:share_plus/share_plus.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
@@ -11,13 +11,15 @@ import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
 import 'package:mindsarthi/core/widgets/app_dialog.dart';
 import 'package:mindsarthi/core/widgets/app_action_sheet.dart';
 import 'package:mindsarthi/core/widgets/animated_action_menu.dart';
-import 'package:mindsarthi/features/personal_user/screens/4communitypage/comment_input_screen.dart';
-import 'package:mindsarthi/features/personal_user/screens/4communitypage/report_dialog.dart';
-import 'package:mindsarthi/features/personal_user/screens/4communitypage/hidden_posts_manager.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
+import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_repository.dart';
 import 'comment_screen.dart';
+import 'hidden_posts_manager.dart';
 
-class PostCard extends StatefulWidget {
-  final DocumentSnapshot post;
+class PostCard extends ConsumerStatefulWidget {
+  final PostModel post;
   final bool showCommentIcon;
   final bool isProfileComplete;
   final bool expandComments;
@@ -37,26 +39,25 @@ class PostCard extends StatefulWidget {
   });
 
   @override
-  State<PostCard> createState() => _PostCardState();
+  ConsumerState<PostCard> createState() => _PostCardState();
 }
 
-class _PostCardState extends State<PostCard>
+class _PostCardState extends ConsumerState<PostCard>
     with SingleTickerProviderStateMixin {
   bool isLiked = false;
   int likeCount = 0;
   String? currentUid;
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  bool isFollowing = false;
+  bool isSaved = false;
 
   @override
   void initState() {
     super.initState();
-    currentUid = FirebaseAuth.instance.currentUser?.uid;
-
-    final data = widget.post.data() as Map<String, dynamic>;
-    likeCount = data['likes'] ?? 0;
-    final List<dynamic> likedBy = data['likedBy'] ?? [];
-    isLiked = likedBy.contains(currentUid);
+    currentUid = ref.read(authStateProvider).value?.$id;
+    likeCount = widget.post.likes;
+    isLiked = widget.post.likedBy.contains(currentUid);
 
     // Heart animation setup
     _controller = AnimationController(
@@ -68,6 +69,32 @@ class _PostCardState extends State<PostCard>
       begin: 1.0,
       end: 1.2,
     ).chain(CurveTween(curve: Curves.easeOutBack)).animate(_controller);
+
+    _checkRelations();
+  }
+
+  Future<void> _checkRelations() async {
+    if (currentUid == null) return;
+    try {
+      final databases = AppwriteService().databases;
+      final userDoc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: currentUid!,
+      );
+
+      final following = List<String>.from(userDoc.data['following'] ?? []);
+      final savedPosts = List<String>.from(userDoc.data['savedPosts'] ?? []);
+
+      if (mounted) {
+        setState(() {
+          isFollowing = following.contains(widget.post.uid);
+          isSaved = savedPosts.contains(widget.post.id);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user relations in PostCard: $e');
+    }
   }
 
   @override
@@ -77,23 +104,15 @@ class _PostCardState extends State<PostCard>
   }
 
   Future<void> toggleLike() async {
-    final postRef = FirebaseFirestore.instance
-        .collection('posts')
-        .doc(widget.post.id);
+    if (currentUid == null) return;
 
     if (!isLiked) {
-      // Animate and like
       await _controller.forward();
       await _controller.reverse();
 
       setState(() {
         isLiked = true;
         likeCount += 1;
-      });
-
-      await postRef.update({
-        'likes': FieldValue.increment(1),
-        'likedBy': FieldValue.arrayUnion([currentUid]),
       });
     } else {
       final confirm = await MindSarthiDialog.show(
@@ -105,17 +124,92 @@ class _PostCardState extends State<PostCard>
         isDestructive: true,
       );
 
-      if (confirm ?? false) {
-        setState(() {
-          isLiked = false;
-          likeCount -= 1;
-        });
+      if (!(confirm ?? false)) return;
 
-        await postRef.update({
-          'likes': FieldValue.increment(-1),
-          'likedBy': FieldValue.arrayRemove([currentUid]),
-        });
+      setState(() {
+        isLiked = false;
+        likeCount -= 1;
+      });
+    }
+
+    try {
+      await ref.read(postRepositoryProvider).toggleLike(widget.post.id, currentUid!);
+    } catch (e) {
+      debugPrint('Error toggling like: $e');
+    }
+  }
+
+  Future<void> toggleFollow() async {
+    if (currentUid == null) return;
+
+    final databases = AppwriteService().databases;
+    try {
+      final userDoc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: currentUid!,
+      );
+
+      final following = List<String>.from(userDoc.data['following'] ?? []);
+      if (isFollowing) {
+        following.remove(widget.post.uid);
+      } else {
+        following.add(widget.post.uid);
       }
+
+      await databases.updateDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: currentUid!,
+        data: {'following': following},
+      );
+
+      setState(() {
+        isFollowing = !isFollowing;
+      });
+
+      if (mounted) {
+        AppToast.success(context, isFollowing ? 'Followed user' : 'Unfollowed user');
+      }
+    } catch (e) {
+      debugPrint('Error toggling follow: $e');
+    }
+  }
+
+  Future<void> toggleSave() async {
+    if (currentUid == null) return;
+
+    final databases = AppwriteService().databases;
+    try {
+      final userDoc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: currentUid!,
+      );
+
+      final savedPosts = List<String>.from(userDoc.data['savedPosts'] ?? []);
+      if (isSaved) {
+        savedPosts.remove(widget.post.id);
+      } else {
+        savedPosts.add(widget.post.id);
+      }
+
+      await databases.updateDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: currentUid!,
+        data: {'savedPosts': savedPosts},
+      );
+
+      setState(() {
+        isSaved = !isSaved;
+      });
+
+      if (mounted) {
+        AppToast.success(context, isSaved ? 'Saved post' : 'Removed from Saved');
+      }
+    } catch (e) {
+      debugPrint('Error toggling save: $e');
     }
   }
 
@@ -139,15 +233,12 @@ class _PostCardState extends State<PostCard>
     );
   }
 
-  /// Shows a themed action sheet for post options (Report, Hide, Delete).
-  void _showPostOptions(BuildContext context, Map<String, dynamic> data) {
-    final isOwner = data['uid'] == currentUid;
-    final isAnonymous = data['isAnonymous'] == true;
-
+  void _showPostOptions(BuildContext context) {
+    final isOwner = widget.post.uid == currentUid;
     final actions = <ActionSheetItem>[];
+    final databases = AppwriteService().databases;
 
-    // Owner delete option
-    if (isOwner) {
+    if (isOwner || widget.isModerator) {
       actions.add(ActionSheetItem(
         label: 'Delete Post',
         icon: CupertinoIcons.trash,
@@ -156,110 +247,40 @@ class _PostCardState extends State<PostCard>
           final confirm = await MindSarthiDialog.show(
             context: context,
             title: 'Delete Post?',
-            content:
-                'Are you sure you want to delete this post? This action cannot be undone.',
+            content: 'Are you sure you want to delete this post? This action cannot be undone.',
             confirmText: 'Yes, Delete',
             cancelText: 'Cancel',
             isDestructive: true,
           );
           if (confirm == true) {
-            final postData = Map<String, dynamic>.from(data);
-            final postId = widget.post.id;
-            await FirebaseFirestore.instance
-                .collection('posts')
-                .doc(postId)
-                .delete();
-            if (context.mounted) {
-              AppToast.showUndo(
-                context,
-                'Post deleted',
-                onUndo: () async {
-                  await FirebaseFirestore.instance
-                      .collection('posts')
-                      .doc(postId)
-                      .set(postData);
-                },
-              );
+            await databases.deleteDocument(
+              databaseId: AppwriteConstants.databaseId,
+              collectionId: AppwriteConstants.postsCollectionId,
+              documentId: widget.post.id,
+            );
+            if (mounted) {
+              AppToast.success(context, 'Post deleted');
+              if (widget.onPostHidden != null) {
+                widget.onPostHidden!();
+              }
             }
           }
         },
       ));
     }
 
-    // Moderator delete option
-    if (!isOwner && widget.isModerator) {
-      actions.add(ActionSheetItem(
-        label: 'Delete Post (Moderator)',
-        icon: CupertinoIcons.shield_lefthalf_fill,
-        isDestructive: true,
-        onTap: () async {
-          final confirm = await MindSarthiDialog.show(
-            context: context,
-            title: 'Delete Post (Moderator)?',
-            content:
-                'Are you sure you want to delete this post as a moderator? This action cannot be undone.',
-            confirmText: 'Yes, Delete',
-            cancelText: 'Cancel',
-            isDestructive: true,
-          );
-          if (confirm == true) {
-            final postData = Map<String, dynamic>.from(data);
-            final postId = widget.post.id;
-            await FirebaseFirestore.instance
-                .collection('posts')
-                .doc(postId)
-                .delete();
-            if (context.mounted) {
-              AppToast.showUndo(
-                context,
-                'Post deleted by moderator',
-                onUndo: () async {
-                  await FirebaseFirestore.instance
-                      .collection('posts')
-                      .doc(postId)
-                      .set(postData);
-                },
-              );
-            }
-          }
-        },
-      ));
-    }
-
-    // Hide post option (only for public posts)
-    if (!isAnonymous) {
+    if (!widget.post.isAnonymous) {
       actions.add(ActionSheetItem(
         label: 'Hide Post',
         icon: CupertinoIcons.eye_slash,
         onTap: () async {
-          final postId = widget.post.id;
-          await HiddenPostsManager.hidePost(postId);
+          await HiddenPostsManager.hidePost(widget.post.id);
           if (widget.onPostHidden != null) {
             widget.onPostHidden!();
           }
           if (context.mounted) {
-            AppToast.showUndo(
-              context,
-              'Post hidden',
-              onUndo: () async {
-                await HiddenPostsManager.unhidePost(postId);
-                if (widget.onPostHidden != null) {
-                  widget.onPostHidden!();
-                }
-              },
-            );
+            AppToast.success(context, 'Post hidden');
           }
-        },
-      ));
-    }
-
-    // Report post option (only for public posts, and not owner)
-    if (!isAnonymous && !isOwner) {
-      actions.add(ActionSheetItem(
-        label: 'Report Post',
-        icon: CupertinoIcons.flag,
-        onTap: () {
-          showReportSheet(context, widget.post.id);
         },
       ));
     }
@@ -267,17 +288,15 @@ class _PostCardState extends State<PostCard>
     MindSarthiActionSheet.show(
       context: context,
       title: 'Post Options',
-      subtitle: isAnonymous ? 'Anonymous Friendly Space' : null,
+      subtitle: widget.post.isAnonymous ? 'Anonymous Friendly Space' : null,
       actions: actions,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final data = widget.post.data() as Map<String, dynamic>;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isAnonymous = data['isAnonymous'] == true;
-    final isOwner = data['uid'] == currentUid;
+    final isOwner = currentUid == widget.post.uid;
 
     return NeumorphicContainer(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -286,11 +305,9 @@ class _PostCardState extends State<PostCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Avatar + Username + Options
           Row(
             children: [
-              if (isAnonymous) ...[
-                // Anonymous Avatar & User Details
+              if (widget.post.isAnonymous) ...[
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.background,
@@ -310,12 +327,12 @@ class _PostCardState extends State<PostCard>
                   ),
                 ),
               ] else ...[
-                // Standard Public User
-                FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(data['uid'])
-                      .get(),
+                FutureBuilder<models.Document>(
+                  future: AppwriteService().databases.getDocument(
+                    databaseId: AppwriteConstants.databaseId,
+                    collectionId: AppwriteConstants.usersCollectionId,
+                    documentId: widget.post.uid,
+                  ),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return Row(
@@ -334,9 +351,9 @@ class _PostCardState extends State<PostCard>
                       );
                     }
 
-                    final userData = snapshot.data?.data() as Map<String, dynamic>?;
+                    final userData = snapshot.data?.data;
 
-                    if (userData == null || userData['username'] == null) {
+                    if (userData == null || userData['name'] == null) {
                       return Row(
                         children: [
                           CircleAvatar(
@@ -351,7 +368,7 @@ class _PostCardState extends State<PostCard>
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            'Unknown',
+                            'User',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
@@ -361,17 +378,15 @@ class _PostCardState extends State<PostCard>
                       );
                     }
 
-                    final profileInitial = userData['profileInitial'] ?? '';
-                    final username = userData['username'];
+                    final name = userData['name'].toString();
+                    final profileInitial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
                     return Row(
                       children: [
                         CircleAvatar(
                           backgroundColor: isDark ? AppColors.darkPrimaryLight : AppColors.primaryLight,
                           child: Text(
-                            profileInitial.isNotEmpty
-                                ? profileInitial
-                                : username[0].toUpperCase(),
+                            profileInitial,
                             style: TextStyle(
                               color: isDark ? AppColors.darkPrimary : AppColors.primary,
                               fontWeight: FontWeight.w800,
@@ -380,7 +395,7 @@ class _PostCardState extends State<PostCard>
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          username,
+                          name,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
@@ -397,48 +412,18 @@ class _PostCardState extends State<PostCard>
                             ),
                           ),
                           const SizedBox(width: 8),
-                          StreamBuilder<DocumentSnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(currentUid)
-                                .collection('following')
-                                .doc(data['uid'])
-                                .snapshots(),
-                            builder: (context, followSnapshot) {
-                              final isFollowing = followSnapshot.data?.exists ?? false;
-                              return GestureDetector(
-                                onTap: () async {
-                                  final followRef = FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(currentUid)
-                                      .collection('following')
-                                      .doc(data['uid']);
-                                  if (isFollowing) {
-                                    await followRef.delete();
-                                    if (context.mounted) {
-                                      AppToast.success(context, 'Unfollowed user');
-                                    }
-                                  } else {
-                                    await followRef.set({
-                                      'timestamp': FieldValue.serverTimestamp(),
-                                    });
-                                    if (context.mounted) {
-                                      AppToast.success(context, 'Followed user');
-                                    }
-                                  }
-                                },
-                                child: Text(
-                                  isFollowing ? 'Following' : 'Follow',
-                                  style: TextStyle(
-                                    color: isFollowing 
-                                        ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
-                                        : (isDark ? AppColors.darkPrimary : AppColors.primary),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              );
-                            },
+                          GestureDetector(
+                            onTap: toggleFollow,
+                            child: Text(
+                              isFollowing ? 'Following' : 'Follow',
+                              style: TextStyle(
+                                color: isFollowing 
+                                    ? (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)
+                                    : (isDark ? AppColors.darkPrimary : AppColors.primary),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
                         ],
                       ],
@@ -448,15 +433,11 @@ class _PostCardState extends State<PostCard>
               ],
 
               const Spacer(),
-              // Show options button only for:
-              // 1. Non-anonymous posts (which use the moderation system)
-              // 2. Owner of anonymous posts (to let them delete it)
-              // 3. Moderators (to moderate public posts, note: anonymous posts are unmoderated)
-              if (!isAnonymous || isOwner)
+              if (!widget.post.isAnonymous || isOwner)
                 CupertinoButton(
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
-                  onPressed: () => _showPostOptions(context, data),
+                  onPressed: () => _showPostOptions(context),
                   child: Icon(
                     CupertinoIcons.ellipsis,
                     color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
@@ -467,10 +448,9 @@ class _PostCardState extends State<PostCard>
 
           const SizedBox(height: 12),
 
-          // Title / Header
-          if (data['title'] != null && data['title'].toString().trim().isNotEmpty) ...[
+          if (widget.post.title.trim().isNotEmpty) ...[
             Text(
-              data['title'].toString().trim(),
+              widget.post.title.trim(),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -481,9 +461,8 @@ class _PostCardState extends State<PostCard>
             const SizedBox(height: 8),
           ],
 
-          // Post Content
           MarkdownBody(
-            data: data['content'] ?? '',
+            data: widget.post.content,
             selectable: true,
             styleSheet: MarkdownStyleSheet(
               p: TextStyle(
@@ -542,7 +521,7 @@ class _PostCardState extends State<PostCard>
               ),
             ),
           ),
-          if (data['mediaUrl'] != null && data['mediaUrl'].toString().isNotEmpty) ...[
+          if (widget.post.mediaUrl != null && widget.post.mediaUrl!.isNotEmpty) ...[
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
@@ -550,7 +529,7 @@ class _PostCardState extends State<PostCard>
                 alignment: Alignment.center,
                 children: [
                   Image.network(
-                    data['mediaUrl'],
+                    widget.post.mediaUrl!,
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: 220,
@@ -568,7 +547,7 @@ class _PostCardState extends State<PostCard>
                       );
                     },
                   ),
-                  if (data['mediaType'] == 'video')
+                  if (widget.post.mediaType == 'video')
                     Container(
                       width: 50,
                       height: 50,
@@ -589,10 +568,8 @@ class _PostCardState extends State<PostCard>
           ],
           const SizedBox(height: 16),
 
-          // Bottom Actions
           Row(
             children: [
-              // Like button
               GestureDetector(
                 onTap: toggleLike,
                 child: ScaleTransition(
@@ -613,7 +590,6 @@ class _PostCardState extends State<PostCard>
                 ),
               ),
 
-              // Comment icon and count
               if (widget.showCommentIcon) ...[
                 const SizedBox(width: 20),
                 GestureDetector(
@@ -625,14 +601,10 @@ class _PostCardState extends State<PostCard>
                   ),
                 ),
                 const SizedBox(width: 6),
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('posts')
-                      .doc(widget.post.id)
-                      .collection('comments')
-                      .snapshots(),
+                FutureBuilder<List<CommentModel>>(
+                  future: ref.read(postRepositoryProvider).getComments(widget.post.id),
                   builder: (context, snapshot) {
-                    final count = snapshot.data?.docs.length ?? 0;
+                    final count = snapshot.data?.length ?? 0;
                     return Text(
                       formatCount(count),
                       style: TextStyle(
@@ -644,22 +616,17 @@ class _PostCardState extends State<PostCard>
                 ),
               ],
 
-              // Save/Bookmark and Share actions
-              if (isAnonymous) ...[
+              if (widget.post.isAnonymous) ...[
                 const Spacer(),
                 GestureDetector(
                   onTap: () async {
-                    final textToShare = 'Anonymous Post: "${data['content']}"\nShared via MindSarthi';
+                    final textToShare = 'Anonymous Post: "${widget.post.content}"\nShared via MindSarthi';
                     try {
                       await Share.share(textToShare);
                     } catch (e) {
                       await Clipboard.setData(ClipboardData(text: textToShare));
                       if (context.mounted) {
-                        AppToast.success(
-                          context,
-                          'Link copied to clipboard!',
-                          description: 'Sharing fallback: Copied description to clipboard.',
-                        );
+                        AppToast.success(context, 'Link copied to clipboard!');
                       }
                     }
                   },
@@ -673,62 +640,28 @@ class _PostCardState extends State<PostCard>
                 const Spacer(),
                 AnimatedActionMenu(
                   children: [
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(currentUid)
-                          .collection('saved_posts')
-                          .doc(widget.post.id)
-                          .snapshots(),
-                      builder: (context, savedSnapshot) {
-                        final isSaved = savedSnapshot.data?.exists ?? false;
-                        return GestureDetector(
-                          onTap: () async {
-                            final savedRef = FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(currentUid)
-                                .collection('saved_posts')
-                                .doc(widget.post.id);
-                            if (isSaved) {
-                              await savedRef.delete();
-                              if (context.mounted) {
-                                AppToast.success(context, 'Removed from Saved');
-                              }
-                            } else {
-                              await savedRef.set({
-                                'savedAt': FieldValue.serverTimestamp(),
-                              });
-                              if (context.mounted) {
-                                AppToast.success(context, 'Saved post');
-                              }
-                            }
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Icon(
-                              isSaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark,
-                              color: isSaved 
-                                  ? (isDark ? AppColors.darkPrimary : AppColors.primary)
-                                  : (isDark ? AppColors.darkTextHint : AppColors.textHint),
-                              size: 22,
-                            ),
-                          ),
-                        );
-                      },
+                    GestureDetector(
+                      onTap: toggleSave,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Icon(
+                          isSaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark,
+                          color: isSaved 
+                              ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+                              : (isDark ? AppColors.darkTextHint : AppColors.textHint),
+                          size: 22,
+                        ),
+                      ),
                     ),
                     GestureDetector(
                       onTap: () async {
-                        final textToShare = 'Post by @${data['username'] ?? 'User'}: "${data['content']}"\nShared via MindSarthi';
+                        final textToShare = 'Post: "${widget.post.content}"\nShared via MindSarthi';
                         try {
                           await Share.share(textToShare);
                         } catch (e) {
                           await Clipboard.setData(ClipboardData(text: textToShare));
                           if (context.mounted) {
-                            AppToast.success(
-                              context,
-                              'Link copied to clipboard!',
-                              description: 'Sharing fallback: Copied description to clipboard.',
-                            );
+                            AppToast.success(context, 'Link copied to clipboard!');
                           }
                         }
                       },
@@ -746,126 +679,6 @@ class _PostCardState extends State<PostCard>
               ],
             ],
           ),
-
-          // Inline Comments (Quora style)
-          if (widget.expandComments) ...[
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            // Add a comment prompt
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CommentInputScreen(postId: widget.post.id),
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  "Add a comment...",
-                  style: TextStyle(
-                    color: isDark ? AppColors.darkTextHint : AppColors.textHint,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-            StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('posts')
-                  .doc(widget.post.id)
-                  .collection('comments')
-                  .orderBy('likes', descending: true)
-                  .limit(2)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CupertinoActivityIndicator());
-                }
-                if (snapshot.data!.docs.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      'No comments yet.',
-                      style: TextStyle(
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  );
-                }
-
-                return Column(
-                  children: snapshot.data!.docs.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6.0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            (data['username'] ?? 'Anonymous') + '  ',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              data['text'] ?? '',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                CupertinoIcons.heart, 
-                                size: 14,
-                                color: isDark ? AppColors.darkTextHint : AppColors.textHint,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                (data['likes'] ?? 0).toString(),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isDark ? AppColors.darkTextHint : AppColors.textHint,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-
-            // View all comments link
-            GestureDetector(
-              onTap: widget.onCommentTap ?? openComments,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  'View all comments',
-                  style: TextStyle(
-                    color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

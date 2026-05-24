@@ -1,30 +1,32 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/theme_provider.dart';
 import 'package:mindsarthi/features/organizational_user/screens/org_nav.dart';
 import 'package:mindsarthi/features/personal_user/screens/nav.dart';
 import 'package:mindsarthi/features/professional_user/screens/professional_nav.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider_pkg;
 import 'package:shimmer/shimmer.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 
 /// Routes the authenticated user to the correct Nav screen based on their
-/// Firestore [userRole] field.
+/// Appwrite [userRole] field.
 ///
 /// Supported roles:
 ///   - `personal`       → NavBar (personal user)
 ///   - `professional`   → NavBar (fallback until ProfessionalNavBar exists)
 ///   - `org`            → NavBar (fallback until OrgNavBar exists)
 ///   - missing / null   → NavBar (defaults to personal)
-class RoleRouter extends StatefulWidget {
+class RoleRouter extends ConsumerStatefulWidget {
   const RoleRouter({super.key});
 
   @override
-  State<RoleRouter> createState() => _RoleRouterState();
+  ConsumerState<RoleRouter> createState() => _RoleRouterState();
 }
 
-class _RoleRouterState extends State<RoleRouter> {
+class _RoleRouterState extends ConsumerState<RoleRouter> {
   String? _role;
   bool _loading = true;
 
@@ -36,8 +38,8 @@ class _RoleRouterState extends State<RoleRouter> {
 
   Future<void> _fetchRole() async {
     try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
         if (mounted) {
           setState(() {
             _role = 'personal';
@@ -47,19 +49,21 @@ class _RoleRouterState extends State<RoleRouter> {
         return;
       }
 
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
+      final databases = AppwriteService().databases;
+      final doc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+      );
 
       if (!mounted) return;
 
-      final data = doc.data();
-      final role = data?['userRole'] as String?;
+      final data = doc.data;
+      final role = data['userRole'] as String?;
       final resolvedRole = role ?? 'personal';
 
       if (mounted) {
-        Provider.of<ThemeProvider>(context, listen: false).setRole(resolvedRole);
+        provider_pkg.Provider.of<ThemeProvider>(context, listen: false).setRole(resolvedRole);
       }
 
       setState(() {
@@ -68,7 +72,7 @@ class _RoleRouterState extends State<RoleRouter> {
       });
     } catch (e) {
       if (mounted) {
-        Provider.of<ThemeProvider>(context, listen: false).setRole('personal');
+        provider_pkg.Provider.of<ThemeProvider>(context, listen: false).setRole('personal');
         setState(() {
           _role = 'personal';
           _loading = false;
