@@ -245,9 +245,9 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with TickerProvid
                   width: 90,
                   height: 90,
                   decoration: BoxDecoration(
-                    color: activeTeal.withOpacity(0.15),
+                    color: activeTeal.withValues(alpha:  0.15),
                     shape: BoxShape.circle,
-                    border: Border.all(color: activeTeal.withOpacity(0.3), width: 2),
+                    border: Border.all(color: activeTeal.withValues(alpha:  0.3), width: 2),
                   ),
                   child: Center(
                     child: Icon(
@@ -331,7 +331,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with TickerProvid
                           border: Border.all(
                             color: _isAnimatingError
                                 ? AppColors.error
-                                : (isFilled ? activeTeal : textSecondary.withOpacity(0.4)),
+                                : (isFilled ? activeTeal : textSecondary.withValues(alpha:  0.4)),
                             width: 2.2,
                           ),
                         ),
@@ -388,7 +388,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with TickerProvid
                                 width: 72,
                                 height: 72,
                                 decoration: BoxDecoration(
-                                  color: activeTeal.withOpacity(0.12),
+                                  color: activeTeal.withValues(alpha:  0.12),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
@@ -431,7 +431,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with TickerProvid
 
   Widget _buildKeypadButton(String label, Color textColor, {bool isIcon = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final btnBg = isDark ? AppColors.darkSurface2 : Colors.teal.shade50.withOpacity(0.4);
+    final btnBg = isDark ? AppColors.darkSurface2 : Colors.teal.shade50.withValues(alpha:  0.4);
 
     return InkWell(
       onTap: () => _onKeyPress(label),
@@ -447,7 +447,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with TickerProvid
           child: isIcon 
               ? Icon(
                   CupertinoIcons.delete_left_fill,
-                  color: textColor.withOpacity(0.8),
+                  color: textColor.withValues(alpha:  0.8),
                   size: 24,
                 )
               : Text(

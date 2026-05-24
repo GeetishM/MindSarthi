@@ -174,7 +174,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
                                 Icon(
                                   CupertinoIcons.bell_slash,
                                   size: 64,
-                                  color: textSecondary.withOpacity(0.3),
+                                  color: textSecondary.withValues(alpha:  0.3),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -235,7 +235,9 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
                                 ),
                                 onDismissed: (direction) async {
                                   await box.delete(id);
-                                  AppToast.success(context, 'Notification dismissed');
+                                  if (context.mounted) {
+                                    AppToast.success(context, 'Notification dismissed');
+                                  }
                                 },
                                 child: GestureDetector(
                                   onTap: () async {
@@ -250,12 +252,12 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
                                     decoration: BoxDecoration(
                                       color: isRead 
                                           ? (isDark ? AppColors.darkBackground : Colors.grey.shade50)
-                                          : (isDark ? AppColors.darkSurface : Colors.teal.shade50.withOpacity(0.3)),
+                                          : (isDark ? AppColors.darkSurface : Colors.teal.shade50.withValues(alpha:  0.3)),
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
                                         color: isRead 
                                             ? borderCol 
-                                            : AppColors.primary.withOpacity(0.3),
+                                            : AppColors.primary.withValues(alpha:  0.3),
                                         width: isRead ? 0.8 : 1.2,
                                       ),
                                     ),
@@ -294,7 +296,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
                                                     timeLabel,
                                                     style: TextStyle(
                                                       fontSize: 11,
-                                                      color: textSecondary.withOpacity(0.7),
+                                                      color: textSecondary.withValues(alpha:  0.7),
                                                       fontWeight: FontWeight.w500,
                                                     ),
                                                   ),
@@ -305,7 +307,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
                                                 body,
                                                 style: TextStyle(
                                                   fontSize: 13,
-                                                  color: isRead ? textSecondary : textPrimary.withOpacity(0.9),
+                                                  color: isRead ? textSecondary : textPrimary.withValues(alpha:  0.9),
                                                   height: 1.3,
                                                 ),
                                               ),
@@ -332,12 +334,14 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
-                              side: BorderSide(color: AppColors.error.withOpacity(0.2)),
+                              side: BorderSide(color: AppColors.error.withValues(alpha:  0.2)),
                             ),
                           ),
                           onPressed: () async {
                             await box.clear();
-                            AppToast.success(context, 'All notifications cleared');
+                            if (context.mounted) {
+                              AppToast.success(context, 'All notifications cleared');
+                            }
                           },
                           icon: const Icon(CupertinoIcons.trash, size: 16),
                           label: const Text(

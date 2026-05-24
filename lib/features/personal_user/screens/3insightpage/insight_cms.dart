@@ -167,6 +167,7 @@ class _InsightCmsPageState extends State<InsightCmsPage> {
                     );
                   }
                 } catch (e) {
+                  if (context.mounted) {
                     MindSarthiDialog.show(
                       context: context,
                       title: 'Error',
@@ -174,6 +175,7 @@ class _InsightCmsPageState extends State<InsightCmsPage> {
                       confirmText: 'OK',
                       cancelText: 'Cancel',
                     );
+                  }
                 }
               },
               child: const Text('Save'),

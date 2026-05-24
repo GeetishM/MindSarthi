@@ -304,7 +304,7 @@ class MoodInsightsPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: moodColor.withOpacity(0.12),
+                    color: moodColor.withValues(alpha:  0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -398,7 +398,7 @@ class MoodInsightsPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha:  0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -479,7 +479,7 @@ class MoodInsightsPage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: moodColor.withOpacity(0.12),
+                      color: moodColor.withValues(alpha:  0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(moodIcon, size: 22, color: moodColor),
@@ -629,7 +629,7 @@ class MoodLineChartPainter extends CustomPainter {
 
     // Draw Grid Lines (horizontal)
     final gridPaint = Paint()
-      ..color = (isDark ? AppColors.darkBorder : AppColors.border).withOpacity(0.4)
+      ..color = (isDark ? AppColors.darkBorder : AppColors.border).withValues(alpha:  0.4)
       ..strokeWidth = 0.8;
 
     for (int i = 0; i < 5; i++) {
@@ -675,8 +675,8 @@ class MoodLineChartPainter extends CustomPainter {
 
       final fillShader = LinearGradient(
         colors: [
-          AppColors.primary.withOpacity(isDark ? 0.3 : 0.2),
-          AppColors.primary.withOpacity(0.0),
+          AppColors.primary.withValues(alpha:  isDark ? 0.3 : 0.2),
+          AppColors.primary.withValues(alpha:  0.0),
         ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -695,7 +695,7 @@ class MoodLineChartPainter extends CustomPainter {
 
       // Draw glowing circles on points
       final pointPaint = Paint()..color = AppColors.primary;
-      final glowPaint = Paint()..color = AppColors.primary.withOpacity(0.2);
+      final glowPaint = Paint()..color = AppColors.primary.withValues(alpha:  0.2);
 
       for (var pt in points) {
         canvas.drawCircle(pt, 7.0, glowPaint);

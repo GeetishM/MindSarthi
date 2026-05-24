@@ -212,6 +212,7 @@ class _NavBarState extends ConsumerState<NavBar> {
     );
 
     if (confirmed == true) {
+      if (!context.mounted) return;
       final provider = context.read<ChatProvider>();
       await provider.deletChatMessages(chatId: chat.chatId);
       await chat.delete();
@@ -466,7 +467,7 @@ class _NavBarState extends ConsumerState<NavBar> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: activeColor.withOpacity(0.12),
+              color: activeColor.withValues(alpha:  0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -631,7 +632,7 @@ class _NavBarState extends ConsumerState<NavBar> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: activeColor.withOpacity(0.12),
+                    color: activeColor.withValues(alpha:  0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -697,7 +698,7 @@ class _NavBarState extends ConsumerState<NavBar> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurface2 : AppColors.primaryLight.withOpacity(0.4),
+                        color: isDark ? AppColors.darkSurface2 : AppColors.primaryLight.withValues(alpha:  0.4),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isDark ? AppColors.darkBorder : AppColors.border,
@@ -958,7 +959,7 @@ class _NavBarState extends ConsumerState<NavBar> {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: activeColor.withOpacity(0.12),
+                      color: activeColor.withValues(alpha:  0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -981,7 +982,7 @@ class _NavBarState extends ConsumerState<NavBar> {
                 color: textPrimary,
                 fontSize: 14,
               ),
-              backgroundColor: isDark ? AppColors.darkSurface2 : Colors.teal.shade50.withOpacity(0.4),
+              backgroundColor: isDark ? AppColors.darkSurface2 : Colors.teal.shade50.withValues(alpha:  0.4),
               onChanged: (val) {
                 setState(() {
                   _chatSearchQuery = val;
@@ -1038,7 +1039,7 @@ class _NavBarState extends ConsumerState<NavBar> {
                     return Container(
                       decoration: BoxDecoration(
                         color: isActive
-                            ? (isDark ? AppColors.darkPrimaryLight.withOpacity(0.3) : AppColors.primaryLight.withOpacity(0.5))
+                            ? (isDark ? AppColors.darkPrimaryLight.withValues(alpha:  0.3) : AppColors.primaryLight.withValues(alpha:  0.5))
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1084,7 +1085,7 @@ class _NavBarState extends ConsumerState<NavBar> {
                           constraints: const BoxConstraints(),
                           icon: Icon(
                             CupertinoIcons.delete,
-                            color: AppColors.error.withOpacity(0.7),
+                            color: AppColors.error.withValues(alpha:  0.7),
                             size: 14,
                           ),
                           onPressed: () => _deleteChat(context, chat),

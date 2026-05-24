@@ -108,7 +108,7 @@ class _ThemeToggleSwitchState extends State<ThemeToggleSwitch>
                       color: (t > 0.5
                               ? AppColors.darkPrimary
                               : AppColors.primary)
-                          .withOpacity(0.3),
+                          .withValues(alpha:  0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
@@ -140,8 +140,8 @@ class _ThemeToggleSwitchState extends State<ThemeToggleSwitch>
                             boxShadow: [
                               BoxShadow(
                                 color: t > 0.5
-                                    ? Colors.white.withOpacity(0.3)
-                                    : const Color(0xFFFDD835).withOpacity(0.6),
+                                    ? Colors.white.withValues(alpha:  0.3)
+                                    : const Color(0xFFFDD835).withValues(alpha:  0.6),
                                 blurRadius: 8,
                                 spreadRadius: 1,
                               ),
@@ -289,7 +289,7 @@ class _StarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.7)
+      ..color = Colors.white.withValues(alpha:  0.7)
       ..style = PaintingStyle.fill;
 
     for (final s in _stars) {

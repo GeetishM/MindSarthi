@@ -138,7 +138,7 @@ class _EmotionSelectionPageState extends State<EmotionSelectionPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      widget.mood.color.withOpacity(0.85),
+                      widget.mood.color.withValues(alpha:  0.85),
                       widget.mood.color,
                     ],
                     begin: Alignment.topLeft,
@@ -147,7 +147,7 @@ class _EmotionSelectionPageState extends State<EmotionSelectionPage> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: widget.mood.color.withOpacity(0.3),
+                      color: widget.mood.color.withValues(alpha:  0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 6),
                     ),
@@ -158,7 +158,7 @@ class _EmotionSelectionPageState extends State<EmotionSelectionPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha:  0.2),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(widget.mood.icon, size: 36, color: Colors.white),
@@ -333,7 +333,7 @@ class _EmotionSelectionPageState extends State<EmotionSelectionPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? color.withOpacity(0.15)
+                      ? color.withValues(alpha:  0.15)
                       : (isDark ? AppColors.darkSurface : Colors.white),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
@@ -382,7 +382,7 @@ class _EmotionSelectionPageState extends State<EmotionSelectionPage> {
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
               color: isSelected
-                  ? widget.mood.color.withOpacity(0.15)
+                  ? widget.mood.color.withValues(alpha:  0.15)
                   : (isDark ? AppColors.darkSurface : Colors.white),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(

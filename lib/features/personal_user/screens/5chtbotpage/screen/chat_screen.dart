@@ -115,6 +115,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     isDestructive: false,
                   );
                   if (confirm == true) {
+                    if (!context.mounted) return;
                     final chatProvider = context.read<ChatProvider>();
                     await chatProvider.prepareChatRoom(
                       isNewChat: true,

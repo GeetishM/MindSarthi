@@ -162,15 +162,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         width: 104,
                         height: 104,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.tertiary.withOpacity(0.5),
+                          color: theme.colorScheme.tertiary.withValues(alpha:  0.5),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: theme.colorScheme.primary.withOpacity(0.15),
+                            color: theme.colorScheme.primary.withValues(alpha:  0.15),
                             width: 3,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.shadowColor.withOpacity(0.04),
+                              color: theme.shadowColor.withValues(alpha:  0.04),
                               blurRadius: 16,
                               offset: const Offset(0, 8),
                             ),
@@ -194,7 +194,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           border: Border.all(color: theme.colorScheme.surface, width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.shadowColor.withOpacity(0.1),
+                              color: theme.shadowColor.withValues(alpha:  0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
@@ -232,12 +232,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+                        color: theme.colorScheme.outlineVariant.withValues(alpha:  0.3),
                         width: 1,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.shadowColor.withOpacity(0.03),
+                          color: theme.shadowColor.withValues(alpha:  0.03),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -344,18 +344,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         prefixIcon: Icon(
           icon, 
           size: 22, 
-          color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+          color: theme.textTheme.bodyMedium?.color?.withValues(alpha:  0.8),
         ),
         suffixIcon: readOnly 
             ? Icon(
                 Icons.lock_outline_rounded, 
                 size: 18, 
-                color: theme.textTheme.bodySmall?.color?.withOpacity(0.6)
+                color: theme.textTheme.bodySmall?.color?.withValues(alpha:  0.6)
               ) 
             : null,
         filled: true,
         fillColor: readOnly 
-            ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.2) 
+            ? theme.colorScheme.surfaceContainerHighest.withValues(alpha:  0.2) 
             : theme.inputDecorationTheme.fillColor,
       ),
     );
@@ -375,7 +375,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       borderRadius: BorderRadius.circular(20), // Smooth, premium menu edges
       icon: Icon(
         Icons.keyboard_arrow_down_rounded, // Much cleaner than default arrow
-        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+        color: theme.textTheme.bodyMedium?.color?.withValues(alpha:  0.8),
         size: 26,
       ),
       decoration: InputDecoration(
@@ -383,7 +383,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         prefixIcon: Icon(
           Icons.person_pin_outlined, 
           size: 22, 
-          color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+          color: theme.textTheme.bodyMedium?.color?.withValues(alpha:  0.8),
         ),
         filled: true,
         fillColor: theme.inputDecorationTheme.fillColor,

@@ -51,6 +51,7 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       AppToast.error(context, 'Failed to pick image', description: e.toString());
     }
   }
@@ -65,6 +66,7 @@ class _NewPostScreenState extends ConsumerState<NewPostScreen> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       AppToast.error(context, 'Failed to pick video', description: e.toString());
     }
   }

@@ -71,7 +71,7 @@ class _JournalInsightsScreenState extends State<JournalInsightsScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.analytics_outlined, size: 64, color: textSecondary.withOpacity(0.3)),
+                    Icon(Icons.analytics_outlined, size: 64, color: textSecondary.withValues(alpha:  0.3)),
                     const SizedBox(height: 16),
                     Text(
                       "No analyzed entries yet",
@@ -136,7 +136,7 @@ class _JournalInsightsScreenState extends State<JournalInsightsScreen> {
                     border: Border.all(color: borderCol, width: 0.8),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
+                        color: Colors.black.withValues(alpha:  0.02),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       )
@@ -148,7 +148,7 @@ class _JournalInsightsScreenState extends State<JournalInsightsScreen> {
                         width: 72,
                         height: 72,
                         decoration: BoxDecoration(
-                          color: moodColor.withOpacity(0.1),
+                          color: moodColor.withValues(alpha:  0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -210,9 +210,9 @@ class _JournalInsightsScreenState extends State<JournalInsightsScreen> {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: primaryColor.withOpacity(0.06),
+                          color: primaryColor.withValues(alpha:  0.06),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: primaryColor.withOpacity(0.15), width: 0.8),
+                          border: Border.all(color: primaryColor.withValues(alpha:  0.15), width: 0.8),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -225,7 +225,7 @@ class _JournalInsightsScreenState extends State<JournalInsightsScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                               decoration: BoxDecoration(
-                                color: primaryColor.withOpacity(0.12),
+                                color: primaryColor.withValues(alpha:  0.12),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -281,7 +281,7 @@ class _JournalInsightsScreenState extends State<JournalInsightsScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: primaryColor.withOpacity(0.08),
+                                  color: primaryColor.withValues(alpha:  0.08),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -376,7 +376,7 @@ class _JournalInsightsScreenState extends State<JournalInsightsScreen> {
             border: Border.all(color: borderCol, width: 0.8),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha:  0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               )
@@ -390,7 +390,7 @@ class _JournalInsightsScreenState extends State<JournalInsightsScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: primaryColor.withOpacity(0.1),
+                      color: primaryColor.withValues(alpha:  0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(CupertinoIcons.sparkles, color: primaryColor, size: 18),

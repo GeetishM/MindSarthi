@@ -36,18 +36,18 @@ class StreakCalendar extends StatelessWidget {
               gradient: LinearGradient(
                 colors: isDark 
                   ? [AppColors.darkPrimaryLight, AppColors.darkSurface] 
-                  : [primaryColor.withOpacity(0.12), AppColors.white],
+                  : [primaryColor.withValues(alpha:  0.12), AppColors.white],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: primaryColor.withOpacity(0.2),
+                color: primaryColor.withValues(alpha:  0.2),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+                  color: Colors.black.withValues(alpha:  isDark ? 0.2 : 0.05),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -158,7 +158,7 @@ class StreakCalendar extends StatelessWidget {
               border: Border.all(color: borderCol, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.15 : 0.03),
+                  color: Colors.black.withValues(alpha:  isDark ? 0.15 : 0.03),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -182,14 +182,14 @@ class StreakCalendar extends StatelessWidget {
               ),
               daysOfWeekStyle: DaysOfWeekStyle(
                 weekdayStyle: TextStyle(color: textSecondary, fontWeight: FontWeight.w600, fontSize: 13),
-                weekendStyle: TextStyle(color: primaryColor.withOpacity(0.8), fontWeight: FontWeight.w600, fontSize: 13),
+                weekendStyle: TextStyle(color: primaryColor.withValues(alpha:  0.8), fontWeight: FontWeight.w600, fontSize: 13),
               ),
               calendarStyle: CalendarStyle(
                 defaultTextStyle: TextStyle(color: textPrimary, fontWeight: FontWeight.w500),
                 weekendTextStyle: TextStyle(color: textPrimary, fontWeight: FontWeight.w500),
                 outsideDaysVisible: false,
                 todayDecoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.15),
+                  color: primaryColor.withValues(alpha:  0.15),
                   shape: BoxShape.circle,
                 ),
                 todayTextStyle: TextStyle(

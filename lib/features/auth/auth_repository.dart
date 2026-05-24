@@ -7,9 +7,8 @@ import 'package:appwrite/enums.dart';
 
 class AuthRepository {
   final Account _account;
-  final Databases _databases;
 
-  AuthRepository(this._account, this._databases);
+  AuthRepository(this._account);
 
   /// Sends a 6-digit verification code to the user's email.
   /// Returns the `userId` associated with the token session.
@@ -58,7 +57,7 @@ class AuthRepository {
 /// Provider for AuthRepository.
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final appwrite = AppwriteService();
-  return AuthRepository(appwrite.account, appwrite.databases);
+  return AuthRepository(appwrite.account);
 });
 
 /// StateNotifier to manage user authentication state.

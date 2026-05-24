@@ -581,7 +581,7 @@ class _ConsultPageState extends ConsumerState<ConsultPage> {
                               Icon(
                                 CupertinoIcons.person_crop_circle_badge_exclam,
                                 size: 48,
-                                color: textSecondary.withOpacity(0.4),
+                                color: textSecondary.withValues(alpha:  0.4),
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -818,7 +818,7 @@ class TherapistCard extends StatelessWidget {
                       gradient: LinearGradient(
                         colors: [
                           therapist.avatarColor,
-                          therapist.avatarColor.withOpacity(0.6),
+                          therapist.avatarColor.withValues(alpha:  0.6),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -1036,7 +1036,7 @@ class SessionCard extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               color: isUpcoming
-                  ? primaryColor.withOpacity(0.1)
+                  ? primaryColor.withValues(alpha:  0.1)
                   : (isDark ? AppColors.darkSurface2 : AppColors.border),
               shape: BoxShape.circle,
             ),
@@ -1206,7 +1206,7 @@ class _BookingSheetState extends State<BookingSheet> {
               width: 36,
               height: 5,
               decoration: BoxDecoration(
-                color: textSecondary.withOpacity(0.2),
+                color: textSecondary.withValues(alpha:  0.2),
                 borderRadius: BorderRadius.circular(2.5),
               ),
             ),
@@ -1427,7 +1427,7 @@ class _BookingSheetState extends State<BookingSheet> {
                         _isConfirming = true;
                       });
                       await widget.onBookingConfirmed(_selectedDate, _selectedSlot, _selectedMedium);
-                      if (mounted) {
+                      if (context.mounted) {
                         Navigator.pop(context);
                       }
                     },

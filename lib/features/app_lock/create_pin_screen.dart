@@ -214,7 +214,7 @@ class _CreatePinScreenState extends State<CreatePinScreen> with SingleTickerProv
                           border: Border.all(
                             color: _isAnimatingError
                                 ? AppColors.error
-                                : (isFilled ? activeTeal : textSecondary.withOpacity(0.4)),
+                                : (isFilled ? activeTeal : textSecondary.withValues(alpha:  0.4)),
                             width: 2.2,
                           ),
                         ),
@@ -281,7 +281,7 @@ class _CreatePinScreenState extends State<CreatePinScreen> with SingleTickerProv
 
   Widget _buildKeypadButton(String label, Color textColor, {bool isIcon = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final btnBg = isDark ? AppColors.darkSurface2 : Colors.teal.shade50.withOpacity(0.4);
+    final btnBg = isDark ? AppColors.darkSurface2 : Colors.teal.shade50.withValues(alpha:  0.4);
 
     return InkWell(
       onTap: () => _onKeyPress(label),
@@ -297,7 +297,7 @@ class _CreatePinScreenState extends State<CreatePinScreen> with SingleTickerProv
           child: isIcon 
               ? Icon(
                   CupertinoIcons.delete_left_fill,
-                  color: textColor.withOpacity(0.8),
+                  color: textColor.withValues(alpha:  0.8),
                   size: 24,
                 )
               : Text(

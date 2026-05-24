@@ -258,7 +258,7 @@ class _PostCardState extends ConsumerState<PostCard>
               collectionId: AppwriteConstants.postsCollectionId,
               documentId: widget.post.id,
             );
-            if (mounted) {
+            if (context.mounted) {
               AppToast.success(context, 'Post deleted');
               if (widget.onPostHidden != null) {
                 widget.onPostHidden!();

@@ -49,6 +49,7 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
       // Disable passcode
       await AppLockStorage.setPinEnabled(false);
       await AppLockStorage.setBiometricEnabled(false);
+      if (!mounted) return;
       AppToast.info(context, 'Passcode lock disabled');
       _loadSettings();
     }
@@ -62,6 +63,7 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
 
     bool canCheck = await auth.canCheckBiometrics;
     bool isSupported = await auth.isDeviceSupported();
+    if (!mounted) return;
     if (!canCheck || !isSupported) {
       AppToast.error(context, 'Not Supported', description: 'Biometric authentication is not available on this device.');
       return;
@@ -83,18 +85,21 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
       }
     }
 
+    if (!mounted) return;
     if (enabled && !isAuthenticated) {
       AppToast.error(context, 'Authentication Failed', description: 'Could not verify your biometrics.');
       return;
     }
 
     await AppLockStorage.setBiometricEnabled(enabled);
+    if (!mounted) return;
     setState(() => isBiometricEnabled = enabled);
     AppToast.success(context, enabled ? 'Biometrics enabled' : 'Biometrics disabled');
   }
 
   Future<void> _changeAutoLockDuration(int seconds) async {
     await AppLockStorage.setAutoLockDuration(seconds);
+    if (!mounted) return;
     setState(() => autoLockSeconds = seconds);
     AppToast.success(context, 'Auto-lock setting updated');
   }
@@ -146,7 +151,7 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: activeTeal.withOpacity(0.1),
+                        color: activeTeal.withValues(alpha:  0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -192,7 +197,7 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
                   border: Border.all(color: borderCol, width: 1.2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.15 : 0.03),
+                      color: Colors.black.withValues(alpha:  isDark ? 0.15 : 0.03),
                       blurRadius: 15,
                       offset: const Offset(0, 8),
                     ),
@@ -224,7 +229,7 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
                         onTap: () => _togglePasscode(true),
                         trailing: Icon(
                           CupertinoIcons.chevron_forward,
-                          color: textSecondary.withOpacity(0.5),
+                          color: textSecondary.withValues(alpha:  0.5),
                           size: 20,
                         ),
                       ),
@@ -266,7 +271,7 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
                   'Note: If biometrics or passcodes fail, you can sign out and sign back in with your credentials to restore app access.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: textSecondary.withOpacity(0.8),
+                    color: textSecondary.withValues(alpha:  0.8),
                     height: 1.4,
                   ),
                 ),
@@ -297,7 +302,7 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha:  0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: iconColor, size: 22),
@@ -348,7 +353,7 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
       alignment: Alignment.centerRight,
       icon: Icon(
         CupertinoIcons.chevron_down,
-        color: textSecondary.withOpacity(0.7),
+        color: textSecondary.withValues(alpha:  0.7),
         size: 16,
       ),
       style: TextStyle(

@@ -199,7 +199,7 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                       style: TextStyle(color: textPrimary, fontSize: 16),
                       decoration: InputDecoration(
                         hintText: "What do you want to achieve?",
-                        hintStyle: TextStyle(color: textSecondary.withOpacity(0.5)),
+                        hintStyle: TextStyle(color: textSecondary.withValues(alpha:  0.5)),
                         filled: true,
                         fillColor: isDark ? AppColors.darkBackground : Colors.grey.shade50,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -561,14 +561,14 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                                 color: isSelected 
                                   ? primaryColor 
                                   : isToday 
-                                    ? primaryColor.withOpacity(0.08)
+                                    ? primaryColor.withValues(alpha:  0.08)
                                     : surfaceColor,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: isSelected 
                                     ? primaryColor 
                                     : isToday
-                                      ? primaryColor.withOpacity(0.4)
+                                      ? primaryColor.withValues(alpha:  0.4)
                                       : borderCol,
                                   width: isSelected ? 1.2 : 0.8,
                                 ),
@@ -706,7 +706,7 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                           Icon(
                             CupertinoIcons.doc_text,
                             size: 64,
-                            color: textSecondary.withOpacity(0.3),
+                            color: textSecondary.withValues(alpha:  0.3),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -748,7 +748,7 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: task.isCompleted 
-                                  ? AppColors.success.withOpacity(0.3) 
+                                  ? AppColors.success.withValues(alpha:  0.3) 
                                   : borderCol,
                                 width: task.isCompleted ? 1.2 : 0.8,
                               ),
@@ -771,7 +771,7 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                                     border: Border.all(
                                       color: task.isCompleted 
                                         ? AppColors.success 
-                                        : textSecondary.withOpacity(0.4),
+                                        : textSecondary.withValues(alpha:  0.4),
                                       width: 1.5,
                                     ),
                                   ),
@@ -813,7 +813,7 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
-                                          color: catColor.withOpacity(0.08),
+                                          color: catColor.withValues(alpha:  0.08),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Row(
@@ -840,7 +840,7 @@ class _TodaysGoalsState extends State<TodaysGoals> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                           decoration: BoxDecoration(
-                                            color: Colors.orange.withOpacity(0.08),
+                                            color: Colors.orange.withValues(alpha:  0.08),
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                           child: Row(

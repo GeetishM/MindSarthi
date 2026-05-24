@@ -62,7 +62,7 @@ class _ShadowJournalScreenState extends State<ShadowJournalScreen> {
               Text(
                 "Provide a Gemini API Key to enable AI-driven Shadow Journaling. Get one for free from Google AI Studio.",
                 style: TextStyle(
-                  color: textPrimary.withOpacity(0.7),
+                  color: textPrimary.withValues(alpha:  0.7),
                   fontSize: 13,
                 ),
               ),
@@ -285,7 +285,7 @@ class _ShadowJournalScreenState extends State<ShadowJournalScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
+                    color: AppColors.accent.withValues(alpha:  0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -454,7 +454,7 @@ class _ShadowJournalScreenState extends State<ShadowJournalScreen> {
                         textCapitalization: TextCapitalization.sentences,
                         decoration: InputDecoration(
                           hintText: "Reflect on your thoughts...",
-                          hintStyle: TextStyle(color: textSecondary.withOpacity(0.5)),
+                          hintStyle: TextStyle(color: textSecondary.withValues(alpha:  0.5)),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -499,7 +499,7 @@ class _ShadowJournalScreenState extends State<ShadowJournalScreen> {
   }) {
     final bubbleBg = isUser
         ? primaryColor
-        : (isDark ? AppColors.darkPrimaryLight : primaryColor.withOpacity(0.08));
+        : (isDark ? AppColors.darkPrimaryLight : primaryColor.withValues(alpha:  0.08));
     final textColor = isUser
         ? Colors.white
         : textPrimary;
@@ -593,7 +593,7 @@ class _ShadowJournalScreenState extends State<ShadowJournalScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark
                   ? AppColors.darkPrimaryLight
-                  : primaryColor.withOpacity(0.08),
+                  : primaryColor.withValues(alpha:  0.08),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -671,7 +671,7 @@ class _BlinkingDotState extends State<_BlinkingDot> with SingleTickerProviderSta
         width: 6,
         height: 6,
         decoration: BoxDecoration(
-          color: textSecondary.withOpacity(0.6),
+          color: textSecondary.withValues(alpha:  0.6),
           shape: BoxShape.circle,
         ),
       ),

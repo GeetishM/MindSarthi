@@ -159,7 +159,7 @@ class _CommentScreenState extends ConsumerState<CommentScreen> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha:  0.15),
                 blurRadius: 20,
                 offset: const Offset(0, -5),
               ),
@@ -362,7 +362,7 @@ class _CommentScreenState extends ConsumerState<CommentScreen> {
                                   : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
                               fontWeight: selected ? FontWeight.bold : FontWeight.w500,
                             ),
-                            backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.border.withOpacity(0.2),
+                            backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.border.withValues(alpha:  0.2),
                             side: BorderSide(
                               color: selected 
                                   ? Colors.transparent 
@@ -663,7 +663,7 @@ class _ReplyTile extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 12,
-                backgroundColor: isDark ? AppColors.darkPrimary.withOpacity(0.2) : AppColors.primary.withOpacity(0.1),
+                backgroundColor: isDark ? AppColors.darkPrimary.withValues(alpha:  0.2) : AppColors.primary.withValues(alpha:  0.1),
                 child: Text(
                   initial,
                   style: TextStyle(

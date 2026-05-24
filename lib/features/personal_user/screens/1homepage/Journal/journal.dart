@@ -64,7 +64,7 @@ class _JournalState extends State<Journal> {
               Text(
                 "Provide a Gemini API Key to enable voice transcription. Get one for free from Google AI Studio.",
                 style: TextStyle(
-                  color: textPrimary.withOpacity(0.7),
+                  color: textPrimary.withValues(alpha:  0.7),
                   fontSize: 13,
                 ),
               ),
@@ -267,7 +267,7 @@ class _JournalState extends State<Journal> {
                     Icon(
                       CupertinoIcons.book,
                       size: 64,
-                      color: textSecondary.withOpacity(0.3),
+                      color: textSecondary.withValues(alpha:  0.3),
                     ),
                     const SizedBox(height: 20),
                     Text(
@@ -353,7 +353,7 @@ class _JournalState extends State<Journal> {
                                             vertical: 3,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: primaryColor.withOpacity(
+                                            color: primaryColor.withValues(alpha:  
                                               0.08,
                                             ),
                                             borderRadius: BorderRadius.circular(
@@ -387,7 +387,7 @@ class _JournalState extends State<Journal> {
                                   Icon(
                                     CupertinoIcons.chevron_right,
                                     size: 14,
-                                    color: textSecondary.withOpacity(0.6),
+                                    color: textSecondary.withValues(alpha:  0.6),
                                   ),
                                 ],
                               ),
@@ -490,7 +490,7 @@ class _JournalState extends State<Journal> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: primaryColor.withOpacity(0.35),
+              color: primaryColor.withValues(alpha:  0.35),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),

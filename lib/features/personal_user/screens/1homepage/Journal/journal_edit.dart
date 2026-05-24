@@ -231,7 +231,8 @@ class _JournalEditState extends State<JournalEdit> {
     final deletedIndex = widget.index;
 
     await deletedEntry.delete();
-    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    Navigator.of(context).pop();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -389,31 +390,37 @@ class _JournalEditState extends State<JournalEdit> {
                       }
                       _hasUnsavedChanges = true;
                     });
-                    if (mounted) Navigator.pop(context); // Close sheet
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Transcribed text appended successfully!")),
-                    );
+                    if (context.mounted) {
+                      Navigator.pop(context); // Close sheet
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Transcribed text appended successfully!")),
+                      );
+                    }
                   }
                 } catch (e) {
-                  if (e.toString().contains("API_KEY_MISSING")) {
-                    setModalState(() {
-                      isTranscribing = false;
-                    });
-                    _showApiKeyRequestDialog(() {
+                  if (context.mounted) {
+                    if (e.toString().contains("API_KEY_MISSING")) {
                       setModalState(() {
-                        isTranscribing = true;
+                        isTranscribing = false;
                       });
-                      stopAndTranscribe();
-                    });
-                  } else {
-                    if (mounted) Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("AI Transcription failed: $e")),
-                    );
+                      _showApiKeyRequestDialog(() {
+                        setModalState(() {
+                          isTranscribing = true;
+                        });
+                        stopAndTranscribe();
+                      });
+                    } else {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("AI Transcription failed: $e")),
+                      );
+                    }
                   }
                 }
               } else {
-                if (mounted) Navigator.pop(context);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
               }
             }
 
@@ -422,7 +429,9 @@ class _JournalEditState extends State<JournalEdit> {
               durationTimer?.cancel();
               waveTimer?.cancel();
               await _stopRecording();
-              if (mounted) Navigator.pop(context);
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
             }
 
             // Pause
@@ -522,7 +531,7 @@ class _JournalEditState extends State<JournalEdit> {
                           width: 4,
                           height: h,
                           decoration: BoxDecoration(
-                            color: isPaused ? textSecondary.withOpacity(0.4) : primaryColor,
+                            color: isPaused ? textSecondary.withValues(alpha:  0.4) : primaryColor,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         );
@@ -546,7 +555,7 @@ class _JournalEditState extends State<JournalEdit> {
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: primaryColor.withOpacity(0.1),
+                              color: primaryColor.withValues(alpha:  0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -713,7 +722,7 @@ class _JournalEditState extends State<JournalEdit> {
                     fontWeight: FontWeight.w500,
                     color: _saveStatus == "Saving..." 
                         ? primaryColor 
-                        : textSecondary.withOpacity(0.6),
+                        : textSecondary.withValues(alpha:  0.6),
                   ),
                 ),
               ],
@@ -753,7 +762,7 @@ class _JournalEditState extends State<JournalEdit> {
               style: TextStyle(color: textPrimary, fontSize: 16),
               decoration: InputDecoration(
                 hintText: "Give your entry a title...",
-                hintStyle: TextStyle(color: textSecondary.withOpacity(0.4)),
+                hintStyle: TextStyle(color: textSecondary.withValues(alpha:  0.4)),
                 filled: true,
                 fillColor: surfaceColor,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -792,7 +801,7 @@ class _JournalEditState extends State<JournalEdit> {
                     style: TextStyle(color: textPrimary, fontSize: 15),
                     decoration: InputDecoration(
                       hintText: "Add topic tag...",
-                      hintStyle: TextStyle(color: textSecondary.withOpacity(0.4)),
+                      hintStyle: TextStyle(color: textSecondary.withValues(alpha:  0.4)),
                       filled: true,
                       fillColor: surfaceColor,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -818,7 +827,7 @@ class _JournalEditState extends State<JournalEdit> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: primaryColor.withOpacity(0.1),
+                      color: primaryColor.withValues(alpha:  0.1),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(CupertinoIcons.plus, color: primaryColor, size: 20),
@@ -839,7 +848,7 @@ class _JournalEditState extends State<JournalEdit> {
                           style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                         deleteIcon: Icon(CupertinoIcons.clear, size: 12, color: primaryColor),
-                        backgroundColor: primaryColor.withOpacity(0.08),
+                        backgroundColor: primaryColor.withValues(alpha:  0.08),
                         side: BorderSide.none,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         onDeleted: () => _removeTag(tag),
@@ -895,7 +904,7 @@ class _JournalEditState extends State<JournalEdit> {
                   style: TextStyle(color: textPrimary, fontSize: 15, height: 1.4),
                   decoration: InputDecoration(
                     hintText: "Update your thoughts here...",
-                    hintStyle: TextStyle(color: textSecondary.withOpacity(0.4)),
+                    hintStyle: TextStyle(color: textSecondary.withValues(alpha:  0.4)),
                   ),
                 ),
               ),

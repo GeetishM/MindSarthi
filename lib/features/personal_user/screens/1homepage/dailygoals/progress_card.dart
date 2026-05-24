@@ -44,7 +44,7 @@ class ProgressCard extends StatelessWidget {
         border: Border.all(color: borderCol, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.15 : 0.04),
+            color: Colors.black.withValues(alpha:  isDark ? 0.15 : 0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -62,7 +62,7 @@ class ProgressCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: progressColor.withOpacity(0.12),
+                      color: progressColor.withValues(alpha:  0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(

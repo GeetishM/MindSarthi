@@ -66,6 +66,7 @@ dependencies:
   local_auth: ^2.3.0
   geolocator: ^13.0.2
   shared_preferences: ^2.5.3
+  http: ^1.2.1
   flutter_slidable: ^4.0.0
   flutter_sound: ^9.28.0
   anim_search_bar: ^2.0.3
