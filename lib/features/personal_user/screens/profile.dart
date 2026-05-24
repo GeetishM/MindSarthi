@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/localization/app_localizations.dart';
 
@@ -110,110 +109,140 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      // Scaffold background color is automatically inherited from the theme
       appBar: AppBar(
         title: Text(context.tr('prof_title')),
         centerTitle: true,
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(
-                color: AppColors.primary,
+                color: theme.colorScheme.primary,
                 strokeWidth: 2.5,
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
                 children: [
-                  // ── Avatar ──────────────────────────────────
-                  Container(
-                    width: 88,
-                    height: 88,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.border, width: 2),
-                    ),
-                    child: Center(
-                      child: Text(
-                        _profileInitial ?? 'U',
-                        style: const TextStyle(
-                          fontSize: 36,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
+                  // ── Avatar Section ──────────────────────────────────
+                  Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Container(
+                        width: 96,
+                        height: 96,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.tertiary, // primaryLight mapped to tertiary in theme
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withOpacity(0.2), 
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.shadowColor.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Your Profile',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'This information is private and secure',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // ── Form card ───────────────────────────────
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        _buildInput(context.tr('prof_username'), _usernameController, Icons.person_outline_rounded),
-                        const SizedBox(height: 14),
-                        _buildInput(context.tr('prof_nickname'), _nicknameController, Icons.tag_rounded),
-                        const SizedBox(height: 14),
-                        _buildInput(
-                          context.tr('prof_phone'),
-                          TextEditingController(text: _phoneNumber),
-                          Icons.phone_outlined,
-                          readOnly: true,
-                        ),
-                        const SizedBox(height: 14),
-                        _buildDropdown(context),
-                        const SizedBox(height: 14),
-                        _buildInput(
-                          context.tr('prof_age'),
-                          _ageController,
-                          Icons.cake_outlined,
-                          keyboardType: TextInputType.number,
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isSaving ? null : _saveProfile,
-                            child: _isSaving
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: AppColors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Text(context.tr('prof_save')),
+                        child: Center(
+                          child: Text(
+                            _profileInitial ?? 'U',
+                            style: theme.textTheme.displayMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                            ),
                           ),
                         ),
-                      ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.secondary, // Accent color mapped to secondary
+                          shape: BoxShape.circle,
+                          border: Border.all(color: theme.colorScheme.surface, width: 2),
+                        ),
+                        child: Icon(
+                          Icons.edit_rounded,
+                          size: 14,
+                          color: theme.colorScheme.onSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Your Profile',
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'This information is private and secure',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // ── Form Card ───────────────────────────────
+                  Card(
+                    // Card styling is inherited directly from AppTheme's cardTheme
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          _buildInput(
+                            context,
+                            context.tr('prof_username'),
+                            _usernameController,
+                            Icons.person_outline_rounded,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildInput(
+                            context,
+                            context.tr('prof_nickname'),
+                            _nicknameController,
+                            Icons.tag_rounded,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildInput(
+                            context,
+                            context.tr('prof_phone'),
+                            TextEditingController(text: _phoneNumber),
+                            Icons.phone_outlined,
+                            readOnly: true,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildDropdown(context),
+                          const SizedBox(height: 16),
+                          _buildInput(
+                            context,
+                            context.tr('prof_age'),
+                            _ageController,
+                            Icons.cake_outlined,
+                            keyboardType: TextInputType.number,
+                          ),
+                          const SizedBox(height: 32),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isSaving ? null : _saveProfile,
+                              child: _isSaving
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : Text(context.tr('prof_save')),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -222,44 +251,67 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // Helper widget builder using dynamic Theme context
   Widget _buildInput(
+    BuildContext context,
     String label,
     TextEditingController controller,
     IconData icon, {
     bool readOnly = false,
     TextInputType keyboardType = TextInputType.text,
   }) {
+    final theme = Theme.of(context);
+    
     return TextField(
       controller: controller,
       readOnly: readOnly,
       keyboardType: keyboardType,
-      style: const TextStyle(
-        fontSize: 14,
-        color: AppColors.textPrimary,
+      style: theme.textTheme.bodyLarge?.copyWith(
+        color: readOnly ? theme.textTheme.bodyMedium?.color : theme.textTheme.bodyLarge?.color,
       ),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, size: 20, color: AppColors.textSecondary),
+        prefixIcon: Icon(
+          icon, 
+          size: 20, 
+          color: theme.textTheme.bodyMedium?.color,
+        ),
+        suffixIcon: readOnly 
+            ? Icon(Icons.lock_outline_rounded, size: 16, color: theme.textTheme.bodySmall?.color) 
+            : null,
+        // If readOnly, slightly dim the background by ignoring the default filled color
         filled: true,
-        fillColor: readOnly ? AppColors.background : AppColors.white,
+        fillColor: readOnly 
+            ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3) 
+            : theme.inputDecorationTheme.fillColor,
       ),
     );
   }
 
   Widget _buildDropdown(BuildContext context) {
+    final theme = Theme.of(context);
+
     return DropdownButtonFormField<String>(
-      initialValue: _selectedGender,
-      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+      value: _selectedGender,
+      style: theme.textTheme.bodyLarge,
+      dropdownColor: theme.colorScheme.surface,
+      iconEnabledColor: theme.colorScheme.primary,
       decoration: InputDecoration(
         labelText: context.tr('prof_gender'),
-        prefixIcon: const Icon(Icons.person_pin_outlined, size: 20, color: AppColors.textSecondary),
-        filled: true,
-        fillColor: AppColors.white,
+        prefixIcon: Icon(
+          Icons.person_pin_outlined, 
+          size: 20, 
+          color: theme.textTheme.bodyMedium?.color,
+        ),
       ),
       items: _genders
           .map((e) => DropdownMenuItem(value: e, child: Text(e)))
           .toList(),
-      onChanged: (val) => setState(() => _selectedGender = val!),
+      onChanged: (val) {
+        if (val != null) {
+          setState(() => _selectedGender = val);
+        }
+      },
     );
   }
 }

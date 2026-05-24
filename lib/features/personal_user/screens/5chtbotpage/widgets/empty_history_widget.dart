@@ -25,7 +25,7 @@ class EmptyHistoryWidget extends StatelessWidget {
           ),
           child: const Padding(
             padding: EdgeInsets.all(8.0),
-            child: Text('No chat foune, start a new chat!'),
+            child: Text('No chat found, start a new chat!'),
           ),
         ),
       ),
