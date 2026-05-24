@@ -59,9 +59,15 @@ class _CommunityPageState extends State<CommunityPage> {
     'All': 'Be the first to share an anonymous thought!',
   };
 
+  late final Stream<QuerySnapshot> _postsStream;
+
   @override
   void initState() {
     super.initState();
+    _postsStream = FirebaseFirestore.instance
+        .collection('posts')
+        .orderBy('timestamp', descending: true)
+        .snapshots();
     _checkProfileStatus();
     _loadHiddenPosts();
     _setupFollowingAndSavedListeners();
@@ -223,13 +229,12 @@ class _CommunityPageState extends State<CommunityPage> {
     chipKeys = List.generate(filtersList.length, (_) => GlobalKey());
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final surfaceColor = isDark ? AppColors.darkSurface : AppColors.surface;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: surfaceColor,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         title: Text(
           'CONNECT',
@@ -241,7 +246,7 @@ class _CommunityPageState extends State<CommunityPage> {
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
+            padding: const EdgeInsets.only(right: 24.0),
             child: Center(
               child: AnimatedActionMenu(
                 expandLeft: true,
@@ -285,227 +290,223 @@ class _CommunityPageState extends State<CommunityPage> {
             ),
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(164),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Segmented Control (Public Feed vs. Anonymous Space)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: CupertinoSlidingSegmentedControl<int>(
-                    groupValue: _selectedSegment,
-                    backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
-                    thumbColor: isDark ? AppColors.darkPrimary : AppColors.white,
-                    children: {
-                      0: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Text(
-                          'Public Feed',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: _selectedSegment == 0
-                                ? (isDark ? AppColors.darkBackground : AppColors.primaryDark)
-                                : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                          ),
-                        ),
-                      ),
-                      1: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Text(
-                          'Anonymous Space',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: _selectedSegment == 1
-                                ? (isDark ? AppColors.darkBackground : AppColors.primaryDark)
-                                : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                          ),
-                        ),
-                      ),
-                    },
-                    onValueChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedSegment = val;
-                          selectedFilter = 'Popular';
-                        });
-                      }
-                    },
-                  ),
-                ),
-              ),
-
-              // Search Bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: PremiumSearchBar(
-                  controller: _searchController,
-                  hintText: 'Search topics...',
-                  onChanged: (val) {
-                    setState(() {
-                      _searchQuery = val.toLowerCase().trim();
-                    });
-                  },
-                ),
-              ),
-
-              // Filter Chips
-              SizedBox(
-                height: 50,
-                child: ListView.separated(
-                  controller: _chipScrollController,
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: filtersList.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final filter = filtersList[index];
-                    final isSelected = selectedFilter == filter;
-                    return ChoiceChip(
-                      key: chipKeys[index],
-                      label: Text(filter),
-                      selected: isSelected,
-                      showCheckmark: false,
-                      pressElevation: 0,
-                      elevation: 0,
-                      onSelected: (_) {
-                        setState(() {
-                          selectedFilter = filter;
-                        });
-                        _scrollToSelectedChip(index);
-                      },
-                      selectedColor: isDark ? AppColors.darkPrimary : AppColors.primary,
-                      labelStyle: TextStyle(
-                        color: isSelected 
-                            ? AppColors.white 
-                            : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        fontSize: 14,
-                      ),
-                      backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.background,
-                      side: BorderSide(
-                        color: isSelected 
-                            ? Colors.transparent 
-                            : (isDark ? AppColors.darkBorder : AppColors.border),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
       ),
-      body: _isCheckingProfile
-          ? const Center(child: CupertinoActivityIndicator())
-          : StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('posts')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return _buildShimmerList();
-                }
-
-                final rawPosts = snapshot.data?.docs ?? [];
-                final posts = rawPosts.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>?;
-                  if (data == null) return true;
-
-                  // 1. Filter out locally hidden posts
-                  if (_hiddenPostIds.contains(doc.id)) return false;
-
-                  // 2. Filter out posts with 5 or more reports
-                  final reportsCount = data['reportsCount'] ?? 0;
-                  if (reportsCount >= 5) return false;
-
-                  // 3. Filter out posts reported by the current user
-                  final reportedBy = data['reportedBy'];
-                  if (reportedBy is List && reportedBy.contains(uid)) {
-                    return false;
+      body: Column(
+        children: [
+          // Segmented Control (Public Feed vs. Anonymous Space)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: CupertinoSlidingSegmentedControl<int>(
+                groupValue: _selectedSegment,
+                backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+                thumbColor: isDark ? AppColors.darkPrimary : AppColors.white,
+                children: {
+                  0: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Text(
+                      'Public Feed',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: _selectedSegment == 0
+                            ? (isDark ? AppColors.darkBackground : AppColors.primaryDark)
+                            : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                      ),
+                    ),
+                  ),
+                  1: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Text(
+                      'Anonymous Space',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: _selectedSegment == 1
+                            ? (isDark ? AppColors.darkBackground : AppColors.primaryDark)
+                            : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                      ),
+                    ),
+                  ),
+                },
+                onValueChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _selectedSegment = val;
+                      selectedFilter = 'Popular';
+                    });
                   }
+                },
+              ),
+            ),
+          ),
 
-                  // 4. Filter by Segmented Control selection (isAnonymous)
-                  final isAnon = data['isAnonymous'] == true;
-                  if (_selectedSegment == 0) {
-                    if (isAnon) return false;
-                  } else {
-                    if (!isAnon) return false;
-                  }
-
-                  // 5. Search filtering
-                  if (_searchQuery.isNotEmpty) {
-                    final content = (data['content'] ?? '').toString().toLowerCase();
-                    if (!content.contains(_searchQuery)) {
-                      return false;
-                    }
-                  }
-
-                  return true;
-                }).toList();
-
-                if (selectedFilter == 'Popular') {
-                  posts.sort((a, b) {
-                    final aData = a.data() as Map<String, dynamic>?;
-                    final bData = b.data() as Map<String, dynamic>?;
-                    final aLikes = aData?['likes'] ?? 0;
-                    final bLikes = bData?['likes'] ?? 0;
-                    final aComments = aData?['commentCount'] ?? 0;
-                    final bComments = bData?['commentCount'] ?? 0;
-                    return ((bLikes + bComments) - (aLikes + aComments));
-                  });
-                }
-
-                if (selectedFilter == 'My posts') {
-                  return _buildFilteredPostList(
-                    posts.where((doc) {
-                      final data = doc.data() as Map<String, dynamic>?;
-                      return data?['uid'] == uid;
-                    }).toList(),
-                  );
-                }
-
-                if (selectedFilter == 'Following') {
-                  final followingPosts = posts.where((doc) {
-                    final data = doc.data() as Map<String, dynamic>?;
-                    final postUid = data?['uid'];
-                    return _followingUids.contains(postUid);
-                  }).toList();
-                  return _buildFilteredPostList(followingPosts);
-                }
-
-                if (selectedFilter == 'Saved') {
-                  final savedPosts = posts.where((doc) {
-                    return _savedPostIds.contains(doc.id);
-                  }).toList();
-                  return _buildFilteredPostList(savedPosts);
-                }
-
-                if (selectedFilter == 'My comments') {
-                  return FutureBuilder<List<DocumentSnapshot>>(
-                    future: _fetchCommentedPosts(posts),
-                    builder: (context, snap) {
-                      if (!snap.hasData) return _buildShimmerList();
-                      if (snap.data!.isEmpty) {
-                        return _buildEmptyMessage(
-                          "You haven't commented on any posts yet.",
-                        );
-                      }
-                      return _buildFilteredPostList(snap.data!);
-                    },
-                  );
-                }
-
-                return _buildFilteredPostList(posts);
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: PremiumSearchBar(
+              controller: _searchController,
+              hintText: 'Search topics...',
+              onChanged: (val) {
+                setState(() {
+                  _searchQuery = val.toLowerCase().trim();
+                });
               },
             ),
+          ),
+
+          // Filter Chips
+          SizedBox(
+            height: 50,
+            child: ListView.separated(
+              controller: _chipScrollController,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: filtersList.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final filter = filtersList[index];
+                final isSelected = selectedFilter == filter;
+                return ChoiceChip(
+                  key: chipKeys[index],
+                  label: Text(filter),
+                  selected: isSelected,
+                  showCheckmark: false,
+                  pressElevation: 0,
+                  elevation: 0,
+                  onSelected: (_) {
+                    setState(() {
+                      selectedFilter = filter;
+                    });
+                    _scrollToSelectedChip(index);
+                  },
+                  selectedColor: isDark ? AppColors.darkPrimary : AppColors.primary,
+                  labelStyle: TextStyle(
+                    color: isSelected 
+                        ? AppColors.white 
+                        : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                  backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.background,
+                  side: BorderSide(
+                    color: isSelected 
+                        ? Colors.transparent 
+                        : (isDark ? AppColors.darkBorder : AppColors.border),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          Expanded(
+            child: _isCheckingProfile
+                ? const Center(child: CupertinoActivityIndicator())
+                : StreamBuilder<QuerySnapshot>(
+                    stream: _postsStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return _buildShimmerList();
+                      }
+
+                      final rawPosts = snapshot.data?.docs ?? [];
+                      final posts = rawPosts.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>?;
+                        if (data == null) return true;
+
+                        // 1. Filter out locally hidden posts
+                        if (_hiddenPostIds.contains(doc.id)) return false;
+
+                        // 2. Filter out posts with 5 or more reports
+                        final reportsCount = data['reportsCount'] ?? 0;
+                        if (reportsCount >= 5) return false;
+
+                        // 3. Filter out posts reported by the current user
+                        final reportedBy = data['reportedBy'];
+                        if (reportedBy is List && reportedBy.contains(uid)) {
+                          return false;
+                        }
+
+                        // 4. Filter by Segmented Control selection (isAnonymous)
+                        final isAnon = data['isAnonymous'] == true;
+                        if (_selectedSegment == 0) {
+                          if (isAnon) return false;
+                        } else {
+                          if (!isAnon) return false;
+                        }
+
+                        // 5. Search filtering
+                        if (_searchQuery.isNotEmpty) {
+                          final content = (data['content'] ?? '').toString().toLowerCase();
+                          if (!content.contains(_searchQuery)) {
+                            return false;
+                          }
+                        }
+
+                        return true;
+                      }).toList();
+
+                      if (selectedFilter == 'Popular') {
+                        posts.sort((a, b) {
+                          final aData = a.data() as Map<String, dynamic>?;
+                          final bData = b.data() as Map<String, dynamic>?;
+                          final aLikes = aData?['likes'] ?? 0;
+                          final bLikes = bData?['likes'] ?? 0;
+                          final aComments = aData?['commentCount'] ?? 0;
+                          final bComments = bData?['commentCount'] ?? 0;
+                          return ((bLikes + bComments) - (aLikes + aComments));
+                        });
+                      }
+
+                      if (selectedFilter == 'My posts') {
+                        return _buildFilteredPostList(
+                          posts.where((doc) {
+                            final data = doc.data() as Map<String, dynamic>?;
+                            return data?['uid'] == uid;
+                          }).toList(),
+                        );
+                      }
+
+                      if (selectedFilter == 'Following') {
+                        final followingPosts = posts.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>?;
+                          final postUid = data?['uid'];
+                          return _followingUids.contains(postUid);
+                        }).toList();
+                        return _buildFilteredPostList(followingPosts);
+                      }
+
+                      if (selectedFilter == 'Saved') {
+                        final savedPosts = posts.where((doc) {
+                          return _savedPostIds.contains(doc.id);
+                        }).toList();
+                        return _buildFilteredPostList(savedPosts);
+                      }
+
+                      if (selectedFilter == 'My comments') {
+                        return FutureBuilder<List<DocumentSnapshot>>(
+                          future: _fetchCommentedPosts(posts),
+                          builder: (context, snap) {
+                            if (!snap.hasData) return _buildShimmerList();
+                            if (snap.data!.isEmpty) {
+                              return _buildEmptyMessage(
+                                "You haven't commented on any posts yet.",
+                              );
+                            }
+                            return _buildFilteredPostList(snap.data!);
+                          },
+                        );
+                      }
+
+                      return _buildFilteredPostList(posts);
+                    },
+                  ),
+          ),
+        ],
+      ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 90),
         child: AnimatedContainer(
