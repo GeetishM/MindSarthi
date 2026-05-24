@@ -23,7 +23,14 @@ import 'package:geolocator/geolocator.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   final GlobalKey? menuKey;
-  const HomePage({super.key, this.menuKey});
+  final bool isProfileIncomplete;
+  final VoidCallback? onProfileSaved;
+  const HomePage({
+    super.key,
+    this.menuKey,
+    this.isProfileIncomplete = false,
+    this.onProfileSaved,
+  });
 
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
@@ -1171,7 +1178,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
       key: _scaffoldKey,
       onDrawerChanged: (isOpen) => setState(() => _isDrawerOpen = isOpen),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      drawer: const Sidebar(),
+      drawer: Sidebar(onProfileSaved: widget.onProfileSaved),
       body: CustomScrollView(
         controller: _scrollController,
         physics: const BouncingScrollPhysics(),
@@ -1353,8 +1360,10 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
               widget.menuKey != null
                   ? PremiumShowcase(
                       showcaseKey: widget.menuKey!,
-                      title: 'Settings & Profile',
-                      description: 'Tap here to open the menu where you can access your profile, configure App Lock, change theme, and sign out.',
+                      title: widget.isProfileIncomplete ? 'Complete Your Profile' : 'Settings & Profile',
+                      description: widget.isProfileIncomplete
+                          ? 'Please tap here to open the settings menu and complete your profile details (like nickname and age).'
+                          : 'Tap here to open the menu where you can access your profile, configure App Lock, change theme, and sign out.',
                       targetShapeBorder: const CircleBorder(),
                       child: GestureDetector(
                         onTap: () {

@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindsarthi/core/services/appwrite_service.dart';
 import 'package:mindsarthi/core/constants/appwrite_constants.dart';
 import 'package:mindsarthi/features/auth/auth_repository.dart';
+import 'package:mindsarthi/core/services/notification_service.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/theme/theme_provider.dart';
@@ -49,20 +51,204 @@ class _NavBarState extends ConsumerState<NavBar> {
   final GlobalKey _discoverKey = GlobalKey();
   final GlobalKey _connectKey = GlobalKey();
   final GlobalKey _sarthiKey = GlobalKey();
-  bool _showcaseStarted = false;
+  
+  bool _profileCheckDone = false;
+  bool _shouldShowCompleteProfileDialog = false;
+  bool _dialogShown = false;
+  bool _profileShowcaseStarted = false;
+  bool _fullShowcaseStarted = false;
 
-  late final List<Widget> _pages;
+  late List<Widget> _pages;
 
-  @override
-  void initState() {
-    super.initState();
+  void _updatePages() {
     _pages = [
-      HomePage(menuKey: _menuKey),
+      HomePage(
+        menuKey: _menuKey,
+        isProfileIncomplete: _shouldShowCompleteProfileDialog,
+        onProfileSaved: _checkProfileCompletion,
+      ),
       const ConsultPage(),
       const InsightPage(),
       const CommunityPage(),
       const ChatScreen(),
     ];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _updatePages();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkProfileCompletion();
+    });
+  }
+
+  Future<void> _checkProfileCompletion() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) {
+      if (mounted) {
+        setState(() {
+          _profileCheckDone = true;
+          _shouldShowCompleteProfileDialog = false;
+        });
+      }
+      return;
+    }
+
+    bool isComplete = false;
+    try {
+      final databases = AppwriteService().databases;
+      final doc = await databases.getDocument(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.usersCollectionId,
+        documentId: user.$id,
+      );
+      final data = doc.data;
+      final username = data['username'] as String?;
+      final nickname = data['nickname'] as String?;
+      final age = data['age'] as String?;
+
+      if (username != null && username.trim().isNotEmpty &&
+          nickname != null && nickname.trim().isNotEmpty &&
+          age != null && age.trim().isNotEmpty) {
+        isComplete = true;
+      }
+    } catch (e) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final username = prefs.getString('profile_username_${user.$id}');
+        final nickname = prefs.getString('profile_nickname_${user.$id}');
+        final age = prefs.getString('profile_age_${user.$id}');
+        if (username != null && username.trim().isNotEmpty &&
+            nickname != null && nickname.trim().isNotEmpty &&
+            age != null && age.trim().isNotEmpty) {
+          isComplete = true;
+        }
+      } catch (_) {}
+    }
+
+    NotificationService.scheduleProfileCompletionReminder(!isComplete);
+
+    if (mounted) {
+      setState(() {
+        _shouldShowCompleteProfileDialog = !isComplete;
+        _profileCheckDone = true;
+        _updatePages();
+      });
+    }
+  }
+
+  void _showCompleteProfileDialog(BuildContext builderContext) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: surfaceColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: [
+              Icon(CupertinoIcons.profile_circled, color: primaryColor, size: 28),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  "Complete Your Profile",
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            "Welcome to MindSarthi! Please take a moment to set up your profile details (like nickname and preferences) so we can personalize your mental wellness experience.",
+            style: TextStyle(fontSize: 14, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _triggerProfileShowcase(builderContext);
+              },
+              child: Text(
+                "Later",
+                style: TextStyle(color: textSecondary, fontWeight: FontWeight.w600),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(builder: (_) => const ProfilePage()),
+                ).then((_) {
+                  // After returning, check again. If they finished it, great.
+                  _checkProfileCompletion();
+                  setState(() {
+                    _dialogShown = false;
+                  });
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              child: const Text(
+                "Set Up Profile",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _triggerProfileShowcase(BuildContext builderContext) {
+    if (_profileShowcaseStarted) return;
+    _profileShowcaseStarted = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (builderContext.mounted) {
+          final screenWidth = MediaQuery.of(builderContext).size.width;
+          final isMobile = screenWidth < 640;
+          final list = isMobile ? [_menuKey] : [_profileKey];
+          ShowCaseWidget.of(builderContext).startShowCase(list);
+        }
+      });
+    });
+  }
+
+  void _triggerFullShowcase(BuildContext builderContext) {
+    if (_fullShowcaseStarted) return;
+    _fullShowcaseStarted = true;
+    final myBox = Hive.box('mybox');
+    final hasShown = myBox.get('showcase_nav', defaultValue: false);
+    if (!hasShown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          if (builderContext.mounted) {
+            final screenWidth = MediaQuery.of(builderContext).size.width;
+            final isMobile = screenWidth < 640;
+            final list = isMobile
+                ? [_menuKey, _homeKey, _expertsKey, _discoverKey, _connectKey, _sarthiKey]
+                : [_profileKey, _homeKey, _expertsKey, _discoverKey, _connectKey, _sarthiKey];
+            ShowCaseWidget.of(builderContext).startShowCase(list);
+          }
+        });
+      });
+    }
   }
 
   GlobalKey _getTabKey(int index) {
@@ -225,27 +411,24 @@ class _NavBarState extends ConsumerState<NavBar> {
 
     return ShowCaseWidget(
       onFinish: () {
-        Hive.box('mybox').put('showcase_nav', true);
+        if (!_shouldShowCompleteProfileDialog) {
+          Hive.box('mybox').put('showcase_nav', true);
+        }
       },
       builder: (context) {
           final screenWidth = MediaQuery.of(context).size.width;
 
-          if (!_showcaseStarted) {
-            _showcaseStarted = true;
-            final myBox = Hive.box('mybox');
-            final hasShown = myBox.get('showcase_nav', defaultValue: false);
-            if (!hasShown) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                Future.delayed(const Duration(milliseconds: 1000), () {
-                  if (context.mounted) {
-                    final isMobile = screenWidth < 640;
-                    final list = isMobile
-                        ? [_menuKey, _homeKey, _expertsKey, _discoverKey, _connectKey, _sarthiKey]
-                        : [_profileKey, _homeKey, _expertsKey, _discoverKey, _connectKey, _sarthiKey];
-                    ShowCaseWidget.of(context).startShowCase(list);
-                  }
+          if (_profileCheckDone) {
+            if (_shouldShowCompleteProfileDialog) {
+              if (!_dialogShown) {
+                _dialogShown = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _showCompleteProfileDialog(context);
                 });
-              });
+              }
+            } else {
+              // Profile is complete, start showcase if needed
+              _triggerFullShowcase(context);
             }
           }
 
@@ -550,8 +733,10 @@ class _NavBarState extends ConsumerState<NavBar> {
           ),
           PremiumShowcase(
             showcaseKey: _profileKey,
-            title: 'Your Profile & Settings',
-            description: 'Configure App Lock settings, toggle theme mode, select language preference, and sign out of your account.',
+            title: _shouldShowCompleteProfileDialog ? 'Complete Your Profile' : 'Your Profile & Settings',
+            description: _shouldShowCompleteProfileDialog
+                ? 'Please tap here to complete your profile details (like nickname and age) so we can personalize your wellness experience.'
+                : 'Configure App Lock settings, toggle theme mode, select language preference, and sign out of your account.',
             targetShapeBorder: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -561,7 +746,9 @@ class _NavBarState extends ConsumerState<NavBar> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ProfilePage()),
-              ),
+              ).then((_) {
+                _checkProfileCompletion();
+              }),
               isDark: isDark,
             ),
           ),
@@ -684,8 +871,10 @@ class _NavBarState extends ConsumerState<NavBar> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: PremiumShowcase(
                   showcaseKey: _profileKey,
-                  title: 'Your Profile & Settings',
-                  description: 'Access your profile to check settings, configure passcodes for App Lock, switch light/dark theme, and change language preference.',
+                  title: _shouldShowCompleteProfileDialog ? 'Complete Your Profile' : 'Your Profile & Settings',
+                  description: _shouldShowCompleteProfileDialog
+                      ? 'Please tap here to complete your profile details (like nickname and age) so we can personalize your wellness experience.'
+                      : 'Access your profile to check settings, configure passcodes for App Lock, switch light/dark theme, and change language preference.',
                   targetShapeBorder: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -693,7 +882,9 @@ class _NavBarState extends ConsumerState<NavBar> {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const ProfilePage()),
-                    ),
+                    ).then((_) {
+                      _checkProfileCompletion();
+                    }),
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
                       padding: const EdgeInsets.all(12),

@@ -342,4 +342,38 @@ class NotificationService {
       debugPrint('NotificationService: Failed to show instant notification - $e');
     }
   }
+
+  /// Schedule a daily reminder to complete profile if it is incomplete.
+  static Future<void> scheduleProfileCompletionReminder(bool isProfileIncomplete) async {
+    try {
+      if (isProfileIncomplete) {
+        await _localNotifications.zonedSchedule(
+          11, // Profile completion reminder ID
+          'Complete your MindSarthi Profile 🧘',
+          'Help us personalize your wellness experience by completing your profile details.',
+          _nextInstanceOfTime(12, 0), // Daily at 12:00 PM
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'profile_completion_channel',
+              'Profile Completion Reminders',
+              channelDescription: 'Reminds you to complete your profile details',
+              importance: Importance.max,
+              priority: Priority.high,
+            ),
+            iOS: DarwinNotificationDetails(),
+          ),
+          matchDateTimeComponents: DateTimeComponents.time,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        );
+        debugPrint('NotificationService: Profile completion daily reminder scheduled at 12:00 PM.');
+      } else {
+        await _localNotifications.cancel(11);
+        debugPrint('NotificationService: Profile completion daily reminder cancelled/disabled.');
+      }
+    } catch (e) {
+      debugPrint('NotificationService: Failed to schedule profile completion reminder - $e');
+    }
+  }
 }

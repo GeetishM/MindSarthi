@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
@@ -17,7 +18,8 @@ import 'package:mindsarthi/core/constants/appwrite_constants.dart';
 import 'package:mindsarthi/features/auth/auth_repository.dart';
 
 class Sidebar extends ConsumerStatefulWidget {
-  const Sidebar({super.key});
+  final VoidCallback? onProfileSaved;
+  const Sidebar({super.key, this.onProfileSaved});
 
   @override
   ConsumerState<Sidebar> createState() => _SidebarState();
@@ -52,8 +54,27 @@ class _SidebarState extends ConsumerState<Sidebar> with SingleTickerProviderStat
         collectionId: AppwriteConstants.usersCollectionId,
         documentId: user.$id,
       );
-      return doc.data;
+      final data = Map<String, dynamic>.from(doc.data);
+      final prefs = await SharedPreferences.getInstance();
+      final localUrl = prefs.getString('profile_image_url_${user.$id}');
+      if (localUrl != null && data['profileImageUrl'] == null) {
+        data['profileImageUrl'] = localUrl;
+      }
+      return data;
     } catch (_) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final localUrl = prefs.getString('profile_image_url_${user.$id}');
+        final localNickname = prefs.getString('profile_nickname_${user.$id}');
+        final localInitial = prefs.getString('profile_initial_${user.$id}');
+        if (localNickname != null || localUrl != null) {
+          return {
+            'nickname': localNickname ?? 'User',
+            'profileImageUrl': localUrl,
+            'profileInitial': localInitial,
+          };
+        }
+      } catch (_) {}
       return null;
     }
   }
@@ -98,7 +119,11 @@ class _SidebarState extends ConsumerState<Sidebar> with SingleTickerProviderStat
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const ProfilePage()),
-                        ),
+                        ).then((_) {
+                          if (widget.onProfileSaved != null) {
+                            widget.onProfileSaved!();
+                          }
+                        }),
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -110,18 +135,25 @@ class _SidebarState extends ConsumerState<Sidebar> with SingleTickerProviderStat
                           ),
                           child: Row(
                             children: [
-                              CircleAvatar(
-                                radius: 26,
-                                backgroundColor: AppColors.primary,
-                                child: Text(
-                                  letter,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                               CircleAvatar(
+                                 radius: 26,
+                                 backgroundColor: AppColors.primary,
+                                 backgroundImage: (data?['profileImageUrl'] != null &&
+                                         (data!['profileImageUrl'] as String).isNotEmpty)
+                                     ? NetworkImage(data['profileImageUrl'] as String)
+                                     : null,
+                                 child: (data?['profileImageUrl'] != null &&
+                                         (data!['profileImageUrl'] as String).isNotEmpty)
+                                     ? null
+                                     : Text(
+                                         letter,
+                                         style: const TextStyle(
+                                           color: Colors.white,
+                                           fontSize: 20,
+                                           fontWeight: FontWeight.bold,
+                                         ),
+                                       ),
+                               ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(

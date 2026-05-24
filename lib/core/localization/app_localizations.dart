@@ -32,7 +32,9 @@ class AppLocalizations {
       'prof_nickname': 'Nickname',
       'prof_phone': 'Phone Number',
       'prof_gender': 'Gender',
+      'prof_select_gender': 'Select Gender',
       'prof_age': 'Age',
+      'prof_dob': 'Date of Birth',
       'prof_save': 'Save Profile',
       'prof_saved': 'Profile saved!',
       
@@ -98,7 +100,9 @@ class AppLocalizations {
       'prof_nickname': 'उपनाम',
       'prof_phone': 'फ़ोन नंबर',
       'prof_gender': 'लिंग',
+      'prof_select_gender': 'लिंग चुनें',
       'prof_age': 'आयु',
+      'prof_dob': 'जन्म तिथि',
       'prof_save': 'प्रोफ़ाइल सहेजें',
       'prof_saved': 'प्रोफ़ाइल सुरक्षित की गई!',
       
@@ -164,7 +168,9 @@ class AppLocalizations {
       'prof_nickname': 'ডাকনাম',
       'prof_phone': 'ফোন নম্বর',
       'prof_gender': 'লিঙ্গ',
+      'prof_select_gender': 'লিঙ্গ নির্বাচন করুন',
       'prof_age': 'বয়স',
+      'prof_dob': 'জন্ম তারিখ',
       'prof_save': 'প্রোফাইল সংরক্ষণ করুন',
       'prof_saved': 'প্রোফাইল সংরক্ষিত হয়েছে!',
       

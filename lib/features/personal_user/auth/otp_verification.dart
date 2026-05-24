@@ -110,25 +110,28 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
             documentId: user.$id,
           );
           userDocExists = true;
-        } on AppwriteException catch (e) {
-          if (e.code != 404) {
-            rethrow;
-          }
+        } catch (dbError) {
+          debugPrint("Failed to fetch user doc: $dbError");
         }
 
         if (!userDocExists) {
-          await databases.createDocument(
-            databaseId: AppwriteConstants.databaseId,
-            collectionId: AppwriteConstants.usersCollectionId,
-            documentId: user.$id,
-            data: {
-              'uid': user.$id,
-              'email': widget.email,
-              'userRole': 'personal',
-              'name': user.name.isEmpty ? 'Personal User' : user.name,
-              'joinedDate': DateTime.now().toIso8601String(),
-            },
-          );
+          try {
+            await databases.createDocument(
+              databaseId: AppwriteConstants.databaseId,
+              collectionId: AppwriteConstants.usersCollectionId,
+              documentId: user.$id,
+              data: {
+                'uid': user.$id,
+                'email': widget.email,
+                'userRole': 'personal',
+                'name': user.name.isEmpty ? 'Personal User' : user.name,
+                'joinedDate': DateTime.now().toIso8601String(),
+              },
+            );
+            userDocExists = true;
+          } catch (dbError) {
+             debugPrint("Database profile creation failed but continuing: $dbError");
+          }
         }
 
         // Bear celebrates! 🎉
@@ -136,9 +139,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
 
         if (mounted) {
           AppToast.success(context, 'Verified!',
-              description: userDocExists
-                  ? 'Welcome back!'
-                  : 'Account created successfully.');
+              description: 'Account access successful.');
 
           // Delay so user sees the bear celebrate, then navigate
           await Future.delayed(const Duration(milliseconds: 1200));
@@ -473,7 +474,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
                     Transform.translate(
                       offset: const Offset(0, -20),
                       child: Text(
-                        'Code expires in 2 minutes ⏱️',
+                        'OTP expires in 15 minutes ⏱️',
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark
