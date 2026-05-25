@@ -10,6 +10,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/core/services/appwrite_service.dart';
 import 'package:mindsarthi/core/constants/appwrite_constants.dart';
 import 'package:mindsarthi/features/auth/auth_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Routes the authenticated user to the correct Nav screen based on their
 /// Appwrite [userRole] field.
@@ -62,6 +63,11 @@ class _RoleRouterState extends ConsumerState<RoleRouter> {
       final role = data['userRole'] as String?;
       final resolvedRole = role ?? 'personal';
 
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_role_${user.$id}', resolvedRole);
+      } catch (_) {}
+
       if (mounted) {
         provider_pkg.Provider.of<ThemeProvider>(context, listen: false).setRole(resolvedRole);
       }
@@ -71,10 +77,19 @@ class _RoleRouterState extends ConsumerState<RoleRouter> {
         _loading = false;
       });
     } catch (e) {
+      String localRole = 'personal';
+      try {
+        final user = ref.read(authStateProvider).value;
+        if (user != null) {
+          final prefs = await SharedPreferences.getInstance();
+          localRole = prefs.getString('user_role_${user.$id}') ?? 'personal';
+        }
+      } catch (_) {}
+
       if (mounted) {
-        provider_pkg.Provider.of<ThemeProvider>(context, listen: false).setRole('personal');
+        provider_pkg.Provider.of<ThemeProvider>(context, listen: false).setRole(localRole);
         setState(() {
-          _role = 'personal';
+          _role = localRole;
           _loading = false;
         });
       }

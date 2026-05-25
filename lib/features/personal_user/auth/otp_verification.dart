@@ -10,6 +10,7 @@ import 'package:mindsarthi/core/services/appwrite_service.dart';
 import 'package:mindsarthi/core/constants/appwrite_constants.dart';
 import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:pinput/pinput.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String email;
@@ -113,6 +114,14 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
         } catch (dbError) {
           debugPrint("Failed to fetch user doc: $dbError");
         }
+
+        // Cache the role locally in SharedPreferences
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_role_${user.$id}', 'personal');
+          // Also pre-cache name if we have it
+          await prefs.setString('profile_nickname_${user.$id}', user.name.isEmpty ? 'Personal User' : user.name);
+        } catch (_) {}
 
         if (!userDocExists) {
           try {

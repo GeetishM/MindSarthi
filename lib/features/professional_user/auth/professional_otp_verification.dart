@@ -9,6 +9,7 @@ import 'package:toastification/toastification.dart';
 import 'package:mindsarthi/core/services/appwrite_service.dart';
 import 'package:mindsarthi/core/constants/appwrite_constants.dart';
 import 'package:mindsarthi/features/auth/auth_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String email;
@@ -95,19 +96,31 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
           }
         }
 
+        // Cache the role locally in SharedPreferences
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final resolvedRole = widget.isProfessional ? 'professional' : 'personal';
+          await prefs.setString('user_role_${user.$id}', resolvedRole);
+          await prefs.setString('profile_nickname_${user.$id}', user.name.isEmpty ? 'Professional User' : user.name);
+        } catch (_) {}
+
         if (!userDocExists) {
-          await databases.createDocument(
-            databaseId: AppwriteConstants.databaseId,
-            collectionId: AppwriteConstants.usersCollectionId,
-            documentId: user.$id,
-            data: {
-              'uid': user.$id,
-              'email': widget.email,
-              'userRole': widget.isProfessional ? 'professional' : 'personal',
-              'name': user.name.isEmpty ? 'Professional User' : user.name,
-              'joinedDate': DateTime.now().toIso8601String(),
-            },
-          );
+          try {
+            await databases.createDocument(
+              databaseId: AppwriteConstants.databaseId,
+              collectionId: AppwriteConstants.usersCollectionId,
+              documentId: user.$id,
+              data: {
+                'uid': user.$id,
+                'email': widget.email,
+                'userRole': widget.isProfessional ? 'professional' : 'personal',
+                'name': user.name.isEmpty ? 'Professional User' : user.name,
+                'joinedDate': DateTime.now().toIso8601String(),
+              },
+            );
+          } catch (dbError) {
+            debugPrint("Database profile creation failed but continuing: $dbError");
+          }
         }
 
         _teddyCtrl?.triggerSuccess();
