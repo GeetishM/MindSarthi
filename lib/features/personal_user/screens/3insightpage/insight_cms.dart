@@ -7,7 +7,8 @@ import 'package:mindsarthi/core/widgets/app_dialog.dart';
 import 'insight_data.dart';
 
 class InsightCmsPage extends StatefulWidget {
-  const InsightCmsPage({super.key});
+  final bool showBackButton;
+  const InsightCmsPage({super.key, this.showBackButton = true});
 
   @override
   State<InsightCmsPage> createState() => _InsightCmsPageState();
@@ -237,14 +238,16 @@ class _InsightCmsPageState extends State<InsightCmsPage> {
         ),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          child: Icon(
-            CupertinoIcons.back,
-            color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: widget.showBackButton
+            ? CupertinoButton(
+                padding: EdgeInsets.zero,
+                child: Icon(
+                  CupertinoIcons.back,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                ),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         actions: [
           CupertinoButton(
             padding: EdgeInsets.zero,

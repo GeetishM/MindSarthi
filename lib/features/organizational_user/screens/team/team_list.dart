@@ -6,6 +6,7 @@ import 'package:mindsarthi/core/services/appwrite_service.dart';
 import 'package:mindsarthi/core/constants/appwrite_constants.dart';
 import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:mindsarthi/features/organizational_user/screens/team/bulk_invite.dart';
 
 class TeamList extends ConsumerWidget {
   const TeamList({super.key});
@@ -55,6 +56,19 @@ class TeamList extends ConsumerWidget {
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         automaticallyImplyLeading: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: TextButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BulkInvitePage()),
+              ),
+              icon: const Icon(Icons.person_add_rounded, size: 18),
+              label: const Text('Invite', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _fetchTeamMembers(ref),
@@ -113,11 +127,9 @@ class TeamList extends ConsumerWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(24),
       itemCount: 5,
-      itemBuilder: (_, __) => Shimmer.fromColors(
-        baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
-        highlightColor: isDark
-            ? AppColors.darkShimmerHighlight
-            : AppColors.shimmerHighlight,
+      itemBuilder: (context, index) => Shimmer.fromColors(
+        baseColor: AppTheme.getShimmerBaseColor(context),
+        highlightColor: AppTheme.getShimmerHighlightColor(context),
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           height: 72,
@@ -158,13 +170,7 @@ class _MemberCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color ?? theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
-        ),
-      ),
+      decoration: AppTheme.cardDecoration(context),
       child: Row(
         children: [
           CircleAvatar(

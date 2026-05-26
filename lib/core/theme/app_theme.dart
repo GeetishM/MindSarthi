@@ -587,5 +587,56 @@ class AppTheme {
       ),
     );
   }
+
+  static BoxDecoration cardDecoration(BuildContext context) {
+    final theme = Theme.of(context);
+    return BoxDecoration(
+      color: theme.cardTheme.color ?? theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: theme.brightness == Brightness.dark
+              ? Colors.black.withValues(alpha: 0.2)
+              : theme.colorScheme.primary.withValues(alpha: 0.04),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
+  static Widget sectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: theme.hintColor,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  static Color getShimmerBaseColor(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Color.alphaBlend(
+      theme.colorScheme.primary.withValues(alpha: isDark ? 0.12 : 0.08),
+      theme.colorScheme.surface,
+    );
+  }
+
+  static Color getShimmerHighlightColor(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Color.alphaBlend(
+      theme.colorScheme.primary.withValues(alpha: isDark ? 0.24 : 0.16),
+      theme.colorScheme.surface,
+    );
+  }
 }
 

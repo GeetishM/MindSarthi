@@ -24,6 +24,7 @@ import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/chat_
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_settings_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/profile.dart';
+import 'package:mindsarthi/features/personal_user/screens/notification_settings.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
@@ -405,6 +406,18 @@ class _NavBarState extends ConsumerState<NavBar> {
     }
   }
 
+  Widget _buildActivePage() {
+    final page = _pages[_currentIndex];
+    if (_currentIndex == 0) {
+      return page;
+    }
+    return SafeArea(
+      top: true,
+      bottom: false,
+      child: page,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -451,7 +464,7 @@ class _NavBarState extends ConsumerState<NavBar> {
               },
               child: Scaffold(
                 extendBody: true,
-                body: _pages[_currentIndex],
+                body: _buildActivePage(),
                 bottomNavigationBar: SafeArea(
                   child: Container(
                     margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -497,7 +510,7 @@ class _NavBarState extends ConsumerState<NavBar> {
                     color: isDark ? AppColors.darkBorder : AppColors.border,
                   ),
                   Expanded(
-                    child: _pages[_currentIndex],
+                    child: _buildActivePage(),
                   ),
                 ],
               ),
@@ -528,10 +541,10 @@ class _NavBarState extends ConsumerState<NavBar> {
                         ? Center(
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 800),
-                              child: _pages[_currentIndex],
+                              child: _buildActivePage(),
                             ),
                           )
-                        : _pages[_currentIndex],
+                        : _buildActivePage(),
                   ),
                 ],
               ),
@@ -716,6 +729,15 @@ class _NavBarState extends ConsumerState<NavBar> {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AppLockSettingsScreen()),
+            ),
+            isDark: isDark,
+          ),
+          _buildTabletSettingButton(
+            icon: CupertinoIcons.bell,
+            tooltip: 'Notifications',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
             ),
             isDark: isDark,
           ),
@@ -1036,6 +1058,15 @@ class _NavBarState extends ConsumerState<NavBar> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AppLockSettingsScreen()),
+                  ),
+                  isDark: isDark,
+                ),
+                _buildDesktopSettingsTile(
+                  icon: CupertinoIcons.bell,
+                  title: 'Notifications',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
                   ),
                   isDark: isDark,
                 ),

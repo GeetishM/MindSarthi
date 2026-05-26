@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 
 class SubmitReport extends StatefulWidget {
@@ -55,7 +54,6 @@ class _SubmitReportState extends State<SubmitReport> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,

@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:appwrite/appwrite.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/core/widgets/role_router.dart';
@@ -120,6 +119,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
         try {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('user_role_${user.$id}', 'personal');
+          await prefs.setString('active_role', 'personal');
+          await prefs.setString('active_role_${user.$id}', 'personal');
           // Also pre-cache name if we have it
           if (user.name.isNotEmpty) {
             await prefs.setString('profile_nickname_${user.$id}', user.name);

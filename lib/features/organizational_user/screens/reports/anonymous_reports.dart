@@ -90,16 +90,19 @@ class _AnonymousReportsState extends State<AnonymousReports>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SubmitReport()),
-        ).then((_) {
-          // If we added a report, simulate adding it here
-        }),
-        icon: const Icon(Icons.edit_note_rounded),
-        label: const Text('Submit Report',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 90),
+        child: FloatingActionButton.extended(
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SubmitReport()),
+          ).then((_) {
+            // If we added a report, simulate adding it here
+          }),
+          icon: const Icon(Icons.edit_note_rounded),
+          label: const Text('Submit Report',
+              style: TextStyle(fontWeight: FontWeight.w700)),
+        ),
       ),
       body: TabBarView(
         controller: _tabController,

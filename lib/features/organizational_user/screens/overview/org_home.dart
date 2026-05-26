@@ -7,6 +7,9 @@ import 'package:mindsarthi/core/services/appwrite_service.dart';
 import 'package:mindsarthi/core/constants/appwrite_constants.dart';
 import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:mindsarthi/features/organizational_user/screens/team/bulk_invite.dart';
+import 'package:mindsarthi/features/organizational_user/screens/programs/employee_survey.dart';
+import 'package:mindsarthi/features/organizational_user/screens/reports/anonymous_reports.dart';
 
 class OrgHome extends ConsumerStatefulWidget {
   const OrgHome({super.key});
@@ -142,36 +145,76 @@ class _OrgHomeState extends ConsumerState<OrgHome> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.tertiary,
-                              borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              theme.colorScheme.primary,
+                              theme.colorScheme.primary.withValues(alpha: 0.8),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
                             ),
-                            child: Text(
-                              'Organization Dashboard',
-                              style: TextStyle(
-                                color: theme.colorScheme.primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    'ORGANIZATIONAL WORKSPACE',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.business_rounded,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              orgName,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: -0.5,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            orgName,
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: theme.textTheme.bodyLarge?.color,
-                              letterSpacing: -0.5,
+                            const SizedBox(height: 4),
+                            Text(
+                              'Empowering team mental wellness & safe spaces',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white.withValues(alpha: 0.85),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -212,6 +255,66 @@ class _OrgHomeState extends ConsumerState<OrgHome> {
                               color: AppColors.warning,
                               theme: theme,
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // ── Quick Actions ──────────────────────────────
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Quick Actions',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: theme.textTheme.titleMedium?.color,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _QuickActionCard(
+                                  label: 'Add Member',
+                                  icon: Icons.person_add_rounded,
+                                  color: theme.colorScheme.primary,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const BulkInvitePage()),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _QuickActionCard(
+                                  label: 'Create Survey',
+                                  icon: Icons.poll_rounded,
+                                  color: theme.colorScheme.secondary,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const CreateSurveyScreen()),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _QuickActionCard(
+                                  label: 'View Reports',
+                                  icon: Icons.analytics_rounded,
+                                  color: AppColors.warning,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const AnonymousReports()),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -475,9 +578,8 @@ class _OrgHomeState extends ConsumerState<OrgHome> {
 
   Widget _shimmerHeader(ThemeData theme, bool isDark) {
     return Shimmer.fromColors(
-      baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
-      highlightColor:
-          isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight,
+      baseColor: AppTheme.getShimmerBaseColor(context),
+      highlightColor: AppTheme.getShimmerHighlightColor(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -507,10 +609,8 @@ class _OrgHomeState extends ConsumerState<OrgHome> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Shimmer.fromColors(
-        baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
-        highlightColor: isDark
-            ? AppColors.darkShimmerHighlight
-            : AppColors.shimmerHighlight,
+        baseColor: AppTheme.getShimmerBaseColor(context),
+        highlightColor: AppTheme.getShimmerHighlightColor(context),
         child: Column(
           children: List.generate(
             3,
@@ -651,6 +751,57 @@ class _ReportPreviewCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: AppTheme.cardDecoration(context),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: color.withValues(alpha: 0.1),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: theme.textTheme.bodyLarge?.color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

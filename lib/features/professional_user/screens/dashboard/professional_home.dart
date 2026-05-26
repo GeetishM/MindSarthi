@@ -7,9 +7,13 @@ import 'package:mindsarthi/core/services/appwrite_service.dart';
 import 'package:mindsarthi/core/constants/appwrite_constants.dart';
 import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mindsarthi/features/personal_user/screens/notification_center.dart';
 
 class ProfessionalHome extends ConsumerStatefulWidget {
-  const ProfessionalHome({super.key});
+  final Function(int)? onTabChange;
+  const ProfessionalHome({super.key, this.onTabChange});
 
   @override
   ConsumerState<ProfessionalHome> createState() => _ProfessionalHomeState();
@@ -129,37 +133,187 @@ class _ProfessionalHomeState extends ConsumerState<ProfessionalHome> {
             slivers: [
               // ── Header ─────────────────────────────────────────
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: FutureBuilder<String>(
-                    future: _nameFuture,
-                    builder: (context, snap) {
-                      final name = snap.data ?? 'Doctor';
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [
+                              theme.colorScheme.primary.withValues(alpha: 0.12),
+                              theme.colorScheme.primary.withValues(alpha: 0.0),
+                            ]
+                          : [
+                              theme.colorScheme.primary.withValues(alpha: 0.06),
+                              theme.colorScheme.primary.withValues(alpha: 0.0),
+                            ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: FutureBuilder<String>(
+                            future: _nameFuture,
+                            builder: (context, snap) {
+                              final name = snap.data ?? 'Doctor';
+                              return TweenAnimationBuilder<double>(
+                                tween: Tween<double>(begin: 0.0, end: 1.0),
+                                duration: const Duration(milliseconds: 800),
+                                curve: Curves.easeOutBack,
+                                builder: (context, value, child) {
+                                  return Opacity(
+                                    opacity: value.clamp(0.0, 1.0),
+                                    child: Transform.translate(
+                                      offset: Offset(0, 20 * (1.0 - value)),
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Good ${_greeting()},',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Dr. $name 👋',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w900,
+                                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                        letterSpacing: -0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        ValueListenableBuilder(
+                          valueListenable: Hive.box('notificationsBox').listenable(),
+                          builder: (context, Box box, _) {
+                            final int unreadCount = box.values
+                                .where((item) => (item as Map)['isRead'] == false)
+                                .length;
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Good ${_greeting()},',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: theme.textTheme.bodyMedium?.color,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Dr. $name 👋',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: theme.textTheme.bodyLarge?.color,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const NotificationCenter(),
+                                  ),
+                                ).then((_) => setState(() {}));
+                              },
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: isDark ? AppColors.darkSurface2 : AppColors.surface,
+                                      border: Border.all(
+                                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      CupertinoIcons.bell,
+                                      size: 22,
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  if (unreadCount > 0)
+                                    Positioned(
+                                      right: -2,
+                                      top: -2,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.error,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 18,
+                                          minHeight: 18,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '$unreadCount',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── Quick Actions Row ──────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildQuickAction(
+                        context: context,
+                        label: "New Session",
+                        icon: CupertinoIcons.add,
+                        color: theme.colorScheme.primary,
+                        isDark: isDark,
+                        onTap: () {
+                          widget.onTabChange?.call(1);
+                        },
+                      ),
+                      _buildQuickAction(
+                        context: context,
+                        label: "View Clients",
+                        icon: CupertinoIcons.group,
+                        color: theme.colorScheme.secondary,
+                        isDark: isDark,
+                        onTap: () {
+                          widget.onTabChange?.call(2);
+                        },
+                      ),
+                      _buildQuickAction(
+                        context: context,
+                        label: "Write Insight",
+                        icon: CupertinoIcons.doc_text,
+                        color: Colors.teal,
+                        isDark: isDark,
+                        onTap: () {
+                          widget.onTabChange?.call(3);
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -324,9 +478,8 @@ class _ProfessionalHomeState extends ConsumerState<ProfessionalHome> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Shimmer.fromColors(
-        baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
-        highlightColor:
-            isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight,
+        baseColor: AppTheme.getShimmerBaseColor(context),
+        highlightColor: AppTheme.getShimmerHighlightColor(context),
         child: Column(
           children: List.generate(
             3,
@@ -338,6 +491,64 @@ class _ProfessionalHomeState extends ConsumerState<ProfessionalHome> {
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickAction({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required Color color,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? AppColors.darkBorder : AppColors.border,
+              width: 1.0,
+            ),
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: color.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -366,34 +577,51 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.cardTheme.color ?? theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark ? AppColors.darkSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
+          color: isDark ? AppColors.darkBorder : AppColors.border,
+          width: 1,
         ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: color.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 14),
           Text(
             value,
             style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: theme.textTheme.bodyLarge?.color,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: theme.textTheme.bodyMedium?.color,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              height: 1.2,
             ),
           ),
         ],

@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:appwrite/appwrite.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_settings_screen.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
@@ -168,7 +167,7 @@ class _OrgSettingsState extends ConsumerState<OrgSettings> {
                     value: _anonymousReporting,
                     onChanged: (v) =>
                         setState(() => _anonymousReporting = v),
-                    activeColor: theme.colorScheme.primary,
+                    activeTrackColor: theme.colorScheme.primary,
                   ),
                 ),
                 _SettingsTile(
@@ -179,7 +178,7 @@ class _OrgSettingsState extends ConsumerState<OrgSettings> {
                     value: _mandatoryCheckin,
                     onChanged: (v) =>
                         setState(() => _mandatoryCheckin = v),
-                    activeColor: theme.colorScheme.primary,
+                    activeTrackColor: theme.colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -237,16 +236,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
-        color: theme.hintColor,
-        letterSpacing: 0.5,
-      ),
-    );
+    return AppTheme.sectionHeader(context, title);
   }
 }
 
@@ -275,13 +265,7 @@ class _SettingsTile extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color ?? theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.dividerTheme.color ?? theme.colorScheme.outlineVariant,
-        ),
-      ),
+      decoration: AppTheme.cardDecoration(context),
       child: ListTile(
         onTap: onTap,
         leading: Icon(

@@ -11,6 +11,7 @@ import 'journal_entry.dart';
 import 'ai_service.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/services/notification_service.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/streak_model.dart';
 import 'package:uuid/uuid.dart';
 import 'package:mindsarthi/core/services/sync_service.dart';
 import 'package:mindsarthi/core/widgets/markdown_text_editing_controller.dart';
@@ -578,8 +579,9 @@ class _JournalNewState extends State<JournalNew> {
         createdAt: DateTime.now(),
         lastEdited: DateTime.now(),
       );
-      box.add(newEntry).then((index) {
+      box.add(newEntry).then((index) async {
         _runSentimentAnalysis(index, content);
+        await _checkAndCelebrateStreak();
         SyncService().syncAll();
       });
     } else {
@@ -618,6 +620,30 @@ class _JournalNewState extends State<JournalNew> {
           }
         }
       });
+    }
+  }
+
+  Future<void> _checkAndCelebrateStreak() async {
+    try {
+      final box = Hive.box<JournalEntry>('journalBox');
+      final int currentStreak = StreakModel.calculateJournalStreak(box);
+      final myBox = Hive.box('mybox');
+      final lastCelebratedStreak = myBox.get('last_celebrated_journal_streak', defaultValue: 0) as int;
+      
+      if (currentStreak > lastCelebratedStreak) {
+        await myBox.put('last_celebrated_journal_streak', currentStreak);
+        await myBox.put('journal_streak', currentStreak);
+        await myBox.put('last_journal_date', DateTime.now().toIso8601String());
+        
+        await NotificationService.scheduleDailyReminders();
+
+        final milestones = {3, 7, 14, 30, 50, 100, 150, 200, 250, 300, 365};
+        if (milestones.contains(currentStreak)) {
+          await NotificationService.showJournalStreakCelebration(currentStreak);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error celebrating journal streak: $e');
     }
   }
 
@@ -687,8 +713,9 @@ class _JournalNewState extends State<JournalNew> {
               createdAt: DateTime.now(),
               lastEdited: DateTime.now(),
             );
-            await box.add(newEntry).then((index) {
+            await box.add(newEntry).then((index) async {
               _runSentimentAnalysis(index, content);
+              await _checkAndCelebrateStreak();
               SyncService().syncAll();
             });
           } else {

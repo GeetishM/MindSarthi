@@ -50,39 +50,47 @@ class _RoleRouterState extends ConsumerState<RoleRouter> {
         return;
       }
 
-      final databases = AppwriteService().databases;
-      final doc = await databases.getDocument(
-        databaseId: AppwriteConstants.databaseId,
-        collectionId: AppwriteConstants.usersCollectionId,
-        documentId: user.$id,
-      );
+      final prefs = await SharedPreferences.getInstance();
+      String? activeRole = prefs.getString('active_role_${user.$id}');
+      activeRole ??= prefs.getString('active_role');
 
-      if (!mounted) return;
+      if (activeRole == null) {
+        // Fallback to database userRole
+        final databases = AppwriteService().databases;
+        final doc = await databases.getDocument(
+          databaseId: AppwriteConstants.databaseId,
+          collectionId: AppwriteConstants.usersCollectionId,
+          documentId: user.$id,
+        );
+        final data = doc.data;
+        final role = data['userRole'] as String?;
+        activeRole = role;
+      }
 
-      final data = doc.data;
-      final role = data['userRole'] as String?;
-      final resolvedRole = role ?? 'personal';
+      final resolvedRole = activeRole ?? 'personal';
 
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_role_${user.$id}', resolvedRole);
-      } catch (_) {}
+      // Ensure cached local role is synchronized
+      await prefs.setString('active_role_${user.$id}', resolvedRole);
+      await prefs.setString('active_role', resolvedRole);
+      await prefs.setString('user_role_${user.$id}', resolvedRole);
 
       if (mounted) {
         provider_pkg.Provider.of<ThemeProvider>(context, listen: false).setRole(resolvedRole);
+        setState(() {
+          _role = resolvedRole;
+          _loading = false;
+        });
       }
-
-      setState(() {
-        _role = resolvedRole;
-        _loading = false;
-      });
     } catch (e) {
       String localRole = 'personal';
       try {
         final user = ref.read(authStateProvider).value;
         if (user != null) {
           final prefs = await SharedPreferences.getInstance();
-          localRole = prefs.getString('user_role_${user.$id}') ?? 'personal';
+          localRole = prefs.getString('active_role_${user.$id}') ?? 
+                      prefs.getString('active_role') ?? 
+                      prefs.getString('user_role_${user.$id}') ?? 
+                      'personal';
         }
       } catch (_) {}
 

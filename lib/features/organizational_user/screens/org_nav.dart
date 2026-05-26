@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/organizational_user/screens/overview/org_home.dart';
 import 'package:mindsarthi/features/organizational_user/screens/team/team_list.dart';
 import 'package:mindsarthi/features/organizational_user/screens/reports/anonymous_reports.dart';
 import 'package:mindsarthi/features/organizational_user/screens/settings/org_settings.dart';
+import 'package:mindsarthi/features/organizational_user/screens/programs/wellness_programs.dart';
 
 class OrgNav extends StatefulWidget {
   const OrgNav({super.key});
@@ -22,6 +22,7 @@ class _OrgNavState extends State<OrgNav> {
     const OrgHome(),
     const TeamList(),
     const AnonymousReports(),
+    const WellnessProgramsPage(),
     const OrgSettings(),
   ];
 
@@ -40,6 +41,11 @@ class _OrgNavState extends State<OrgNav> {
       label: 'Reports',
       icon: Icons.analytics_outlined,
       activeIcon: Icons.analytics_rounded,
+    ),
+    _NavItemData(
+      label: 'Programs',
+      icon: Icons.assignment_outlined,
+      activeIcon: Icons.assignment_rounded,
     ),
     _NavItemData(
       label: 'Settings',
@@ -70,7 +76,11 @@ class _OrgNavState extends State<OrgNav> {
       },
       child: Scaffold(
         extendBody: true,
-        body: _pages[_currentIndex],
+        body: SafeArea(
+          top: true,
+          bottom: false,
+          child: _pages[_currentIndex],
+        ),
         bottomNavigationBar: SafeArea(
           child: Container(
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),

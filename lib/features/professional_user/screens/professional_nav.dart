@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindsarthi/core/theme/app_toast.dart';
 import 'package:mindsarthi/features/professional_user/screens/dashboard/professional_home.dart';
 import 'package:mindsarthi/features/professional_user/screens/sessions/session_list.dart';
 import 'package:mindsarthi/features/professional_user/screens/clients/client_list.dart';
 import 'package:mindsarthi/features/professional_user/screens/profile/professional_profile.dart';
+import 'package:mindsarthi/features/professional_user/screens/profile/profile_completion_gate.dart';
+import 'package:mindsarthi/features/personal_user/screens/3insightpage/insight_cms.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/features/auth/auth_repository.dart';
 
-class ProfessionalNav extends StatefulWidget {
+class ProfessionalNav extends ConsumerStatefulWidget {
   const ProfessionalNav({super.key});
 
   @override
-  State<ProfessionalNav> createState() => _ProfessionalNavState();
+  ConsumerState<ProfessionalNav> createState() => _ProfessionalNavState();
 }
 
-class _ProfessionalNavState extends State<ProfessionalNav> {
+class _ProfessionalNavState extends ConsumerState<ProfessionalNav> {
   int _currentIndex = 0;
   DateTime? _lastBackPressed;
-
-  final List<Widget> _pages = [
-    const ProfessionalHome(),
-    const SessionList(),
-    const ClientList(),
-    const ProfessionalProfile(),
-  ];
+  late final List<Widget> _pages;
 
   final List<_NavItemData> _navItems = [
     _NavItemData(
@@ -41,11 +41,123 @@ class _ProfessionalNavState extends State<ProfessionalNav> {
       activeIcon: Icons.people_rounded,
     ),
     _NavItemData(
+      label: 'Insights',
+      icon: Icons.article_outlined,
+      activeIcon: Icons.article_rounded,
+    ),
+    _NavItemData(
       label: 'Profile',
       icon: Icons.person_outline_rounded,
       activeIcon: Icons.person_rounded,
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      ProfessionalHome(
+        onTabChange: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
+      const SessionList(),
+      const ClientList(),
+      ProfileCompletionGate(
+        onNavigateToProfile: () {
+          setState(() {
+            _currentIndex = 4; // index of Profile
+          });
+        },
+        child: const InsightCmsPage(showBackButton: false),
+      ),
+      const ProfessionalProfile(),
+    ];
+    _checkProfileOnNavInit();
+  }
+
+  Future<void> _checkProfileOnNavInit() async {
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (!mounted) return;
+
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) return;
+
+      final databases = AppwriteService().databases;
+      bool isComplete = false;
+      try {
+        final doc = await databases.getDocument(
+          databaseId: AppwriteConstants.databaseId,
+          collectionId: AppwriteConstants.professionalProfilesCollectionId,
+          documentId: user.$id,
+        );
+        isComplete = doc.data['profileComplete'] as bool? ?? false;
+      } catch (_) {}
+
+      if (!isComplete && mounted) {
+        _showProfileReminderDialog();
+      }
+    } catch (e) {
+      debugPrint('Error checking professional profile status: $e');
+    }
+  }
+
+  void _showProfileReminderDialog() {
+    final theme = Theme.of(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: [
+              Icon(Icons.lock_person_rounded, color: theme.colorScheme.primary, size: 28),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  "Complete Your Profile",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            "Please take a moment to set up your display name, bio, experience, specializations, and upload your certificates in your Profile. This is required to show your profile in counselling sessions and to publish insights.",
+            style: TextStyle(fontSize: 14, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Later',
+                style: TextStyle(color: theme.textTheme.bodyMedium?.color),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  _currentIndex = 4; // Navigate to Profile tab
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Go to Profile'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +181,11 @@ class _ProfessionalNavState extends State<ProfessionalNav> {
       },
       child: Scaffold(
         extendBody: true,
-        body: _pages[_currentIndex],
+        body: SafeArea(
+          top: true,
+          bottom: false,
+          child: _pages[_currentIndex],
+        ),
         bottomNavigationBar: SafeArea(
           child: Container(
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -115,7 +231,7 @@ class _ProfessionalNavState extends State<ProfessionalNav> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutQuint,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16.0 : 12.0,
+          horizontal: isSelected ? 14.0 : 10.0,
           vertical: 12.0,
         ),
         decoration: BoxDecoration(
@@ -153,7 +269,7 @@ class _ProfessionalNavState extends State<ProfessionalNav> {
                     style: TextStyle(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w700,
-                      fontSize: 13,
+                      fontSize: 12,
                     ),
                     maxLines: 1,
                   ),

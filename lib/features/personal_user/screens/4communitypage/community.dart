@@ -16,6 +16,7 @@ import 'package:mindsarthi/features/personal_user/screens/4communitypage/post_ca
 import 'package:mindsarthi/features/personal_user/screens/4communitypage/hidden_posts_manager.dart';
 import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
 import 'package:mindsarthi/core/widgets/animated_action_menu.dart';
+import 'package:mindsarthi/features/personal_user/screens/4communitypage/community_notifications.dart';
 
 class CommunityPage extends ConsumerStatefulWidget {
   const CommunityPage({super.key});
@@ -42,6 +43,8 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   String? uid;
 
   StreamSubscription? _relationsSubscription;
+  StreamSubscription? _notificationsSubscription;
+  int _unreadCount = 0;
   Set<String> _followingUids = {};
   Set<String> _savedPostIds = {};
 
@@ -69,6 +72,8 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
     _checkProfileStatus();
     _loadHiddenPosts();
     _setupRelationsListener();
+    _setupNotificationsListener();
+    _loadUnreadCount();
     _contentScrollController.addListener(() {
       if (_contentScrollController.hasClients) {
         setState(() {
@@ -76,6 +81,49 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
         });
       }
     });
+  }
+
+  void _setupNotificationsListener() {
+    final currentUid = uid;
+    if (currentUid == null) return;
+
+    try {
+      final realtime = Realtime(AppwriteService().client);
+      _notificationsSubscription = realtime.subscribe([
+        'databases.${AppwriteConstants.databaseId}.collections.${AppwriteConstants.communityNotificationsCollectionId}.documents'
+      ]).stream.listen((event) {
+        if (mounted && event.payload['userId'] == currentUid) {
+          _loadUnreadCount();
+        }
+      });
+    } catch (e) {
+      debugPrint('Appwrite Realtime notifications setup failed: $e');
+    }
+  }
+
+  Future<void> _loadUnreadCount() async {
+    final currentUid = uid;
+    if (currentUid == null) return;
+
+    try {
+      final databases = AppwriteService().databases;
+      final response = await databases.listDocuments(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.communityNotificationsCollectionId,
+        queries: [
+          Query.equal('userId', currentUid),
+          Query.equal('isRead', false),
+          Query.limit(10),
+        ],
+      );
+      if (mounted) {
+        setState(() {
+          _unreadCount = response.total;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading unread community notifications count: $e');
+    }
   }
 
   void _setupRelationsListener() {
@@ -180,6 +228,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   @override
   void dispose() {
     _relationsSubscription?.cancel();
+    _notificationsSubscription?.cancel();
     _chipScrollController.dispose();
     _contentScrollController.dispose();
     _searchController.dispose();
@@ -280,15 +329,53 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CommunityNotifications(),
+                        ),
+                      ).then((_) => _loadUnreadCount());
+                    },
                     child: Container(
                       width: 36,
                       height: 36,
                       alignment: Alignment.center,
-                      child: Icon(
-                        CupertinoIcons.bell,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                        size: 20,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            CupertinoIcons.bell,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          if (_unreadCount > 0)
+                            Positioned(
+                              right: -2,
+                              top: -2,
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.error,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 12,
+                                  minHeight: 12,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    _unreadCount > 9 ? '9+' : '$_unreadCount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 7,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),

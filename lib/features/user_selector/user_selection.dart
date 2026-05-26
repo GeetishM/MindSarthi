@@ -7,6 +7,7 @@ import 'package:mindsarthi/core/widgets/premium_showcase.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:provider/provider.dart';
 import 'package:mindsarthi/core/theme/theme_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserSelection extends StatefulWidget {
   const UserSelection({super.key});
@@ -51,7 +52,7 @@ class _UserSelectionState extends State<UserSelection>
 
   void _selectRole(String role) => setState(() => selectedRole = role);
 
-  void _continue() {
+  Future<void> _continue() async {
     if (selectedRole == null) {
       AppToast.warning(context, 'Please select a role to continue');
       return;
@@ -61,13 +62,25 @@ class _UserSelectionState extends State<UserSelection>
     final resolvedRole = selectedRole == 'organization' ? 'org' : (selectedRole ?? 'personal');
     provider.setRole(resolvedRole);
 
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('active_role', resolvedRole);
+    } catch (e) {
+      debugPrint('Error saving active role: $e');
+    }
+
+    if (!mounted) return;
+
     switch (selectedRole) {
       case 'personal':
         Navigator.pushNamed(context, '/personalauth');
+        break;
       case 'professional':
         Navigator.pushNamed(context, '/professionalauth');
+        break;
       case 'organization':
         Navigator.pushNamed(context, '/organizationalauth');
+        break;
     }
   }
 

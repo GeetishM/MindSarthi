@@ -6,9 +6,10 @@ import 'journal_entry.dart';
 import 'journal_edit.dart';
 import 'journal_new.dart';
 import 'shadow_journal_screen.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/Journal/journal_insights.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/streak_model.dart';
 import 'entry_dates.dart';
 
-import 'journal_insights.dart';
 import 'package:mindsarthi/core/localization/app_localizations.dart';
 import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
 import 'package:mindsarthi/core/widgets/markdown_text_editing_controller.dart';
@@ -69,6 +70,39 @@ class _JournalState extends State<Journal> {
         elevation: 0,
         scrolledUnderElevation: 1,
         actions: [
+          ValueListenableBuilder(
+            valueListenable: journalBox.listenable(),
+            builder: (context, Box<JournalEntry> box, _) {
+              final int streak = StreakModel.calculateJournalStreak(box);
+              if (streak == 0) return const SizedBox.shrink();
+              return Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$streak-day streak',
+                        style: const TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
           IconButton(
             icon: Icon(CupertinoIcons.chart_bar_square, color: primaryColor, size: 20),
             onPressed: () => Navigator.push(

@@ -101,6 +101,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
           final prefs = await SharedPreferences.getInstance();
           final resolvedRole = widget.isProfessional ? 'professional' : 'personal';
           await prefs.setString('user_role_${user.$id}', resolvedRole);
+          await prefs.setString('active_role', resolvedRole);
+          await prefs.setString('active_role_${user.$id}', resolvedRole);
           // Also pre-cache name if we have it
           if (user.name.isNotEmpty) {
             await prefs.setString('profile_nickname_${user.$id}', user.name);

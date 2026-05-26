@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:mindsarthi/features/app_lock/app_lock_settings_screen.dart';
 import 'package:mindsarthi/features/personal_user/screens/profile.dart';
+import 'package:mindsarthi/features/personal_user/screens/notification_settings.dart';
 import 'package:mindsarthi/core/localization/locale_provider.dart';
 import 'package:mindsarthi/core/localization/app_localizations.dart';
 import 'package:mindsarthi/core/services/appwrite_service.dart';
@@ -214,14 +215,24 @@ class _SidebarState extends ConsumerState<Sidebar> with SingleTickerProviderStat
                           MaterialPageRoute(builder: (_) => const AppLockSettingsScreen()),
                         ),
                       ),
-                      _buildAnimatedThemeToggleRow(context, isDark, index: 2),
-                      _buildAnimatedLanguageSelector(context, isDark, index: 3),
+                      _buildAnimatedItem(
+                        index: 2,
+                        icon: CupertinoIcons.bell_fill,
+                        title: 'Notification Settings',
+                        isDark: isDark,
+                        onTap: (ctx) => Navigator.push(
+                          ctx,
+                          MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
+                        ),
+                      ),
+                      _buildAnimatedThemeToggleRow(context, isDark, index: 3),
+                      _buildAnimatedLanguageSelector(context, isDark, index: 4),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         child: Divider(thickness: 1, height: 1),
                       ),
                       _buildAnimatedItem(
-                        index: 4,
+                        index: 5,
                         icon: Icons.logout_rounded,
                         title: context.tr('sb_logout'),
                         isDark: isDark,

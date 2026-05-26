@@ -8,6 +8,7 @@ import 'package:mindsarthi/core/constants/appwrite_constants.dart';
 import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:mindsarthi/features/professional_user/screens/sessions/add_session_sheet.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:intl/intl.dart';
 
 class SessionList extends ConsumerStatefulWidget {
   const SessionList({super.key});
@@ -68,13 +69,16 @@ class _SessionListState extends ConsumerState<SessionList>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddSession(context),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('New Session',
-            style: TextStyle(fontWeight: FontWeight.w700)),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 90),
+        child: FloatingActionButton.extended(
+          onPressed: () => _showAddSession(context),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('New Session',
+              style: TextStyle(fontWeight: FontWeight.w700)),
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: theme.colorScheme.onPrimary,
+        ),
       ),
       body: TabBarView(
         controller: _tabController,
@@ -125,8 +129,37 @@ class _SessionListState extends ConsumerState<SessionList>
     }
   }
 
+  Map<String, List<Map<String, dynamic>>> _groupSessionsByDate(List<Map<String, dynamic>> sessions) {
+    final Map<String, List<Map<String, dynamic>>> groups = {};
+    for (var session in sessions) {
+      final dateStr = session['date'] as String? ?? 'No Date';
+      String groupHeader = dateStr;
+      try {
+        final dt = DateTime.parse(dateStr);
+        final today = DateTime.now();
+        final tomorrow = today.add(const Duration(days: 1));
+        if (dt.year == today.year && dt.month == today.month && dt.day == today.day) {
+          groupHeader = 'Today';
+        } else if (dt.year == tomorrow.year && dt.month == tomorrow.month && dt.day == tomorrow.day) {
+          groupHeader = 'Tomorrow';
+        } else {
+          groupHeader = DateFormat('EEEE, MMM d, yyyy').format(dt);
+        }
+      } catch (_) {}
+
+      if (!groups.containsKey(groupHeader)) {
+        groups[groupHeader] = [];
+      }
+      groups[groupHeader]!.add(session);
+    }
+    return groups;
+  }
+
   Widget _buildSessionTab(String status, bool isDark) {
     final theme = Theme.of(context);
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _fetchSessions(status),
       builder: (context, snap) {
@@ -136,38 +169,99 @@ class _SessionListState extends ConsumerState<SessionList>
 
         if (!snap.hasData || snap.data!.isEmpty) {
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  status == 'upcoming'
-                      ? Icons.event_available_rounded
-                      : status == 'completed'
-                          ? Icons.task_alt_rounded
-                          : Icons.event_busy_rounded,
-                  size: 56,
-                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.4) ?? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No $status sessions',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: theme.textTheme.bodyMedium?.color,
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      status == 'upcoming'
+                          ? Icons.calendar_month_rounded
+                          : status == 'completed'
+                              ? Icons.check_circle_outline_rounded
+                              : Icons.cancel_outlined,
+                      size: 64,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  Text(
+                    'No ${status[0].toUpperCase() + status.substring(1)} Sessions',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    status == 'upcoming'
+                        ? 'Schedule a new counselling session to get started.'
+                        : 'Completed sessions will appear here.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: textSecondary,
+                    ),
+                  ),
+                  if (status == 'upcoming') ...[
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () => _showAddSession(context),
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('Add Session'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           );
         }
 
         final sessions = snap.data!;
+        final grouped = _groupSessionsByDate(sessions);
+        final List<dynamic> items = [];
+        grouped.forEach((date, sessionList) {
+          items.add(date);
+          items.addAll(sessionList);
+        });
 
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 100),
-          itemCount: sessions.length,
+          itemCount: items.length,
           itemBuilder: (context, index) {
-            final data = sessions[index];
+            final item = items[index];
+            if (item is String) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 16, bottom: 8, left: 4),
+                child: Text(
+                  item.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              );
+            }
+
+            final data = item as Map<String, dynamic>;
             final docId = data['id'];
             return _SessionCard(
               data: data,
@@ -209,10 +303,8 @@ class _SessionListState extends ConsumerState<SessionList>
       padding: const EdgeInsets.all(24),
       itemCount: 4,
       itemBuilder: (_, index) => Shimmer.fromColors(
-        baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
-        highlightColor: isDark
-            ? AppColors.darkShimmerHighlight
-            : AppColors.shimmerHighlight,
+        baseColor: AppTheme.getShimmerBaseColor(context),
+        highlightColor: AppTheme.getShimmerHighlightColor(context),
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           height: 90,

@@ -20,6 +20,7 @@ import 'package:mindsarthi/features/personal_user/screens/1homepage/sidebar.dart
 import 'package:toastification/toastification.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:mindsarthi/features/personal_user/screens/notification_center.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   final GlobalKey? menuKey;
@@ -1508,7 +1509,14 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
                             .length;
 
                         return GestureDetector(
-                          onTap: () => _showNotificationsBottomSheet(),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const NotificationCenter(),
+                              ),
+                            );
+                          },
                           child: Stack(
                             clipBehavior: Clip.none,
                             children: [

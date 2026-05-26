@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart' as models;
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
 import 'package:mindsarthi/core/widgets/neumorphic_container.dart';
@@ -153,28 +154,36 @@ class _ConsultPageState extends ConsumerState<ConsultPage> {
       final databases = AppwriteService().databases;
       final response = await databases.listDocuments(
         databaseId: AppwriteConstants.databaseId,
-        collectionId: AppwriteConstants.usersCollectionId,
+        collectionId: AppwriteConstants.professionalProfilesCollectionId,
         queries: [
-          Query.equal('userRole', 'professional'),
           Query.limit(1),
         ],
       );
       if (response.documents.isEmpty) {
         for (var t in kTherapists) {
+          // Parse experience integer from e.g. "12 years"
+          final expNum = int.tryParse(t.experience.split(' ')[0]) ?? 5;
           await databases.createDocument(
             databaseId: AppwriteConstants.databaseId,
-            collectionId: AppwriteConstants.usersCollectionId,
+            collectionId: AppwriteConstants.professionalProfilesCollectionId,
             documentId: t.id,
             data: {
-              'uid': t.id,
-              'email': '${t.name.replaceAll(' ', '').toLowerCase()}@mindsarthi.com',
+              'userId': t.id,
               'name': t.name,
-              'userRole': 'professional',
-              'joinedDate': DateTime.now().toIso8601String(),
+              'bio': t.biography,
+              'experience': expNum,
+              'specializations': t.expertiseTags,
+              'role': t.role,
+              'rating': t.rating,
+              'reviewsCount': t.reviewsCount,
+              'startingPrice': t.startingPrice,
+              'availableSlots': t.availableSlots,
+              'isVerified': true,
+              'profileComplete': true,
             },
           );
         }
-        debugPrint("Professionals successfully seeded to Appwrite Users Collection!");
+        debugPrint("Professionals successfully seeded to Appwrite professional_profiles collection!");
       }
     } catch (e) {
       debugPrint("Error seeding professionals: $e");
@@ -220,42 +229,54 @@ class _ConsultPageState extends ConsumerState<ConsultPage> {
     final databases = AppwriteService().databases;
     final future = databases.listDocuments(
       databaseId: AppwriteConstants.databaseId,
-      collectionId: AppwriteConstants.usersCollectionId,
+      collectionId: AppwriteConstants.professionalProfilesCollectionId,
       queries: [
-        Query.equal('userRole', 'professional'),
+        Query.equal('profileComplete', true),
       ],
     ).then((response) {
       return response.documents.map((doc) {
         final data = doc.data;
         final name = data['name'] ?? 'Certified Professional';
+        
+        Color avatarColor = Colors.teal;
         final match = kTherapists.firstWhere(
           (t) => t.name == name || t.id == doc.$id,
-          orElse: () => Therapist(
-            id: doc.$id,
-            name: name,
-            role: data['role'] ?? 'Therapist',
-            experience: data['experience'] ?? '5 years',
-            rating: (data['rating'] as num?)?.toDouble() ?? 4.8,
-            reviewsCount: (data['reviewsCount'] as num?)?.toInt() ?? 50,
-            startingPrice: (data['startingPrice'] as num?)?.toInt() ?? 500,
-            expertiseTags: List<String>.from(data['specializations'] ?? data['expertiseTags'] ?? ['Anxiety', 'Stress']),
-            biography: data['bio'] ?? data['biography'] ?? 'Certified therapist ready to assist.',
-            availableSlots: List<String>.from(data['availableSlots'] ?? ['09:00 AM', '12:00 PM', '03:00 PM']),
-            avatarColor: Colors.indigo,
+          orElse: () => const Therapist(
+            id: '',
+            name: '',
+            role: '',
+            experience: '',
+            rating: 5.0,
+            reviewsCount: 0,
+            startingPrice: 1000,
+            expertiseTags: [],
+            biography: '',
+            availableSlots: [],
+            avatarColor: Colors.teal,
           ),
         );
+        if (match.id.isNotEmpty) {
+          avatarColor = match.avatarColor;
+        } else {
+          final index = doc.$id.hashCode % Colors.primaries.length;
+          avatarColor = Colors.primaries[index];
+        }
+
+        final expVal = data['experience'] as int? ?? 5;
+        final expText = '$expVal years';
+
         return Therapist(
           id: doc.$id,
           name: name,
-          role: data['role'] ?? match.role,
-          experience: data['experience'] ?? match.experience,
-          rating: (data['rating'] as num?)?.toDouble() ?? match.rating,
-          reviewsCount: (data['reviewsCount'] as num?)?.toInt() ?? match.reviewsCount,
-          startingPrice: (data['startingPrice'] as num?)?.toInt() ?? match.startingPrice,
-          expertiseTags: List<String>.from(data['specializations'] ?? data['expertiseTags'] ?? match.expertiseTags),
-          biography: data['bio'] ?? data['biography'] ?? match.biography,
-          availableSlots: List<String>.from(data['availableSlots'] ?? match.availableSlots),
-          avatarColor: match.avatarColor,
+          role: data['role'] ?? 'Therapist',
+          experience: expText,
+          rating: (data['rating'] as num?)?.toDouble() ?? 5.0,
+          reviewsCount: (data['reviewsCount'] as num?)?.toInt() ?? 0,
+          startingPrice: (data['startingPrice'] as num?)?.toInt() ?? 1000,
+          expertiseTags: List<String>.from(data['specializations'] ?? []),
+          biography: data['bio'] ?? 'Certified professional ready to assist.',
+          availableSlots: List<String>.from(data['availableSlots'] ?? ['09:00 AM', '12:00 PM', '03:00 PM']),
+          avatarColor: avatarColor,
         );
       }).toList();
     });
@@ -1161,17 +1182,48 @@ class _BookingSheetState extends State<BookingSheet> {
   late String _selectedSlot;
   String _selectedMedium = 'Video';
   bool _isConfirming = false;
+  List<models.Document> _certificates = [];
+  bool _loadingCertificates = true;
 
   final List<DateTime> _dates = [];
 
   @override
   void initState() {
     super.initState();
-    _selectedSlot = widget.therapist.availableSlots.first;
+    _selectedSlot = widget.therapist.availableSlots.isEmpty 
+        ? '09:00 AM' 
+        : widget.therapist.availableSlots.first;
     for (int i = 0; i < 3; i++) {
       _dates.add(DateTime.now().add(Duration(days: i)));
     }
     _selectedDate = _dates.first;
+    _loadCertificates();
+  }
+
+  Future<void> _loadCertificates() async {
+    try {
+      final databases = AppwriteService().databases;
+      final res = await databases.listDocuments(
+        databaseId: AppwriteConstants.databaseId,
+        collectionId: AppwriteConstants.certificatesCollectionId,
+        queries: [
+          Query.equal('userId', widget.therapist.id),
+        ],
+      );
+      if (mounted) {
+        setState(() {
+          _certificates = res.documents;
+          _loadingCertificates = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading therapist certificates: $e');
+      if (mounted) {
+        setState(() {
+          _loadingCertificates = false;
+        });
+      }
+    }
   }
 
   @override
@@ -1263,6 +1315,96 @@ class _BookingSheetState extends State<BookingSheet> {
             ],
           ),
           const SizedBox(height: 20),
+          Divider(color: isDark ? AppColors.darkBorder : AppColors.border, height: 1),
+          const SizedBox(height: 20),
+          // Biography
+          Text(
+            widget.therapist.biography,
+            style: TextStyle(
+              fontSize: 13,
+              color: textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Credentials
+          if (_loadingCertificates)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.0),
+              child: Center(child: CupertinoActivityIndicator()),
+            )
+          else if (_certificates.isNotEmpty) ...[
+            Text(
+              'Qualifications & Credentials',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 52,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _certificates.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final cert = _certificates[index];
+                  final name = cert.data['degreeName'] ?? '';
+                  final inst = cert.data['institution'] ?? '';
+                  final year = cert.data['year'] ?? '';
+                  final isVerified = cert.data['verified'] as bool? ?? false;
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkSurface : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isVerified
+                            ? Colors.green.withValues(alpha: 0.3)
+                            : borderCol.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isVerified ? Icons.verified_rounded : Icons.school_outlined,
+                          color: isVerified ? Colors.green : primaryColor,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
+                            Text(
+                              '$inst ($year)',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           Divider(color: isDark ? AppColors.darkBorder : AppColors.border, height: 1),
           const SizedBox(height: 20),
           Text(
