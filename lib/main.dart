@@ -8,6 +8,7 @@ import 'package:mindsarthi/core/widgets/error_boundary.dart';
 import 'package:mindsarthi/core/widgets/role_router.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Journal/journal_entry.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/chat_history.dart';
+import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/knowledge_article.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/task.dart';
 import 'package:mindsarthi/features/welcome.dart';
@@ -47,6 +48,8 @@ void main() async {
 
   Hive.registerAdapter(ChatHistoryAdapter());
   await Hive.openBox<ChatHistory>('chat_history');
+  Hive.registerAdapter(KnowledgeArticleAdapter());
+  await Hive.openBox<KnowledgeArticle>('knowledgeBase');
   await ChatProvider.initHive();
 
   Hive.registerAdapter(TaskAdapter());

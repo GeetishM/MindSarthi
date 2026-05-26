@@ -8,6 +8,7 @@ import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/api/api_se
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/constants.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/boxes.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/chat_history.dart';
+import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/knowledge_article.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/models/message.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/user_model.dart';
 import 'package:uuid/uuid.dart';
@@ -253,6 +254,55 @@ class ChatProvider extends ChangeNotifier {
 
     if (!Hive.isBoxOpen(Constants.userBox)) {
       await Hive.openBox<UserModel>(Constants.userBox);
+    }
+
+    if (!Hive.isBoxOpen('knowledgeBase')) {
+      await Hive.openBox<KnowledgeArticle>('knowledgeBase');
+    }
+
+    await _seedKnowledgeBase();
+  }
+
+  static Future<void> _seedKnowledgeBase() async {
+    final box = Hive.box<KnowledgeArticle>('knowledgeBase');
+    if (box.isEmpty) {
+      await box.addAll([
+        KnowledgeArticle(
+          id: 'panic_grounding',
+          category: 'panic',
+          keywords: ['panic', 'scared', 'hyperventilating', 'heart racing', 'fear', 'cannot breathe'],
+          content: 'Grounding Technique: Guide them through 5-4-3-2-1 breathing. Remind them they are safe, the sensation is temporary, and they can breathe through it.',
+          appSuggestion: 'relief_resources',
+        ),
+        KnowledgeArticle(
+          id: 'adhd_overwhelm',
+          category: 'adhd',
+          keywords: ['focus', 'adhd', 'distracted', 'procrastination', 'overwhelmed', 'cannot concentrate'],
+          content: 'Action: Validate the difficulty of starting. Suggest breaking the goal into a single micro-task (e.g., "just write for 1 minute" or write task in Daily Goals).',
+          appSuggestion: 'daily_goals',
+        ),
+        KnowledgeArticle(
+          id: 'depression_sadness',
+          category: 'depression',
+          keywords: ['sad', 'lonely', 'depressed', 'crying', 'hopeless', 'heartbroken', 'empty'],
+          content: 'Action: Validate their pain. Encourage small self-care step (drinking warm water, stretch, or journal thoughts).',
+          appSuggestion: 'journal',
+        ),
+        KnowledgeArticle(
+          id: 'anxiety_stress',
+          category: 'anxiety',
+          keywords: ['anxious', 'anxiety', 'worried', 'stress', 'nervous', 'tense'],
+          content: 'Action: Remind them to release control of future. Deep breathing circle or box-breathing. Suggest tracking mood to identify triggers.',
+          appSuggestion: 'mood',
+        ),
+        KnowledgeArticle(
+          id: 'suicidal_thoughts',
+          category: 'suicidal',
+          keywords: ['suicide', 'kill myself', 'self-harm', 'die', 'hurt myself', 'give up'],
+          content: 'Action: Direct, non-judgmental validation. Prioritize safety. Point directly to helpline page or panic SOS button immediately.',
+          appSuggestion: 'helpline',
+        ),
+      ]);
     }
   }
 }

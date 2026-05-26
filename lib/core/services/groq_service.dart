@@ -1,60 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/utility/local_rag_engine.dart';
 
 class GroqService {
   static const String _endpoint = 'https://api.groq.com/openai/v1/chat/completions';
 
   // Fallback API key loaded from compile-time environment.
   static String groqApiKey = const String.fromEnvironment('GROQ_API_KEY'); 
-
-  /// Scans the user message for emotional keywords and returns matching coping instructions.
-  /// This acts as a lightweight local RAG (Retrieval-Augmented Generation) context.
-  static String? getLocalRagContext(String message) {
-    final lowerMessage = message.toLowerCase();
-
-    // 1. Anxiety / Panic Grounding
-    if (lowerMessage.contains('panic') || 
-        lowerMessage.contains('anxious') || 
-        lowerMessage.contains('anxiety') || 
-        lowerMessage.contains('scared') || 
-        lowerMessage.contains('nervous') ||
-        lowerMessage.contains('heart is beating fast')) {
-      return "CONSTRUCTIVE COPING ACTION: The user is showing signs of anxiety or panic. "
-          "Gently guide them to perform the '5-4-3-2-1 Grounding Technique': "
-          "Acknowledge 5 things they can see, 4 things they can touch, 3 things they can hear, 2 things they can smell, and 1 thing they can taste. "
-          "Encourage slow, deep belly breathing.";
-    }
-
-    // 2. Crisis / Self-Harm Prevention
-    if (lowerMessage.contains('suicide') || 
-        lowerMessage.contains('kill myself') || 
-        lowerMessage.contains('self-harm') || 
-        lowerMessage.contains('die') || 
-        lowerMessage.contains('hurt myself') || 
-        lowerMessage.contains('give up on life')) {
-      return "URGENT CRISIS ACTION: The user is expressing thoughts of self-harm or suicide. "
-          "Provide immediate, unconditional emotional support in a warm, non-judgmental tone. "
-          "Clearly, gently, and explicitly encourage them to contact support resources: "
-          "Provide the national helpline number (988 for US/Canada, 112 for Europe, or local equivalent). "
-          "Do not lecture, and remind them that they are not alone and that help is available.";
-    }
-
-    // 3. Sadness / Loneliness
-    if (lowerMessage.contains('sad') || 
-        lowerMessage.contains('lonely') || 
-        lowerMessage.contains('depressed') || 
-        lowerMessage.contains('crying') || 
-        lowerMessage.contains('hopeless') ||
-        lowerMessage.contains('heartbroken')) {
-      return "CONSTRUCTIVE COPING ACTION: The user is experiencing sadness or isolation. "
-          "Focus on validating their feelings without trying to 'fix' everything immediately. "
-          "Recommend one simple self-care step, like drinking a warm glass of water, going for a short 5-minute walk, or doing a gentle stretching exercise.";
-    }
-
-    // No specific keyword hit
-    return null;
-  }
 
   /// Sends a chat message history to Groq Llama 3 and streams/returns the response.
   static Future<String> getChatResponse({
@@ -67,17 +20,22 @@ class GroqService {
       throw Exception('Groq API Key is missing. Please configure it.');
     }
 
-    // Scan for RAG context
-    final ragContext = getLocalRagContext(userMessage);
+    // Retrieve RAG Context using our local Hive database knowledge-base
+    final ragContext = LocalRagEngine.retrieveContext(userMessage);
 
     final List<Map<String, String>> messages = [];
 
     // Inject system instructions with RAG context
-    final systemMessage = "You are MindSarthi, a warm, highly empathetic, and professional mental wellness companion. "
-        "Your goal is to actively listen, validate user feelings, and offer calm, supportive guidance based on cognitive behavioral therapy (CBT) principles. "
-        "Keep responses friendly, helpful, and concise (max 3-4 sentences). "
-        "Avoid clinical jargon, and never diagnose medical conditions. "
-        "${ragContext ?? ''}";
+    final systemMessage = 
+        "You are Sarthi, a warm, highly empathetic, and supportive mental wellness companion. "
+        "Your mission is to act as a caring friend and gentle active listener, never a cold machine or clinical diagnostic tool. "
+        "RULES:\n"
+        "1. Active Listening & Mirroring: Mirror the user's emotion first (e.g., 'I hear how painful this is for you', 'It sounds like you are carrying a lot of stress right now').\n"
+        "2. Validation: Normalize and validate their feelings without immediately rushing to 'fix' everything. Let them know they are not alone.\n"
+        "3. Empathy-First Tone: Keep your voice warm, understanding, and companion-like. Avoid clinical jargon or lecturing.\n"
+        "4. Concise Support: Keep responses concise (max 3-4 sentences) so they are easy to read during vulnerable times.\n"
+        "5. Subtly suggest relevant app features (like writing in the 'Journal', logging feelings in the 'Mood Input', trying breathing/grounding in 'Relief Resources', or looking up contacts in 'Helpline') only if they fit the discussion naturally.\n"
+        "${ragContext != null ? 'Use this specific context to support your advice: $ragContext' : ''}";
 
     messages.add({"role": "system", "content": systemMessage});
     
@@ -95,7 +53,7 @@ class GroqService {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'model': 'llama3-8b-8192', // Ultra-fast Llama 3 model running on Groq LPUs
+          'model': 'llama-3.1-8b-instant', // Ultra-fast Llama 3.1 model running on Groq LPUs
           'messages': messages,
           'temperature': 0.6,
           'max_tokens': 1024,
