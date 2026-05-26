@@ -31,15 +31,21 @@ class _BottomChatFieldState extends State<BottomChatField> {
     super.initState();
     // listen to text changes to update send button active/disabled state
     textController.addListener(_onTextChanged);
+    textFieldFocus.addListener(_onFocusChanged);
   }
 
   void _onTextChanged() {
     setState(() {});
   }
 
+  void _onFocusChanged() {
+    setState(() {});
+  }
+
   @override
   void dispose() {
     textController.removeListener(_onTextChanged);
+    textFieldFocus.removeListener(_onFocusChanged);
     textController.dispose();
     textFieldFocus.dispose();
     super.dispose();
@@ -86,18 +92,29 @@ class _BottomChatFieldState extends State<BottomChatField> {
     final hasText = textController.text.trim().isNotEmpty;
     final isSendEnabled = (hasText || hasImages) && !widget.chatProvider.isLoading;
 
-    return Container(
+    final isFocused = textFieldFocus.hasFocus;
+    final primaryColor = isDark ? AppColors.darkPrimary : AppColors.primary;
+    final borderColor = isFocused
+        ? primaryColor
+        : (isDark ? AppColors.darkBorder : AppColors.border);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface2 : AppColors.white,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.border,
-          width: 1,
+          color: borderColor,
+          width: isFocused ? 1.6 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-            blurRadius: 8,
+            color: isFocused
+                ? primaryColor.withValues(alpha: isDark ? 0.25 : 0.08)
+                : Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
+            blurRadius: isFocused ? 12 : 6,
             offset: const Offset(0, 3),
           ),
         ],
@@ -115,7 +132,7 @@ class _BottomChatFieldState extends State<BottomChatField> {
                 child: Icon(
                   CupertinoIcons.photo,
                   color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                  size: 24,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: 4),
@@ -135,19 +152,20 @@ class _BottomChatFieldState extends State<BottomChatField> {
                             );
                           }
                         },
-                  placeholder: 'Enter a prompt...',
+                  placeholder: 'Ask Sarthi about your day...',
                   placeholderStyle: TextStyle(
                     color: isDark ? AppColors.darkTextHint : AppColors.textHint,
-                    fontSize: 15,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w400,
                   ),
                   style: TextStyle(
                     color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    fontSize: 15,
+                    fontSize: 14.5,
                   ),
                   decoration: const BoxDecoration(
                     color: Colors.transparent,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 14.0),
                 ),
               ),
               CupertinoButton(
@@ -164,14 +182,14 @@ class _BottomChatFieldState extends State<BottomChatField> {
                 child: Icon(
                   CupertinoIcons.arrow_up_circle_fill,
                   color: isSendEnabled
-                      ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+                      ? primaryColor
                       : (isDark
                           ? AppColors.darkTextHint.withValues(alpha: 0.3)
                           : AppColors.textHint.withValues(alpha: 0.3)),
-                  size: 34,
+                  size: 32,
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 6),
             ],
           ),
         ],

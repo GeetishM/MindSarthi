@@ -7,7 +7,7 @@ import 'journal_edit.dart';
 import 'journal_new.dart';
 import 'shadow_journal_screen.dart';
 import 'entry_dates.dart';
-import 'ai_service.dart';
+
 import 'journal_insights.dart';
 import 'package:mindsarthi/core/localization/app_localizations.dart';
 import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
@@ -39,68 +39,7 @@ class _JournalState extends State<Journal> {
     super.dispose();
   }
 
-  // Dialog to prompt the user for their Gemini API Key if missing
-  void _showApiKeyDialog() {
-    final controller = TextEditingController(
-      text: JournalAIService.getApiKey(),
-    );
-    showDialog(
-      context: context,
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final textPrimary = isDark
-            ? AppColors.darkTextPrimary
-            : AppColors.textPrimary;
 
-        return AlertDialog(
-          title: Text(
-            "Gemini API Key",
-            style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Provide a Gemini API Key to enable voice transcription. Get one for free from Google AI Studio.",
-                style: TextStyle(
-                  color: textPrimary.withValues(alpha:  0.7),
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'API Key',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                JournalAIService.saveApiKey(controller.text);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Gemini API Key saved successfully"),
-                  ),
-                );
-              },
-              child: const Text("Save"),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,11 +75,6 @@ class _JournalState extends State<Journal> {
               MaterialPageRoute(builder: (_) => const JournalInsightsScreen()),
             ),
             tooltip: context.tr('jr_sentiment'),
-          ),
-          IconButton(
-            icon: Icon(CupertinoIcons.settings, color: primaryColor, size: 20),
-            onPressed: _showApiKeyDialog,
-            tooltip: 'Configure Gemini API Key',
           ),
         ],
         bottom: PreferredSize(
@@ -523,21 +457,6 @@ class _JournalState extends State<Journal> {
                 MaterialPageRoute(builder: (_) => const ShadowJournalScreen()),
               ),
               tooltip: 'Shadow Journaling',
-            ),
-            Container(width: 1, height: 24, color: Colors.white24),
-            IconButton(
-              icon: const Icon(
-                CupertinoIcons.mic_fill,
-                color: Colors.white,
-                size: 22,
-              ),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const JournalNew(autoStartRecord: true),
-                ),
-              ),
-              tooltip: 'Voice-based AI Entry',
             ),
           ],
         ),

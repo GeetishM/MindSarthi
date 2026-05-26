@@ -21,8 +21,6 @@ class _ShadowJournalScreenState extends State<ShadowJournalScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
   bool _isSaving = false;
-  String _apiKey = '';
-
   @override
   void initState() {
     super.initState();
@@ -30,77 +28,14 @@ class _ShadowJournalScreenState extends State<ShadowJournalScreen> {
   }
 
   void _checkApiKey() {
-    setState(() {
-      _apiKey = JournalAIService.getApiKey();
+    // Add initial greeting from the reflection partner
+    _chatHistory.add({
+      'role': 'reflection',
+      'message': "Hello! I am your Digital Reflection. I'm here to help you unpack your thoughts today. How are you feeling right now, or what is on your mind?"
     });
-    if (_apiKey.isNotEmpty) {
-      // Add initial greeting from the reflection partner
-      _chatHistory.add({
-        'role': 'reflection',
-        'message': "Hello! I am your Digital Reflection. I'm here to help you unpack your thoughts today. How are you feeling right now, or what is on your mind?"
-      });
-    }
   }
 
-  void _showApiKeyDialog() {
-    final controller = TextEditingController(text: _apiKey);
-    showDialog(
-      context: context,
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
 
-        return AlertDialog(
-          title: Text(
-            "Configure Gemini API Key",
-            style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Provide a Gemini API Key to enable AI-driven Shadow Journaling. Get one for free from Google AI Studio.",
-                style: TextStyle(
-                  color: textPrimary.withValues(alpha:  0.7),
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'API Key',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                JournalAIService.saveApiKey(controller.text);
-                Navigator.pop(context);
-                setState(() {
-                  _apiKey = controller.text.trim();
-                });
-                _checkApiKey();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Gemini API Key saved successfully")),
-                );
-              },
-              child: const Text("Save"),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -263,69 +198,7 @@ class _ShadowJournalScreenState extends State<ShadowJournalScreen> {
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
     final borderCol = isDark ? AppColors.darkBorder : AppColors.border;
 
-    if (_apiKey.isEmpty) {
-      return Scaffold(
-        backgroundColor: scaffoldBg,
-        appBar: AppBar(
-          leading: IconButton(
-            icon: Icon(CupertinoIcons.back, color: primaryColor),
-            onPressed: () => Navigator.maybePop(context),
-          ),
-          title: const Text("Shadow Journaling"),
-          centerTitle: true,
-          backgroundColor: surfaceColor,
-          elevation: 0,
-        ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha:  0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    CupertinoIcons.sparkles,
-                    size: 48,
-                    color: AppColors.accent,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  "Gemini API Key Required",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: textPrimary,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Shadow Journaling uses conversational AI to guide your reflection. Please configure a Gemini API key to start.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: textSecondary,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: _showApiKeyDialog,
-                  icon: const Icon(CupertinoIcons.settings),
-                  label: const Text("Set API Key"),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+
 
     return WillPopScope(
       onWillPop: _onWillPop,
