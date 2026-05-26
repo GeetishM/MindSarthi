@@ -352,8 +352,9 @@ class _PostCardState extends ConsumerState<PostCard>
                     }
 
                     final userData = snapshot.data?.data;
+                    final displayName = userData?['username'] ?? userData?['nickname'] ?? userData?['name'];
 
-                    if (userData == null || userData['name'] == null) {
+                    if (userData == null || displayName == null) {
                       return Row(
                         children: [
                           CircleAvatar(
@@ -378,7 +379,7 @@ class _PostCardState extends ConsumerState<PostCard>
                       );
                     }
 
-                    final name = userData['name'].toString();
+                    final name = displayName.toString();
                     final profileInitial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
                     return Row(
