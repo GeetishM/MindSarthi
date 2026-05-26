@@ -532,91 +532,125 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
+  Widget _animateWidget(Widget child, int index) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 400 + (index * 80)),
+      curve: Curves.easeOutQuint,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 20 * (1.0 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
   Widget _buildAvatar(ThemeData theme, bool isDark) {
     final activeColor = theme.colorScheme.primary;
+    final accentColor = theme.colorScheme.secondary;
     
     return Stack(
       alignment: Alignment.bottomRight,
       children: [
         Container(
-          width: 110,
-          height: 110,
+          width: 120,
+          height: 120,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(
-              color: activeColor.withValues(alpha: 0.2),
-              width: 4,
+            gradient: LinearGradient(
+              colors: [
+                activeColor,
+                accentColor,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color: theme.shadowColor.withValues(alpha: 0.08),
+                color: activeColor.withValues(alpha: isDark ? 0.3 : 0.15),
                 blurRadius: 20,
-                offset: const Offset(0, 10),
+                offset: const Offset(0, 8),
               ),
             ],
           ),
-          child: CircleAvatar(
-            radius: 52,
-            backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
-            child: _localImageFile != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(52),
-                    child: Image.file(
-                      _localImageFile!,
-                      width: 104,
-                      height: 104,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(52),
-                        child: Image.network(
-                          _profileImageUrl!,
-                          width: 104,
-                          height: 104,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => _buildInitialsAvatar(theme),
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Shimmer.fromColors(
-                              baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
-                              highlightColor: isDark ? AppColors.darkShimmerHighlight : AppColors.darkShimmerHighlight,
-                              child: Container(
-                                width: 104,
-                                height: 104,
-                                decoration: const BoxDecoration(
-                                  color: Colors.grey,
-                                  shape: BoxShape.circle,
+          padding: const EdgeInsets.all(4),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark ? AppColors.darkSurface : AppColors.white,
+            ),
+            padding: const EdgeInsets.all(3),
+            child: CircleAvatar(
+              radius: 50,
+              backgroundColor: isDark ? AppColors.darkSurface2 : AppColors.primaryLight,
+              child: _localImageFile != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(50),
+                      child: Image.file(
+                        _localImageFile!,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(50),
+                          child: Image.network(
+                            _profileImageUrl!,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => _buildInitialsAvatar(theme),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Shimmer.fromColors(
+                                baseColor: isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase,
+                                highlightColor: isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight,
+                                child: Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.grey,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : _buildInitialsAvatar(theme),
+                              );
+                            },
+                          ),
+                        )
+                      : _buildInitialsAvatar(theme),
+            ),
           ),
         ),
         GestureDetector(
           onTap: _pickImage,
           child: Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: theme.colorScheme.secondary,
+              color: accentColor,
               shape: BoxShape.circle,
-              border: Border.all(color: theme.colorScheme.surface, width: 3),
+              border: Border.all(
+                color: isDark ? AppColors.darkSurface : AppColors.white,
+                width: 2.5,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: theme.shadowColor.withValues(alpha: 0.15),
-                  blurRadius: 10,
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Icon(
+            child: const Icon(
               Icons.camera_alt_rounded,
-              size: 18,
-              color: theme.colorScheme.onSecondary,
+              size: 16,
+              color: Colors.white,
             ),
           ),
         ),
@@ -628,11 +662,23 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(context.tr('prof_title')),
+        title: Text(
+          context.tr('prof_title'),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+        ),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: _isLoading
           ? Center(
@@ -641,123 +687,207 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 strokeWidth: 2.5,
               ),
             )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              child: Column(
-                children: [
-                  // ── Avatar Section ──────────────────────────────────
-                  _buildAvatar(theme, isDark),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Your Profile',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'This information is private and secure',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      letterSpacing: 0.1,
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // ── Form Container ───────────────────────────────
-                  Container(
+          : Stack(
+              children: [
+                // Top premium gradient background banner
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 250,
+                  child: Container(
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-                        width: 1.5,
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [
+                                theme.colorScheme.primary.withValues(alpha: 0.25),
+                                theme.colorScheme.primary.withValues(alpha: 0.0),
+                              ]
+                            : [
+                                theme.colorScheme.primary.withValues(alpha: 0.15),
+                                theme.colorScheme.primary.withValues(alpha: 0.0),
+                              ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.shadowColor.withValues(alpha: 0.04),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
                     ),
-                    padding: const EdgeInsets.all(24),
+                  ),
+                ),
+                SafeArea(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
                     child: Column(
                       children: [
-                        _buildInput(
-                          context,
-                          context.tr('prof_username'),
-                          _usernameController,
-                          Icons.person_outline_rounded,
-                        ),
-                        const SizedBox(height: 20),
-                        _buildInput(
-                          context,
-                          context.tr('prof_nickname'),
-                          _nicknameController,
-                          Icons.tag_rounded,
-                        ),
-                        const SizedBox(height: 20),
-                        
-                        // Premium IntlPhoneField
-                        _buildPhoneField(context, isDark),
-                        
-                        const SizedBox(height: 20),
-                        
-                        // Premium Gender Input with Bottom Sheet Selection
-                        _buildGenderInput(context),
-                        
-                        const SizedBox(height: 20),
-                        
-                        // Date of Birth field with both Picker and Keyboard Typing input
-                        _buildDobInput(context),
-                        
-                        const SizedBox(height: 36),
-                        
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _isSaving ? null : _saveProfile,
-                            style: ElevatedButton.styleFrom(
-                              elevation: 0,
-                              backgroundColor: theme.colorScheme.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: _isSaving
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    context.tr('prof_save'),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.2,
-                                    ),
-                                  ),
+                        _buildAvatar(theme, isDark),
+                        const SizedBox(height: 18),
+                        Text(
+                          'Your Profile',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Premium secure data badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isDark 
+                                ? AppColors.darkSurface2.withValues(alpha: 0.8) 
+                                : AppColors.primaryLight.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.lock_outline_rounded,
+                                size: 14,
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Private & Secure',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.colorScheme.primary,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // Form card
+                        _animateWidget(
+                          Container(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(
+                                color: isDark 
+                                    ? AppColors.darkBorder.withValues(alpha: 0.5) 
+                                    : AppColors.border.withValues(alpha: 0.5),
+                                width: 1.2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 12),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Personal Information',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                
+                                _buildInput(
+                                  context,
+                                  context.tr('prof_username'),
+                                  _usernameController,
+                                  Icons.person_outline_rounded,
+                                ),
+                                const SizedBox(height: 20),
+                                _buildInput(
+                                  context,
+                                  context.tr('prof_nickname'),
+                                  _nicknameController,
+                                  Icons.tag_rounded,
+                                ),
+                                const SizedBox(height: 20),
+                                
+                                _buildPhoneField(context, isDark),
+                                const SizedBox(height: 20),
+                                
+                                _buildGenderInput(context),
+                                const SizedBox(height: 20),
+                                
+                                _buildDobInput(context),
+                                const SizedBox(height: 32),
+                                
+                                // Premium Save Button with Gradient and Shadow
+                                InkWell(
+                                  onTap: _isSaving ? null : _saveProfile,
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    height: 56,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      gradient: LinearGradient(
+                                        colors: _isSaving
+                                            ? [
+                                                primaryColor.withValues(alpha: 0.6),
+                                                primaryColor.withValues(alpha: 0.8),
+                                              ]
+                                            : [
+                                                primaryColor,
+                                                isDark ? const Color(0xFF238E82) : const Color(0xFF22847A),
+                                              ],
+                                      ),
+                                      boxShadow: _isSaving
+                                          ? null
+                                          : [
+                                              BoxShadow(
+                                                color: primaryColor.withValues(alpha: isDark ? 0.35 : 0.25),
+                                                blurRadius: 18,
+                                                offset: const Offset(0, 8),
+                                              ),
+                                            ],
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: _isSaving
+                                        ? const SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : Text(
+                                            context.tr('prof_save'),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.3,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          1,
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
     );
   }
-
-  // ── Helper Builders ──────────────────────────────────────────────
 
   Widget _buildInput(
     BuildContext context,
@@ -767,19 +897,52 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     TextInputType keyboardType = TextInputType.text,
   }) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       style: theme.textTheme.bodyLarge?.copyWith(
         fontWeight: FontWeight.w500,
+        fontSize: 15,
       ),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(
-          icon, 
-          size: 22, 
-          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+        labelStyle: TextStyle(
+          color: isDark ? AppColors.darkTextSecondary.withValues(alpha: 0.7) : AppColors.textSecondary.withValues(alpha: 0.7),
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: theme.colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: 4.0, right: 2.0),
+          child: Icon(
+            icon, 
+            size: 20, 
+            color: theme.colorScheme.primary.withValues(alpha: 0.7),
+          ),
+        ),
+        filled: true,
+        fillColor: isDark 
+            ? AppColors.darkSurface2.withValues(alpha: 0.5) 
+            : AppColors.primaryLight.withValues(alpha: 0.3),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.darkBorder.withValues(alpha: 0.5) : AppColors.border.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: theme.colorScheme.primary,
+            width: 1.5,
+          ),
         ),
       ),
     );
@@ -792,15 +955,50 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       controller: _phoneController,
       style: theme.textTheme.bodyLarge?.copyWith(
         fontWeight: FontWeight.w500,
+        fontSize: 15,
       ),
       dropdownTextStyle: theme.textTheme.bodyLarge?.copyWith(
         fontWeight: FontWeight.w500,
+        fontSize: 15,
       ),
+      showCountryFlag: true,
       decoration: InputDecoration(
         labelText: context.tr('prof_phone'),
-        prefixIcon: const Icon(
-          Icons.phone_outlined,
-          size: 22,
+        labelStyle: TextStyle(
+          color: isDark ? AppColors.darkTextSecondary.withValues(alpha: 0.7) : AppColors.textSecondary.withValues(alpha: 0.7),
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: theme.colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: 4.0, right: 2.0),
+          child: Icon(
+            Icons.phone_outlined,
+            size: 20,
+            color: theme.colorScheme.primary.withValues(alpha: 0.7),
+          ),
+        ),
+        filled: true,
+        fillColor: isDark 
+            ? AppColors.darkSurface2.withValues(alpha: 0.5) 
+            : AppColors.primaryLight.withValues(alpha: 0.3),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.darkBorder.withValues(alpha: 0.5) : AppColors.border.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: theme.colorScheme.primary,
+            width: 1.5,
+          ),
         ),
         counterText: '',
       ),
@@ -882,6 +1080,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   Widget _buildGenderInput(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     
     return TextFormField(
       controller: _genderController,
@@ -889,19 +1088,51 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       onTap: () => _showGenderPicker(context),
       style: theme.textTheme.bodyLarge?.copyWith(
         fontWeight: FontWeight.w500,
+        fontSize: 15,
       ),
       decoration: InputDecoration(
         labelText: context.tr('prof_gender'),
         hintText: context.tr('prof_select_gender'),
-        prefixIcon: Icon(
-          Icons.person_pin_outlined, 
-          size: 22, 
-          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+        labelStyle: TextStyle(
+          color: isDark ? AppColors.darkTextSecondary.withValues(alpha: 0.7) : AppColors.textSecondary.withValues(alpha: 0.7),
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: theme.colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: 4.0, right: 2.0),
+          child: Icon(
+            Icons.person_pin_outlined, 
+            size: 20, 
+            color: theme.colorScheme.primary.withValues(alpha: 0.7),
+          ),
         ),
         suffixIcon: Icon(
           Icons.keyboard_arrow_down_rounded,
-          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
-          size: 26,
+          color: theme.colorScheme.primary.withValues(alpha: 0.7),
+          size: 24,
+        ),
+        filled: true,
+        fillColor: isDark 
+            ? AppColors.darkSurface2.withValues(alpha: 0.5) 
+            : AppColors.primaryLight.withValues(alpha: 0.3),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.darkBorder.withValues(alpha: 0.5) : AppColors.border.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: theme.colorScheme.primary,
+            width: 1.5,
+          ),
         ),
       ),
     );
@@ -909,6 +1140,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   Widget _buildDobInput(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     
     return TextFormField(
       controller: _dobController,
@@ -916,19 +1148,54 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       inputFormatters: [_dobFormatter],
       style: theme.textTheme.bodyLarge?.copyWith(
         fontWeight: FontWeight.w500,
+        fontSize: 15,
       ),
       decoration: InputDecoration(
         labelText: context.tr('prof_dob'),
         hintText: 'DD/MM/YYYY',
-        prefixIcon: Icon(
-          Icons.calendar_today_outlined,
-          size: 20,
-          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+        labelStyle: TextStyle(
+          color: isDark ? AppColors.darkTextSecondary.withValues(alpha: 0.7) : AppColors.textSecondary.withValues(alpha: 0.7),
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
         ),
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.date_range_rounded),
+        floatingLabelStyle: TextStyle(
           color: theme.colorScheme.primary,
-          onPressed: () => _selectDateOfBirth(context),
+          fontWeight: FontWeight.bold,
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: 4.0, right: 2.0),
+          child: Icon(
+            Icons.calendar_today_outlined,
+            size: 18,
+            color: theme.colorScheme.primary.withValues(alpha: 0.7),
+          ),
+        ),
+        suffixIcon: Padding(
+          padding: const EdgeInsets.only(right: 4.0),
+          child: IconButton(
+            icon: const Icon(Icons.date_range_rounded, size: 22),
+            color: theme.colorScheme.primary,
+            onPressed: () => _selectDateOfBirth(context),
+          ),
+        ),
+        filled: true,
+        fillColor: isDark 
+            ? AppColors.darkSurface2.withValues(alpha: 0.5) 
+            : AppColors.primaryLight.withValues(alpha: 0.3),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.darkBorder.withValues(alpha: 0.5) : AppColors.border.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: theme.colorScheme.primary,
+            width: 1.5,
+          ),
         ),
       ),
     );
