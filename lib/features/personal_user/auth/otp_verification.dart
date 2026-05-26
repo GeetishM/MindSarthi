@@ -120,7 +120,11 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('user_role_${user.$id}', 'personal');
           // Also pre-cache name if we have it
-          await prefs.setString('profile_nickname_${user.$id}', user.name.isEmpty ? 'Personal User' : user.name);
+          if (user.name.isNotEmpty) {
+            await prefs.setString('profile_nickname_${user.$id}', user.name);
+          } else {
+            await prefs.remove('profile_nickname_${user.$id}');
+          }
         } catch (_) {}
 
         if (!userDocExists) {

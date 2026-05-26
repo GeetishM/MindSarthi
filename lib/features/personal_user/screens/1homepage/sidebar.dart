@@ -60,6 +60,12 @@ class _SidebarState extends ConsumerState<Sidebar> with SingleTickerProviderStat
       if (localUrl != null && data['profileImageUrl'] == null) {
         data['profileImageUrl'] = localUrl;
       }
+      final loadedNickname = data['nickname'] as String?;
+      if (loadedNickname == 'Personal User' ||
+          loadedNickname == 'Professional User' ||
+          loadedNickname == 'Organizational User') {
+        data['nickname'] = 'User';
+      }
       return data;
     } catch (_) {
       try {
@@ -68,8 +74,14 @@ class _SidebarState extends ConsumerState<Sidebar> with SingleTickerProviderStat
         final localNickname = prefs.getString('profile_nickname_${user.$id}');
         final localInitial = prefs.getString('profile_initial_${user.$id}');
         if (localNickname != null || localUrl != null) {
+          String displayNickname = localNickname ?? 'User';
+          if (displayNickname == 'Personal User' ||
+              displayNickname == 'Professional User' ||
+              displayNickname == 'Organizational User') {
+            displayNickname = 'User';
+          }
           return {
-            'nickname': localNickname ?? 'User',
+            'nickname': displayNickname,
             'profileImageUrl': localUrl,
             'profileInitial': localInitial,
           };

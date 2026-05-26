@@ -100,7 +100,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           _phoneNumberCountryCode = initialCountry;
 
           _usernameController.text = data['username'] ?? '';
-          _nicknameController.text = data['nickname'] ?? '';
+          final loadedNickname = data['nickname'] as String?;
+          final displayNickname = (loadedNickname == 'Personal User' ||
+                  loadedNickname == 'Professional User' ||
+                  loadedNickname == 'Organizational User')
+              ? ''
+              : (loadedNickname ?? '');
+          _nicknameController.text = displayNickname;
           final loadedGender = data['gender'] as String?;
           _selectedGender = (loadedGender == null || loadedGender.trim().isEmpty) ? null : loadedGender;
           _genderController.text = _selectedGender ?? '';
@@ -126,7 +132,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
         setState(() {
           _usernameController.text = localUsername ?? '';
-          _nicknameController.text = localNickname ?? '';
+          final displayNickname = (localNickname == 'Personal User' ||
+                  localNickname == 'Professional User' ||
+                  localNickname == 'Organizational User')
+              ? ''
+              : (localNickname ?? '');
+          _nicknameController.text = displayNickname;
           _phoneNumber = localPhone ?? '';
           
           String initialNumber = _phoneNumber;
