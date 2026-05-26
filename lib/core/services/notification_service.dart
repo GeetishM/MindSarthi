@@ -1,4 +1,3 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -7,14 +6,7 @@ import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/Journal/journal_entry.dart';
 
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Background message handler
-  debugPrint("Handling a background message: ${message.messageId}");
-}
-
 class NotificationService {
-  static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
@@ -23,27 +15,7 @@ class NotificationService {
       // 1. Initialize Timezones (required for scheduled notifications)
       tz.initializeTimeZones();
 
-      // 2. Register Firebase background handler
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-      // 3. Request Firebase notification permission
-      NotificationSettings settings = await _firebaseMessaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
-
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        debugPrint('NotificationService: Firebase permission granted');
-      } else {
-        debugPrint('NotificationService: Firebase permission declined');
-      }
-
-      // 4. Request Android 13+ Local Notification Permission
+      // 2. Request Android 13+ Local Notification Permission
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         await _localNotifications
             .resolvePlatformSpecificImplementation<
@@ -51,7 +23,7 @@ class NotificationService {
             ?.requestNotificationsPermission();
       }
 
-      // 5. Initialize Local Notifications settings
+      // 3. Initialize Local Notifications settings
       const AndroidInitializationSettings androidSettings =
           AndroidInitializationSettings('@mipmap/ic_launcher');
       
@@ -74,36 +46,10 @@ class NotificationService {
         },
       );
 
-      // 6. Schedule Daily Reminders
+      // 4. Schedule Daily Reminders
       await scheduleDailyReminders();
 
-      // 7. Get and print FCM registration token
-      String? token = await _firebaseMessaging.getToken();
-      debugPrint('FCM Token: $token');
-
-      // 8. Listen for foreground notifications (FCM)
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('Received foreground notification: ${message.notification?.title} - ${message.notification?.body}');
-        if (message.notification != null) {
-          addNotification(
-            title: message.notification!.title ?? 'New Notification',
-            body: message.notification!.body ?? '',
-          );
-        }
-      });
-
-      // 9. Handle user interactions when tapping a notification from background/terminated states
-      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        debugPrint('User tapped background notification: ${message.data}');
-      });
-      
-      // Check if opened from a terminated state
-      RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
-      if (initialMessage != null) {
-        debugPrint('App opened from terminated state via notification: ${initialMessage.data}');
-      }
-
-      // 10. Seed Welcome Notification if empty
+      // 5. Seed Welcome Notification if empty
       final box = Hive.box('notificationsBox');
       if (box.isEmpty) {
         await addNotification(

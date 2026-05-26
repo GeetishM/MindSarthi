@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mindsarthi/core/routes/app_routes.dart';
@@ -55,7 +54,6 @@ void main() async {
   await Hive.openBox('mybox');
   await Hive.openBox('notificationsBox');
 
-  await Firebase.initializeApp();
   await NotificationService.initialize();
   Insight.seedInsights();
 
