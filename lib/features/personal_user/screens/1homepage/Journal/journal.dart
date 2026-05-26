@@ -11,6 +11,7 @@ import 'entry_dates.dart';
 import 'journal_insights.dart';
 import 'package:mindsarthi/core/localization/app_localizations.dart';
 import 'package:mindsarthi/core/widgets/premium_search_bar.dart';
+import 'package:mindsarthi/core/widgets/markdown_text_editing_controller.dart';
 
 class Journal extends StatefulWidget {
   const Journal({super.key});
@@ -264,15 +265,27 @@ class _JournalState extends State<Journal> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const SizedBox(height: 8),
-                              Text(
-                                entry.content,
+                              Text.rich(
+                                TextSpan(
+                                  children: MarkdownParser.parse(
+                                    entry.content,
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      color: textSecondary,
+                                      height: 1.4,
+                                    ),
+                                    syntaxColor: Colors.transparent,
+                                    boldStyle: const TextStyle(fontWeight: FontWeight.bold),
+                                    italicStyle: const TextStyle(fontStyle: FontStyle.italic),
+                                    underlineStyle: const TextStyle(decoration: TextDecoration.underline),
+                                    strikethroughStyle: const TextStyle(decoration: TextDecoration.lineThrough),
+                                    codeStyle: const TextStyle(fontFamily: 'monospace'),
+                                    headingStyle: const TextStyle(fontWeight: FontWeight.bold),
+                                    showSyntax: false,
+                                  ),
+                                ),
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  color: textSecondary,
-                                  height: 1.4,
-                                ),
                               ),
                               if (entry.tag.isNotEmpty) ...[
                                 const SizedBox(height: 12),
@@ -391,15 +404,27 @@ class _JournalState extends State<Journal> {
                               ),
                               const SizedBox(height: 6),
                               Expanded(
-                                child: Text(
-                                  entry.content,
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: MarkdownParser.parse(
+                                      entry.content,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: textSecondary,
+                                        height: 1.3,
+                                      ),
+                                      syntaxColor: Colors.transparent,
+                                      boldStyle: const TextStyle(fontWeight: FontWeight.bold),
+                                      italicStyle: const TextStyle(fontStyle: FontStyle.italic),
+                                      underlineStyle: const TextStyle(decoration: TextDecoration.underline),
+                                      strikethroughStyle: const TextStyle(decoration: TextDecoration.lineThrough),
+                                      codeStyle: const TextStyle(fontFamily: 'monospace'),
+                                      headingStyle: const TextStyle(fontWeight: FontWeight.bold),
+                                      showSyntax: false,
+                                    ),
+                                  ),
                                   maxLines: 4,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: textSecondary,
-                                    height: 1.3,
-                                  ),
                                 ),
                               ),
                               const SizedBox(height: 6),
