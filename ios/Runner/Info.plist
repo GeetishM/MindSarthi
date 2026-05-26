@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>MindSarthi requires Face ID to secure your journals and personal data.</string>
 </dict>
 </plist>
