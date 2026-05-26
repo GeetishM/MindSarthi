@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_sound/flutter_sound.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'journal_entry.dart';
 import 'ai_service.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
@@ -103,10 +104,26 @@ class _JournalEditState extends State<JournalEdit> {
   Future<void> _initAudioRecorder() async {
     _audioRecorder = FlutterSoundRecorder();
     try {
-      await _audioRecorder!.openRecorder();
-      setState(() {
-        _isRecorderInit = true;
-      });
+      var status = await Permission.microphone.status;
+      if (status.isDenied) {
+        status = await Permission.microphone.request();
+      }
+
+      if (status.isGranted) {
+        await _audioRecorder!.openRecorder();
+        setState(() {
+          _isRecorderInit = true;
+        });
+      } else {
+        debugPrint("Microphone permission was denied.");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Microphone permission is required for voice journaling."),
+            ),
+          );
+        }
+      }
     } catch (e) {
       debugPrint("Could not initialize recorder: $e");
     }
@@ -342,22 +359,35 @@ class _JournalEditState extends State<JournalEdit> {
                 isPaused = false;
                 duration = 0;
               });
-              await _startRecording();
+              try {
+                await _startRecording();
 
-              durationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-                setModalState(() {
-                  duration++;
-                });
-              });
-
-              waveTimer = Timer.periodic(const Duration(milliseconds: 120), (timer) {
-                setModalState(() {
-                  waveHeights = List.generate(7, (index) {
-                    if (isPaused) return 10.0;
-                    return random.nextInt(40).toDouble() + 8.0;
+                durationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                  setModalState(() {
+                    duration++;
                   });
                 });
-              });
+
+                waveTimer = Timer.periodic(const Duration(milliseconds: 120), (timer) {
+                  setModalState(() {
+                    waveHeights = List.generate(7, (index) {
+                      if (isPaused) return 10.0;
+                      return random.nextInt(40).toDouble() + 8.0;
+                    });
+                  });
+                });
+              } catch (e) {
+                debugPrint("Error starting recorder: $e");
+                setModalState(() {
+                  isRecording = false;
+                });
+                if (context.mounted) {
+                  Navigator.pop(context); // Close the sheet if it failed
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Failed to start voice recording: $e")),
+                  );
+                }
+              }
             }
 
             // Stop recording & transcribe
@@ -398,17 +428,13 @@ class _JournalEditState extends State<JournalEdit> {
                     }
                   }
                 } catch (e) {
+                  debugPrint("AI Transcription failed: $e");
                   if (context.mounted) {
                     if (e.toString().contains("API_KEY_MISSING")) {
-                      setModalState(() {
-                        isTranscribing = false;
-                      });
-                      _showApiKeyRequestDialog(() {
-                        setModalState(() {
-                          isTranscribing = true;
-                        });
-                        stopAndTranscribe();
-                      });
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("AI features are unavailable. Please configure the Groq API key in the app environment.")),
+                      );
                     } else {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -484,7 +510,7 @@ class _JournalEditState extends State<JournalEdit> {
                     const CupertinoActivityIndicator(radius: 18),
                     const SizedBox(height: 16),
                     Text(
-                      "Transcribing with Gemini AI...",
+                      "Transcribing with Groq Whisper...",
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -583,48 +609,7 @@ class _JournalEditState extends State<JournalEdit> {
     );
   }
 
-  void _showApiKeyRequestDialog(VoidCallback onSaved) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Gemini API Key Required"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("To use voice transcription, please enter your Gemini API Key. Free keys are available on Google AI Studio."),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'API Key',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (controller.text.trim().isNotEmpty) {
-                  JournalAIService.saveApiKey(controller.text);
-                  Navigator.pop(context);
-                  onSaved();
-                }
-              },
-              child: const Text("Save & Resume"),
-            ),
-          ],
-        );
-      },
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
