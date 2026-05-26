@@ -32,6 +32,7 @@ class InsightDetailPage extends StatefulWidget {
 class _InsightDetailPageState extends State<InsightDetailPage> {
   bool _hasRated = false;
   int _userRating = 0;
+  int _tempRating = 0;
   bool _isBookmarked = false;
   bool _isShareClicked = false;
 
@@ -58,30 +59,37 @@ class _InsightDetailPageState extends State<InsightDetailPage> {
 
   Future<void> _checkIfRated() async {
     final prefs = await SharedPreferences.getInstance();
+    final savedRating = prefs.getInt('rating_val_${widget.id}') ?? 0;
     setState(() {
       _hasRated = prefs.getBool('rated_${widget.id}') ?? false;
-      _userRating = prefs.getInt('rating_val_${widget.id}') ?? 0;
+      _userRating = savedRating;
+      _tempRating = savedRating;
     });
   }
 
-  Future<void> _submitRating(int rating) async {
-    if (_hasRated) return;
+  Future<void> _saveNewRating(int rating) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('rated_${widget.id}', true);
     await prefs.setInt('rating_val_${widget.id}', rating);
     setState(() {
       _hasRated = true;
       _userRating = rating;
+      _tempRating = rating;
     });
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Thank you for rating this article!'),
-          backgroundColor: AppColors.success,
-        ),
+      AppToast.success(
+        context,
+        'Rating submitted!',
+        description: 'Thank you for your feedback.',
       );
     }
+  }
+
+  void _undoRating() {
+    setState(() {
+      _tempRating = _userRating;
+    });
   }
 
   String _getInitials(String name) {
@@ -354,11 +362,15 @@ class _InsightDetailPageState extends State<InsightDetailPage> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          _hasRated ? 'Your Rating' : 'Tap a star to rate',
+                          _hasRated 
+                              ? (_tempRating != _userRating ? 'Changing your rating...' : 'Your Rating') 
+                              : 'Tap a star to rate',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            color: _tempRating != _userRating
+                                ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+                                : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -367,23 +379,78 @@ class _InsightDetailPageState extends State<InsightDetailPage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(5, (index) {
                             final starVal = index + 1;
-                            final isActive = _hasRated ? (_userRating >= starVal) : false;
+                            final isHighlighted = _tempRating >= starVal;
                             return GestureDetector(
-                              onTap: _hasRated ? null : () => _submitRating(starVal),
+                              onTap: () {
+                                setState(() {
+                                  _tempRating = starVal;
+                                });
+                              },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 4),
                                 child: Icon(
-                                  _hasRated 
-                                      ? (isActive ? Icons.star_rounded : Icons.star_border_rounded)
-                                      : Icons.star_border_rounded,
-                                  color: _hasRated 
-                                      ? (isActive ? Colors.amber : Colors.grey[600])
-                                      : Colors.grey[400],
+                                  isHighlighted ? Icons.star_rounded : Icons.star_border_rounded,
+                                  color: isHighlighted 
+                                      ? Colors.amber 
+                                      : (isDark ? Colors.grey[600] : Colors.grey[400]),
                                   size: 32,
                                 ),
                               ),
                             );
                           }),
+                        ),
+                        
+                        // Animated Submit & Undo Buttons
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          child: _tempRating != _userRating
+                              ? Padding(
+                                  padding: const EdgeInsets.only(top: 16.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Undo Button
+                                      OutlinedButton.icon(
+                                        onPressed: _undoRating,
+                                        icon: const Icon(Icons.undo_rounded, size: 16),
+                                        label: const Text('Undo'),
+                                        style: OutlinedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          foregroundColor: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                          side: BorderSide(
+                                            color: isDark ? AppColors.darkBorder : Colors.grey[300]!,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      // Submit Button
+                                      ElevatedButton.icon(
+                                        onPressed: () => _saveNewRating(_tempRating),
+                                        icon: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                                        label: const Text(
+                                          'Submit',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          backgroundColor: isDark ? AppColors.darkPrimary : AppColors.primary,
+                                          elevation: 0,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
                         ),
                       ],
                     ),
