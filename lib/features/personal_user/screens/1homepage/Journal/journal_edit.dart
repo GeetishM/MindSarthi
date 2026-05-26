@@ -14,6 +14,7 @@ import 'package:mindsarthi/core/widgets/app_dialog.dart';
 import 'package:mindsarthi/core/services/notification_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:mindsarthi/core/services/sync_service.dart';
+import 'package:mindsarthi/core/widgets/markdown_text_editing_controller.dart';
 
 
 class JournalEdit extends StatefulWidget {
@@ -27,7 +28,7 @@ class JournalEdit extends StatefulWidget {
 
 class _JournalEditState extends State<JournalEdit> {
   late TextEditingController _titleController;
-  late TextEditingController _contentController;
+  late MarkdownTextEditingController _contentController;
   late TextEditingController _tagController;
   late List<String> _tags;
   bool _hasUnsavedChanges = false;
@@ -50,7 +51,16 @@ class _JournalEditState extends State<JournalEdit> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.entry.title);
-    _contentController = TextEditingController(text: widget.entry.content);
+    _contentController = MarkdownTextEditingController(
+      text: widget.entry.content,
+      syntaxColor: const Color(0x66009688), // Subtle teal transparency
+      boldStyle: const TextStyle(fontWeight: FontWeight.bold),
+      italicStyle: const TextStyle(fontStyle: FontStyle.italic),
+      underlineStyle: const TextStyle(decoration: TextDecoration.underline),
+      strikethroughStyle: const TextStyle(decoration: TextDecoration.lineThrough),
+      codeStyle: const TextStyle(fontFamily: 'monospace'),
+      headingStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+    );
     _tagController = TextEditingController();
     _tags = List<String>.from(widget.entry.tag);
 
@@ -880,6 +890,30 @@ class _JournalEditState extends State<JournalEdit> {
             ),
             const SizedBox(height: 8),
             _buildFormatToolbar(isDark, primaryColor, surfaceColor, borderCol, textSecondary),
+            const SizedBox(height: 6),
+            Center(
+              child: RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: textSecondary.withValues(alpha:  0.7),
+                  ),
+                  children: const [
+                    TextSpan(text: "Visual guide: "),
+                    TextSpan(text: "**bold**", style: TextStyle(fontWeight: FontWeight.bold)),
+                    TextSpan(text: " | "),
+                    TextSpan(text: "*italic*", style: TextStyle(fontStyle: FontStyle.italic)),
+                    TextSpan(text: " | "),
+                    TextSpan(text: "__underline__", style: TextStyle(decoration: TextDecoration.underline)),
+                    TextSpan(text: " | "),
+                    TextSpan(text: "~~strikethrough~~", style: TextStyle(decoration: TextDecoration.lineThrough)),
+                    TextSpan(text: " | "),
+                    TextSpan(text: "### Heading", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 8),
             Container(
               height: 280,
