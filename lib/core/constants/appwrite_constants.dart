@@ -1,5 +1,5 @@
 class AppwriteConstants {
-  static const String databaseId = 'mindsarthi_db'; // Update to match your Appwrite Database ID
+  static const String databaseId = String.fromEnvironment('APPWRITE_DATABASE_ID', defaultValue: 'mindsarthi_db');
 
   // Collections
   static const String usersCollectionId = 'users';
