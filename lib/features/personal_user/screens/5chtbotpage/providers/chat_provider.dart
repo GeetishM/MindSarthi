@@ -12,6 +12,8 @@ import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/knowl
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/models/message.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/user_model.dart';
 import 'package:uuid/uuid.dart';
+import 'package:mindsarthi/core/services/appwrite_service.dart';
+import 'package:mindsarthi/core/services/sync_service.dart';
 
 class ChatProvider extends ChangeNotifier {
   final List<Message> _inChatMessages = [];
@@ -214,6 +216,17 @@ class ChatProvider extends ChangeNotifier {
     required Message assistantMessage,
     required Box messagesBox,
   }) async {
+    String currentUserId = '';
+    try {
+      final user = await AppwriteService().account.get();
+      currentUserId = user.$id;
+    } catch (_) {}
+
+    userMessage.userId = currentUserId;
+    userMessage.isSynced = false;
+    assistantMessage.userId = currentUserId;
+    assistantMessage.isSynced = false;
+
     await messagesBox.add(userMessage.toMap());
     await messagesBox.add(assistantMessage.toMap());
 
@@ -224,10 +237,15 @@ class ChatProvider extends ChangeNotifier {
       response: assistantMessage.message.toString(),
       imagesUrls: userMessage.imagesUrls,
       timestamp: DateTime.now(),
+      isSynced: false,
+      userId: currentUserId,
     );
 
     await chatHistoryBox.put(chatID, chatHistory);
     await messagesBox.close();
+
+    // Trigger sync in background
+    SyncService().syncAll();
   }
 
   Future<void> deletChatMessages({required String chatId}) async {
@@ -248,6 +266,10 @@ class ChatProvider extends ChangeNotifier {
   }
 
   static Future<void> initHive() async {
+    if (!Hive.isAdapterRegistered(2)) {
+      Hive.registerAdapter(UserModelAdapter());
+    }
+
     if (!Hive.isBoxOpen(Constants.chatHistoryBox)) {
       await Hive.openBox<ChatHistory>(Constants.chatHistoryBox);
     }

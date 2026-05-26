@@ -26,13 +26,16 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       sentimentEmotions: (fields[6] as List?)?.cast<String>(),
       sentimentRecommendation: fields[7] as String?,
       crisisFlag: fields[8] as bool?,
+      id: fields[9] as String?,
+      isSynced: fields[10] as bool?,
+      userId: fields[11] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, JournalEntry obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.title)
       ..writeByte(1)
@@ -50,7 +53,13 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       ..writeByte(7)
       ..write(obj.sentimentRecommendation)
       ..writeByte(8)
-      ..write(obj.crisisFlag);
+      ..write(obj.crisisFlag)
+      ..writeByte(9)
+      ..write(obj.id)
+      ..writeByte(10)
+      ..write(obj.isSynced)
+      ..writeByte(11)
+      ..write(obj.userId);
   }
 
   @override

@@ -1,11 +1,32 @@
-class MoodEntry {
+import 'package:hive/hive.dart';
+
+part 'mood_entry.g.dart';
+
+@HiveType(typeId: 5)
+class MoodEntry extends HiveObject {
+  @HiveField(0)
   final String id;
+
+  @HiveField(1)
   final String mood;
+
+  @HiveField(2)
   final List<String> emotions;
+
+  @HiveField(3)
   final List<String> activities;
+
+  @HiveField(4)
   final String notes;
+
+  @HiveField(5)
   final DateTime timestamp;
+
+  @HiveField(6)
   final String userId;
+
+  @HiveField(7)
+  bool isSynced;
 
   MoodEntry({
     required this.id,
@@ -15,6 +36,7 @@ class MoodEntry {
     required this.notes,
     required this.timestamp,
     required this.userId,
+    this.isSynced = false,
   });
 
   factory MoodEntry.fromAppwrite(Map<String, dynamic> data, String id) {
@@ -26,6 +48,7 @@ class MoodEntry {
       notes: data['notes'] ?? '',
       timestamp: DateTime.tryParse(data['timestamp'] ?? '') ?? DateTime.now(),
       userId: data['userId'] ?? '',
+      isSynced: true,
     );
   }
 

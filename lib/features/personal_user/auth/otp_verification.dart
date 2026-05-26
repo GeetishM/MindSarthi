@@ -11,6 +11,7 @@ import 'package:mindsarthi/core/constants/appwrite_constants.dart';
 import 'package:mindsarthi/features/auth/auth_repository.dart';
 import 'package:pinput/pinput.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mindsarthi/core/services/sync_service.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String email;
@@ -146,6 +147,9 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen>
              debugPrint("Database profile creation failed but continuing: $dbError");
           }
         }
+
+        // Sync local guest data to the authenticated cloud account
+        SyncService().syncAll();
 
         // Bear celebrates! 🎉
         _teddyCtrl?.triggerSuccess();

@@ -11,6 +11,8 @@ import 'journal_entry.dart';
 import 'ai_service.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/services/notification_service.dart';
+import 'package:uuid/uuid.dart';
+import 'package:mindsarthi/core/services/sync_service.dart';
 
 class JournalNew extends StatefulWidget {
   final bool autoStartRecord;
@@ -443,6 +445,7 @@ class _JournalNewState extends State<JournalNew> {
 
     if (_entryKey == null) {
       final newEntry = JournalEntry(
+        id: const Uuid().v4(),
         title: title.isEmpty ? "Untitled Entry" : title,
         content: content,
         tag: _tags,
@@ -558,6 +561,7 @@ class _JournalNewState extends State<JournalNew> {
 
     if (_entryKey == null) {
       final newEntry = JournalEntry(
+        id: const Uuid().v4(),
         title: title.isEmpty ? "Untitled Entry" : title,
         content: content,
         tag: _tags,
@@ -566,6 +570,7 @@ class _JournalNewState extends State<JournalNew> {
       );
       box.add(newEntry).then((index) {
         _runSentimentAnalysis(index, content);
+        SyncService().syncAll();
       });
     } else {
       final entry = box.get(_entryKey);
@@ -576,6 +581,7 @@ class _JournalNewState extends State<JournalNew> {
         entry.lastEdited = DateTime.now();
         entry.save().then((_) {
           _runSentimentAnalysis(_entryKey!, content);
+          SyncService().syncAll();
         });
       }
     }
@@ -597,6 +603,7 @@ class _JournalNewState extends State<JournalNew> {
             entryToUpdate.crisisFlag = sentimentData['crisis_flag'] as bool?;
             entryToUpdate.save().then((_) {
               NotificationService.scheduleDailyReminders();
+              SyncService().syncAll();
             });
           }
         }
@@ -663,6 +670,7 @@ class _JournalNewState extends State<JournalNew> {
           });
           if (_entryKey == null) {
             final newEntry = JournalEntry(
+              id: const Uuid().v4(),
               title: title.isEmpty ? "Untitled Entry" : title,
               content: content,
               tag: _tags,
@@ -671,6 +679,7 @@ class _JournalNewState extends State<JournalNew> {
             );
             await box.add(newEntry).then((index) {
               _runSentimentAnalysis(index, content);
+              SyncService().syncAll();
             });
           } else {
             final entry = box.get(_entryKey);
@@ -681,6 +690,7 @@ class _JournalNewState extends State<JournalNew> {
               entry.lastEdited = DateTime.now();
               await entry.save();
               _runSentimentAnalysis(_entryKey!, content);
+              SyncService().syncAll();
             }
           }
           return true;

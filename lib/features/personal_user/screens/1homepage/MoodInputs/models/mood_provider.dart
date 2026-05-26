@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:appwrite/appwrite.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mindsarthi/core/services/appwrite_service.dart';
 import 'package:mindsarthi/core/constants/appwrite_constants.dart';
+import 'package:mindsarthi/core/services/sync_service.dart';
 import 'mood_entry.dart';
 
 class MoodProvider extends ChangeNotifier {
@@ -18,10 +20,17 @@ class MoodProvider extends ChangeNotifier {
 
   Future<void> _loadUserAndFetchMoods() async {
     try {
+      // 1. Load local data first so UI updates instantly
+      final moodsBox = Hive.box<MoodEntry>('moodsBox');
+      _entries = moodsBox.values.toList();
+      _entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      notifyListeners();
+
+      // 2. Fetch remote data if logged in
       final user = await AppwriteService().account.get();
       await fetchMoods(user.$id);
     } catch (_) {
-      // Not logged in or error
+      // Not logged in or offline, keeping local entries
     }
   }
 
@@ -41,7 +50,17 @@ class MoodProvider extends ChangeNotifier {
         ],
       );
 
-      _entries = response.documents.map((doc) => MoodEntry.fromAppwrite(doc.data, doc.$id)).toList();
+      final remoteEntries = response.documents.map((doc) => MoodEntry.fromAppwrite(doc.data, doc.$id)).toList();
+
+      // Save/update to Hive
+      final moodsBox = Hive.box<MoodEntry>('moodsBox');
+      for (var entry in remoteEntries) {
+        await moodsBox.put(entry.id, entry);
+      }
+
+      // Reload sorted list
+      _entries = moodsBox.values.toList();
+      _entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     } catch (e) {
       debugPrint('Error fetching moods: $e');
     } finally {
@@ -104,7 +123,7 @@ class MoodProvider extends ChangeNotifier {
     }
   }
 
-  // --- Appwrite Write ---
+  // --- Offline-First Write ---
 
   Future<void> saveMoodEntry({
     required String mood,
@@ -112,8 +131,14 @@ class MoodProvider extends ChangeNotifier {
     required List<String> activities,
     required String notes,
   }) async {
-    final user = await AppwriteService().account.get();
-    final databases = AppwriteService().databases;
+    String currentUserId = '';
+    try {
+      final user = await AppwriteService().account.get();
+      currentUserId = user.$id;
+    } catch (_) {
+      // Guest user or offline
+    }
+
     final docId = ID.unique();
 
     final newEntry = MoodEntry(
@@ -123,17 +148,18 @@ class MoodProvider extends ChangeNotifier {
       activities: activities,
       notes: notes,
       timestamp: DateTime.now(),
-      userId: user.$id,
+      userId: currentUserId,
+      isSynced: false,
     );
 
-    await databases.createDocument(
-      databaseId: AppwriteConstants.databaseId,
-      collectionId: AppwriteConstants.moodsCollectionId,
-      documentId: docId,
-      data: newEntry.toAppwrite(),
-    );
+    // Save locally first
+    final moodsBox = Hive.box<MoodEntry>('moodsBox');
+    await moodsBox.put(docId, newEntry);
 
     _entries.insert(0, newEntry);
     notifyListeners();
+
+    // Trigger sync in background
+    SyncService().syncAll();
   }
 }

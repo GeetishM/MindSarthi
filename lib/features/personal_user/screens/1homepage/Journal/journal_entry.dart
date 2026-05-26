@@ -30,6 +30,15 @@ class JournalEntry extends HiveObject {
   @HiveField(8)
   bool? crisisFlag;
 
+  @HiveField(9)
+  String? id;
+
+  @HiveField(10)
+  bool? isSynced;
+
+  @HiveField(11)
+  String? userId;
+
   JournalEntry({
     required this.title,
     required this.content,
@@ -40,5 +49,8 @@ class JournalEntry extends HiveObject {
     this.sentimentEmotions,
     this.sentimentRecommendation,
     this.crisisFlag,
+    this.id,
+    this.isSynced = false,
+    this.userId,
   });
 }

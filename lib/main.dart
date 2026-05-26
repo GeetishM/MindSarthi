@@ -11,12 +11,14 @@ import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/chat_
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/hive/knowledge_article.dart';
 import 'package:mindsarthi/features/personal_user/screens/5chtbotpage/providers/chat_provider.dart';
 import 'package:mindsarthi/features/personal_user/screens/1homepage/dailygoals/task.dart';
+import 'package:mindsarthi/features/personal_user/screens/1homepage/MoodInputs/models/mood_entry.dart';
 import 'package:mindsarthi/features/welcome.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mindsarthi/core/localization/app_localizations.dart';
 import 'package:mindsarthi/core/localization/locale_provider.dart';
 import 'package:mindsarthi/core/services/notification_service.dart';
+import 'package:mindsarthi/core/services/sync_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider;
 import 'package:toastification/toastification.dart';
 import 'package:mindsarthi/features/personal_user/screens/3insightpage/insight_data.dart';
@@ -54,11 +56,16 @@ void main() async {
 
   Hive.registerAdapter(TaskAdapter());
   await Hive.openBox<Task>('tasksBox');
+  
+  Hive.registerAdapter(MoodEntryAdapter());
+  await Hive.openBox<MoodEntry>('moodsBox');
+
   await Hive.openBox('mybox');
   await Hive.openBox('notificationsBox');
 
   await NotificationService.initialize();
   Insight.seedInsights();
+  SyncService().syncAll();
 
   runApp(
     ProviderScope(

@@ -5,6 +5,8 @@ class Message {
   StringBuffer message;
   List<String> imagesUrls;
   DateTime timeSent;
+  bool isSynced;
+  String? userId;
 
   // constructor
   Message({
@@ -14,6 +16,8 @@ class Message {
     required this.message,
     required this.imagesUrls,
     required this.timeSent,
+    this.isSynced = false,
+    this.userId,
   });
 
   // toMap
@@ -25,18 +29,22 @@ class Message {
       'message': message.toString(),
       'imagesUrls': imagesUrls,
       'timeSent': timeSent.toIso8601String(),
+      'isSynced': isSynced,
+      'userId': userId,
     };
   }
 
   // from map
   factory Message.fromMap(Map<String, dynamic> map) {
     return Message(
-      messageId: map['messageId'],
-      chatId: map['chatId'],
-      role: Role.values[map['role']],
-      message: StringBuffer(map['message']),
-      imagesUrls: List<String>.from(map['imagesUrls']),
-      timeSent: DateTime.parse(map['timeSent']),
+      messageId: map['messageId'] ?? '',
+      chatId: map['chatId'] ?? '',
+      role: Role.values[map['role'] ?? 0],
+      message: StringBuffer(map['message'] ?? ''),
+      imagesUrls: List<String>.from(map['imagesUrls'] ?? []),
+      timeSent: DateTime.tryParse(map['timeSent'] ?? '') ?? DateTime.now(),
+      isSynced: map['isSynced'] ?? false,
+      userId: map['userId'],
     );
   }
 
@@ -48,6 +56,8 @@ class Message {
     StringBuffer? message,
     List<String>? imagesUrls,
     DateTime? timeSent,
+    bool? isSynced,
+    String? userId,
   }) {
     return Message(
       messageId: messageId ?? this.messageId,
@@ -56,6 +66,8 @@ class Message {
       message: message ?? this.message,
       imagesUrls: imagesUrls ?? this.imagesUrls,
       timeSent: timeSent ?? this.timeSent,
+      isSynced: isSynced ?? this.isSynced,
+      userId: userId ?? this.userId,
     );
   }
 

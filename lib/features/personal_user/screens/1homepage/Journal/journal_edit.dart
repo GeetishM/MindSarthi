@@ -12,6 +12,8 @@ import 'ai_service.dart';
 import 'package:mindsarthi/core/theme/app_theme.dart';
 import 'package:mindsarthi/core/widgets/app_dialog.dart';
 import 'package:mindsarthi/core/services/notification_service.dart';
+import 'package:uuid/uuid.dart';
+import 'package:mindsarthi/core/services/sync_service.dart';
 
 
 class JournalEdit extends StatefulWidget {
@@ -88,6 +90,11 @@ class _JournalEditState extends State<JournalEdit> {
     final title = _titleController.text.trim();
     final content = _contentController.text.trim();
 
+    if (widget.entry.id == null || widget.entry.id!.isEmpty) {
+      widget.entry.id = const Uuid().v4();
+    }
+    widget.entry.isSynced = false;
+
     widget.entry.title = title.isEmpty ? "Untitled Entry" : title;
     widget.entry.content = content;
     widget.entry.tag = _tags;
@@ -98,6 +105,7 @@ class _JournalEditState extends State<JournalEdit> {
           _saveStatus = "Saved";
         });
       }
+      SyncService().syncAll();
     });
   }
 
@@ -201,13 +209,20 @@ class _JournalEditState extends State<JournalEdit> {
       _isExplicitSaving = true;
     });
 
+    if (widget.entry.id == null || widget.entry.id!.isEmpty) {
+      widget.entry.id = const Uuid().v4();
+    }
+    widget.entry.isSynced = false;
+
     widget.entry.title = _titleController.text.trim().isEmpty 
         ? "Untitled Entry" 
         : _titleController.text.trim();
     widget.entry.content = newContent;
     widget.entry.tag = _tags;
     widget.entry.lastEdited = DateTime.now();
-    widget.entry.save();
+    widget.entry.save().then((_) {
+      SyncService().syncAll();
+    });
 
     if (newContent.isNotEmpty) {
       JournalAIService.analyzeSentiment(newContent).then((sentimentData) {
@@ -217,8 +232,10 @@ class _JournalEditState extends State<JournalEdit> {
           widget.entry.sentimentEmotions = emotionsList is List ? List<String>.from(emotionsList) : null;
           widget.entry.sentimentRecommendation = sentimentData['recommendation'] as String?;
           widget.entry.crisisFlag = sentimentData['crisis_flag'] as bool?;
+          widget.entry.isSynced = false;
           widget.entry.save().then((_) {
             NotificationService.scheduleDailyReminders();
+            SyncService().syncAll();
           });
         }
       });
@@ -649,11 +666,16 @@ class _JournalEditState extends State<JournalEdit> {
           setState(() {
             _isExplicitSaving = true;
           });
+          if (widget.entry.id == null || widget.entry.id!.isEmpty) {
+            widget.entry.id = const Uuid().v4();
+          }
+          widget.entry.isSynced = false;
           widget.entry.title = currentTitle.isEmpty ? "Untitled Entry" : currentTitle;
           widget.entry.content = currentContent;
           widget.entry.tag = _tags;
           widget.entry.lastEdited = DateTime.now();
           await widget.entry.save();
+          SyncService().syncAll();
 
           if (currentContent.isNotEmpty) {
             JournalAIService.analyzeSentiment(currentContent).then((sentimentData) {
@@ -663,8 +685,10 @@ class _JournalEditState extends State<JournalEdit> {
                 widget.entry.sentimentEmotions = emotionsList is List ? List<String>.from(emotionsList) : null;
                 widget.entry.sentimentRecommendation = sentimentData['recommendation'] as String?;
                 widget.entry.crisisFlag = sentimentData['crisis_flag'] as bool?;
+                widget.entry.isSynced = false;
                 widget.entry.save().then((_) {
                   NotificationService.scheduleDailyReminders();
+                  SyncService().syncAll();
                 });
               }
             });
