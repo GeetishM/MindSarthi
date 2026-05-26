@@ -46,4 +46,5 @@ app.*.map.json
 
 # App Secrets
 secrets.json
+setup_schema.ps1
 
