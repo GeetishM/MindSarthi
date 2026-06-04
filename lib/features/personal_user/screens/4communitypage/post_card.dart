@@ -285,6 +285,40 @@ class _PostCardState extends ConsumerState<PostCard>
       ));
     }
 
+    if (!isOwner && currentUid != null) {
+      actions.add(ActionSheetItem(
+        label: 'Report Post',
+        icon: CupertinoIcons.flag,
+        isDestructive: true,
+        onTap: () async {
+          final confirm = await MindSarthiDialog.show(
+            context: context,
+            title: 'Report Post?',
+            content: 'Are you sure you want to report this post for inappropriate content?',
+            confirmText: 'Yes, Report',
+            cancelText: 'Cancel',
+            isDestructive: true,
+          );
+          if (confirm == true) {
+            try {
+              await ref.read(postRepositoryProvider).reportPost(widget.post.id, currentUid!);
+              await HiddenPostsManager.hidePost(widget.post.id);
+              if (widget.onPostHidden != null) {
+                widget.onPostHidden!();
+              }
+              if (context.mounted) {
+                AppToast.success(context, 'Post reported and hidden');
+              }
+            } catch (e) {
+              if (context.mounted) {
+                AppToast.error(context, 'Failed to report post', description: e.toString());
+              }
+            }
+          }
+        },
+      ));
+    }
+
     MindSarthiActionSheet.show(
       context: context,
       title: 'Post Options',
@@ -434,7 +468,7 @@ class _PostCardState extends ConsumerState<PostCard>
               ],
 
               const Spacer(),
-              if (!widget.post.isAnonymous || isOwner)
+              if (currentUid != null)
                 CupertinoButton(
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
