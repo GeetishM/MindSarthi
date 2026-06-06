@@ -1,18 +1,18 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=18,20,24&height=200&section=header&text=MindSarthi%20🧠&fontSize=55&fontColor=fff&animation=twinkling&fontAlignY=38&desc=Your%20Pocket%20Mental%20Health%20Companion&descAlignY=58&descSize=18&descColor=B39DDB"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=28,45,43,45,155,143&height=220&section=header&text=MindSarthi%20🧠&fontSize=55&fontColor=fff&animation=twinkling&fontAlignY=38&desc=Premium%20Local-First%20Mental%20Wellness%20Companion&descAlignY=58&descSize=18&descColor=E5F5F3"/>
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=18&pause=1000&color=B39DDB&center=true&vCenter=true&width=700&lines=AI-Powered+Emotional+Support+%F0%9F%A4%96;Real-Time+Panic+%2F+SOS+System+%F0%9F%9A%A8;Verified+Professional+Consultations+%F0%9F%91%A8%E2%80%8D%E2%9A%95%EF%B8%8F;Daily+Wellness+Tools+%E2%80%94+Mood%2C+Journal%2C+Goals+%F0%9F%93%93;Built+with+Flutter+%2B+Firebase+%2B+Gemini+%F0%9F%94%A5)](https://git.io/typing-svg)
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Outfit&weight=600&size=19&pause=1000&color=2D9B8F&center=true&vCenter=true&width=700&lines=Local-First+Architecture+%E2%9A%A1;Appwrite+Cloud+Synchronization+%E2%98%81%EF%B8%8F;Interactive+Markdown+Journaling+%F0%9F%93%9D;Double-Channel+Notification+Streams+%F0%9F%94%94;Shared+Auth+with+Workspace+Separation+%F0%9F%94%91;AI-Powered+Empathetic+ChatPal+%F0%9F%A4%96)](https://git.io/typing-svg)
 
 <br/>
 
 [![Flutter](https://img.shields.io/badge/Flutter-Android%2FiOS-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
-[![Firebase](https://img.shields.io/badge/Firebase-Firestore%20%2B%20Auth-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com)
-[![Gemini](https://img.shields.io/badge/Gemini_API-AI%20Powered-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
+[![Appwrite](https://img.shields.io/badge/Appwrite-Cloud%20Engine-FD366E?style=for-the-badge&logo=appwrite&logoColor=white)](https://appwrite.io)
 [![Hive](https://img.shields.io/badge/Hive-Local%20Storage-FF7043?style=for-the-badge)](https://hivedb.dev)
+[![Gemini](https://img.shields.io/badge/Gemini_API-AI%20Powered-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-> *Accessible, secure, and empathetic mental health support — for individuals, professionals, and organizations* 💜
+> *Secure, offline-first, and empathetic mental health support tailored for Individuals, verified Professionals, and Organizations* 💚
 
 </div>
 
@@ -20,134 +20,108 @@
 
 ## 📋 Table of Contents
 
-<div align="center">
-
-| | | |
-|:---:|:---:|:---:|
-| [🧠 Overview](#-overview) | [✨ Features](#-core-features) | [🗺️ App Architecture](#%EF%B8%8F-app-architecture) |
-| [🔄 App Flow](#-app-flow) | [🛠️ Tech Stack](#%EF%B8%8F-tech-stack) | [📸 Screenshots](#-screenshots) |
-| [🚀 Getting Started](#-getting-started) | [🛡️ Security](#%EF%B8%8F-security--environment) | [🚧 Roadmap](#-features-in-progress) |
-| [📂 Folder Structure](#-folder-structure) | [👥 Team](#-team-ctrl-freaks) | [🙏 Acknowledgments](#-acknowledgments) |
-
-</div>
-
----
-
-## 🧠 Overview
-
-**MindSarthi** is a mobile-first mental wellness platform built to deliver **accessible, secure, and empathetic support** to individuals, mental health professionals, and organizations.
-
-<div align="center">
-
-| 👤 Personal Users | 👨‍⚕️ Professionals | 🏢 Organizations |
-|:---:|:---:|:---:|
-| Daily wellness tools | Session management | Anonymized reports |
-| AI emotional support | Client consultations | Team wellness dashboards |
-| Panic SOS system | Verified profiles | Role-based access |
-
-</div>
+- [🧠 The Vision & Paradigm Shift](#-the-vision--paradigm-shift)
+  - [Why Appwrite + Local-First Hive?](#why-appwrite--local-first-hive)
+- [✨ Premium Core Features](#-premium-core-features)
+- [🗺️ Technical Architecture](#%EF%B8%8F-technical-architecture)
+  - [Local-First Sync State Machine](#local-first-sync-state-machine)
+  - [Application Flow & Role Router](#application-flow--role-router)
+- [🛠️ Tech Stack](#%EF%B8%8F-tech-stack)
+- [📂 Folder Structure](#-folder-structure)
+- [🚀 Getting Started](#-getting-started)
+  - [Database & Storage Auto-Initialization](#database--storage-auto-initialization)
+- [🛡️ Security & Quality Standards](#%EF%B8%8F-security--quality-standards)
+- [👥 The Ctrl Freaks Team](#-the-ctrl-freaks-team)
 
 ---
 
-## ✨ Core Features
+## 🧠 The Vision & Paradigm Shift
 
-<div align="center">
+**MindSarthi** is a premium, secure mental wellness ecosystem bridging the gap between individuals seeking help, therapists managing clients, and organizations supporting employee mental health. 
 
-| Feature | Description |
-|:---:|:---|
-| 🔐 **Role-based Onboarding** | Separate flows for Personal, Professional & Organization users |
-| 😌 **Mood Tracker** | Log and visualize your daily emotional state |
-| 📓 **Journaling** | Encrypted local journaling via Hive |
-| 🎯 **Daily Goals** | Set and track small wellness milestones |
-| 🚨 **Panic SOS Button** | Trigger emergency flow + mock connect — *Unique Safety USP* |
-| 🤖 **ChatPal** | AI-powered chatbot for instant mental health guidance |
-| 📅 **Consult** | Book & manage therapy sessions with verified professionals |
-| 📰 **Insights** | Expert-curated mental health articles & resources |
-| 🫂 **Community** | Peer support space — share, connect, uplift |
+### Why Appwrite + Local-First Hive?
 
-</div>
+Initially modeled around Firebase, we completely overhauled MindSarthi’s database architecture to a **Local-First (Offline-First)** design by pairing **Hive** with **Appwrite**. 
+
+> [!NOTE]
+> **The Clinical Rationale for Local-First:**
+> In mental health apps, connectivity should never gate access to care. If a user is experiencing an emotional crisis, recording a journal, tracking a daily goal, or logging their mood, a poor network connection must not cause latency, spin-locks, or failures.
+
+By shifting to a Local-First architecture, the app gains three massive clinical and technical benefits:
+1. **Instant UI Response:** Every write operation (Journals, Moods, Tasks, Chat Histories) is committed to Hive locally in under **10ms**, rendering immediately.
+2. **Background Reconciliation:** A dedicated `SyncService` queues unsynced local modifications and dispatches them to Appwrite when connectivity is available, keeping local and cloud states in perfect sync.
+3. **Guest Data Migration:** Guest users can use all journaling and goal-tracking features immediately. Upon signing up or logging in, the sync engine retroactively binds the guest data to their new Appwrite `userId` and runs an initial sync, ensuring zero data loss.
 
 ---
 
-## 🗺️ App Architecture
+## ✨ Premium Core Features
+
+### 👤 Personal User Experience
+*   **😌 Premium Mood Tracker:** Dynamic emotional trending cards with interactive inputs.
+*   **📝 Visual Markdown Journaling:** Standard formatting tools (Bold, Italic, Headers, Underline, Bullet Lists) rendering inline *as you type*, backed by an interactive formatting cheat sheet.
+*   **🎯 Streaks & Goal Milestones:** Real-time streak tracking (`🔥 X-day streak`) dynamically compiled from distinct journal entries to prevent double-counting. Includes animated milestone celebrations (7, 14, 30 days) and streak-break warnings.
+*   **🚨 Panic SOS Assist:** A highly visual crisis intervention card instantly providing mock emergency connections and localized support resources.
+*   **🤖 ChatPal AI Companion:** Warm, empathetic mental health guidance powered by Google Gemini, running sentiment score analysis to flag depression.
+
+### 👨‍⚕️ Professional User Experience
+*   **🔐 Shared Auth, Divided Spaces:** Login with the same email as your personal account, with the router separating your databases and roles cleanly.
+*   **🛡️ Mandatory Verification Gate:** A strict verification middleware locks core features (Insights CMS and Counselling Listings) until the professional uploads degree certificates (PDF/Images) to the Appwrite `certificates_bucket` and completes their profile.
+*   **📊 Client & Session Dashboards:** Grouped sessions (Upcoming, Completed, Cancelled) and stateful client searches displaying historical reports and session records.
+*   **✍️ Insight CMS:** Publish professional, expert-curated wellness articles directly to the personal user feed.
+
+### 🏢 Organizational User Experience
+*   **📈 Wellness Dashboard:** Displays organizational health trends, average team wellness scores, and interactive wellness heatmaps.
+*   **anonymous Reports Stream:** Secure portal for employees to post anonymous workplace climate complaints, allowing HR managers to mark them as resolved.
+*   **📋 Survey Builder & Custom Analytics:** Create custom multiple-choice scale and text questions. Answers are analyzed in a premium results page with custom-painted bar charts.
+*   **✉️ Bulk Invites & CSV Parser:** Invite entire team rosters in seconds using manual comma-separated text or uploading CSV files.
+
+---
+
+## 🗺️ Technical Architecture
+
+### Local-First Sync State Machine
 
 ```mermaid
-flowchart TD
-    AUTH([🔐 Onboarding & Authentication]):::auth
-
-    AUTH --> NAV
-
-    subgraph NAV[📱 Main Navigation]
-        direction LR
-        H[🏠 Home]:::home
-        C[📅 Consult]:::consult
-        I[📰 Insights]:::insights
-        CM[🫂 Community]:::community
-        CP[🤖 ChatPal]:::chatpal
-    end
-
-    H --> H1[😌 Mood Tracker]:::feature
-    H --> H2[🆘 Relief Resources]:::feature
-    H --> H3[🎯 Daily Goals]:::feature
-    H --> H4[📓 Journal]:::feature
-    H --> H5[🚨 Panic Assist]:::feature
-
-    H2 --> R1[Anxiety & Panic Attacks]:::sub
-    H2 --> R2[Depression]:::sub
-    H2 --> R3[Self-Harm & Suicidal Ideation]:::sub
-
-    C --> C1[📋 Your Sessions]:::feature
-    C --> C2[➕ Book a Session]:::feature
-
-    I --> I1[Expert-curated Articles\n& Resources]:::desc
-    CM --> CM1[Connect · Share · Support\nPeer Wellness Community]:::desc
-    CP --> CP1[AI Chatbot · Instant Support\nMental Health Guidance 24/7]:::desc
-
-    classDef auth     fill:#4A148C,color:#fff,stroke:none
-    classDef home     fill:#1A237E,color:#fff,stroke:none
-    classDef consult  fill:#006064,color:#fff,stroke:none
-    classDef insights fill:#1B5E20,color:#fff,stroke:none
-    classDef community fill:#E65100,color:#fff,stroke:none
-    classDef chatpal  fill:#880E4F,color:#fff,stroke:none
-    classDef feature  fill:#283593,color:#fff,stroke:#5C6BC0
-    classDef sub      fill:#4A148C,color:#fff,stroke:#9C27B0,stroke-dasharray:4
-    classDef desc     fill:#212121,color:#B39DDB,stroke:#5C6BC0,stroke-dasharray:3
+graph TD
+    A[App Opens] --> B[Guest Mode]
+    B -->|User logs Mood/Journal/Goal| C[Save Instantly to Local Hive]
+    C -->|isSynced = false| B
+    B -->|Clicks Log In/Sign Up| D[Authentication Successful]
+    D -->|SyncEngine| E[Migrate Guest Data to userId]
+    E --> F[Push Unsynced Records]
+    F --> G[Pull Remote Updates from Appwrite]
+    G --> H[Main App Home Page]
+    H -->|User performs action| I[Write to Local Hive]
+    I -->|Background Sync Triggered| J[Upload to Appwrite Cloud]
+    J -->|Set isSynced = true| H
 ```
 
----
-
-## 🔄 App Flow
+### Application Flow & Role Router
 
 ```mermaid
-flowchart LR
-    A([👤 User Opens App]):::start
-    B{🔐 Authenticated?}:::decision
-    C[📝 Onboarding\n+ Role Selection]:::process
-    D{👤 Role?}:::decision
-    E[🏠 Personal\nDashboard]:::personal
-    F[👨‍⚕️ Professional\nDashboard]:::pro
-    G[🏢 Organization\nDashboard]:::org
-
-    A --> B
-    B -->|No| C --> D
-    B -->|Yes| D
-    D -->|Personal| E
-    D -->|Professional| F
-    D -->|Organization| G
-
-    E --> M[😌 Mood · 📓 Journal\n🎯 Goals · 🚨 SOS]:::feature
-    E --> N[🤖 ChatPal\nAI Support]:::ai
-    F --> O[📅 Sessions\n👥 Client Mgmt]:::feature
-    G --> P[📊 Wellness\nReports]:::feature
-
-    classDef start    fill:#4A148C,color:#fff,stroke:none
-    classDef decision fill:#37474F,color:#fff,stroke:none
-    classDef process  fill:#1A237E,color:#fff,stroke:none
-    classDef personal fill:#006064,color:#fff,stroke:none
-    classDef pro      fill:#1B5E20,color:#fff,stroke:none
-    classDef org      fill:#E65100,color:#fff,stroke:none
-    classDef feature  fill:#283593,color:#fff,stroke:#5C6BC0
-    classDef ai       fill:#880E4F,color:#fff,stroke:none
+graph TD
+    Start[User Opens MindSarthi] --> CheckAuth{Session Active?}
+    CheckAuth -->|No| Selection[Role Selection Screen]
+    Selection --> SaveRole[Store active_role in SharedPreferences]
+    SaveRole --> AuthFlow[OTP / Email Auth Flow]
+    AuthFlow --> RoleRouter[Role Router Middleware]
+    
+    CheckAuth -->|Yes| ReadRole[Read active_role from SharedPreferences]
+    ReadRole --> RoleRouter
+    
+    RoleRouter -->|Personal| PersonalApp[Personal Navigation Shell]
+    RoleRouter -->|Professional| CheckProfile{Profile & Certs Complete?}
+    RoleRouter -->|Organization| OrgApp[Org Navigation Shell]
+    
+    CheckProfile -->|No| Gate[Blocking Profile Completion Gate]
+    Gate --> EditProfile[Edit Bio & Upload Certificate]
+    EditProfile -->|Saves & Uploads| CheckProfile
+    CheckProfile -->|Yes| ProApp[Professional Navigation Shell]
+    
+    PersonalApp --> HomeBell[Home Header: General Alerts]
+    PersonalApp --> CommBell[Community: Post Likes & Comments]
+    ProApp --> InsightsTab[Insights CMS Tab]
+    OrgApp --> ProgramsTab[Programs & Surveys Tab]
 ```
 
 ---
@@ -158,111 +132,12 @@ flowchart LR
 
 | Layer | Technology | Purpose |
 |:---:|:---:|:---|
-| 📱 Frontend | ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logo=flutter&logoColor=white) | Cross-platform Android/iOS app |
-| 🔥 Backend | ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat&logo=firebase&logoColor=black) | Auth, Firestore DB, real-time sync |
-| 💾 Local Storage | ![Hive](https://img.shields.io/badge/Hive-FF7043?style=flat) | Encrypted journaling & offline data |
-| 🤖 AI / NLP | ![Gemini](https://img.shields.io/badge/Gemini_API-4285F4?style=flat&logo=google&logoColor=white) | ChatPal AI responses *(planned)* |
-| 🎨 Design | ![Figma](https://img.shields.io/badge/Figma-F24E1E?style=flat&logo=figma&logoColor=white) | UI/UX design & prototyping |
-| 💬 Language | ![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart&logoColor=white) | App development language |
-
-</div>
-
----
-
-## 📸 Screenshots
-
-<div align="center">
-<img src="https://github.com/user-attachments/assets/4452d734-4b81-4b86-a9b6-84db737f4e6d" width="180"/>
-<img src="https://github.com/user-attachments/assets/586488bd-7f89-46af-86a3-4b37d0f3035e" width="180"/>
-<img src="https://github.com/user-attachments/assets/1ad68376-1f0a-4f56-a6e3-ea77d6ba9691" width="180"/>
-<img src="https://github.com/user-attachments/assets/410ca569-2c82-4775-9ceb-a8021b8ab0d3" width="180"/>
-<img src="https://github.com/user-attachments/assets/d3637de6-87bd-4cdb-a0f6-be52e6373e3b" width="180"/>
-</div>
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-```
-✅ Flutter 3.x SDK
-✅ Dart SDK
-✅ Firebase project (Firestore + Auth enabled)
-✅ Gemini API key  →  https://ai.google.dev
-```
-
-### Setup
-
-**1️⃣ Clone the repository**
-```bash
-git clone https://github.com/TeamCtrlFreaks/MindSarthi
-cd MindSarthi
-```
-
-**2️⃣ Install dependencies**
-```bash
-dart pub get
-```
-
-**3️⃣ Configure Firebase**
-```bash
-flutterfire configure
-```
-
-**4️⃣ Add Gemini API key**
-
-Create `lib/services/gemini_api_key.dart` and add your key:
-```dart
-const String geminiApiKey = 'YOUR_GEMINI_API_KEY';
-```
-
-**5️⃣ Run the app**
-```bash
-flutter run
-```
-
-### 🔥 Firebase Collections Required
-
-```
-users/         → Role-based user profiles
-sessions/      → Therapy session bookings
-moods/         → Mood tracker entries
-```
-
----
-
-## 🛡️ Security & Environment
-
-> ⚠️ Sensitive files are **excluded from version control** via `.gitignore`
-
-<details>
-<summary><b>🔒 Ignored Files (click to expand)</b></summary>
-
-<br/>
-
-| File | Reason |
-|:---|:---|
-| `lib/firebase_options.dart` | Auto-generated Firebase config — run `flutterfire configure` to regenerate |
-| `lib/services/gemini_api_key.dart` | Gemini API Key — add your own securely |
-
-</details>
-
-> ✅ *Never commit secrets or credentials. Use `.env`, `flutter_dotenv`, or secure key management for production.*
-
----
-
-## 🚧 Features in Progress
-
-<div align="center">
-
-| Feature | Status |
-|:---|:---:|
-| 🎙️ Voice-based AI journaling | 🔄 In Progress |
-| 🌐 Regional language support | 🔄 In Progress |
-| 📊 Org dashboards with anonymized wellness reports | 📋 Planned |
-| 🧠 Live Gemini API integration for real-time sentiment | 📋 Planned |
-| 💬 Community & peer discussion module | 📋 Planned |
+| **Frontend** | **Flutter (3.x)** | Clean, responsive multiplatform client codebase |
+| **State Management** | **Flutter Riverpod** | Reactive state bindings and decoupled auth states |
+| **Local Cache** | **Hive DB** | Fast, binary key-value storage for offline durability |
+| **Backend & Cloud** | **Appwrite** | Cloud DB, Document Storage, Auth & Realtime synchronization |
+| **AI Capabilities** | **Google Gemini** | ChatPal natural language processing & sentiment logging |
+| **Aesthetics** | **Custom Styling** | "Healing Teal" and "Warm Coral" design tokens with built-in dark modes |
 
 </div>
 
@@ -270,68 +145,79 @@ moods/         → Mood tracker entries
 
 ## 📂 Folder Structure
 
-<details>
-<summary><b>📁 Click to expand</b></summary>
-
 ```
 /lib
-  /screens        → UI Screens per module
-  /services       → Firebase, Hive, API helpers
-  /models         → Data models
-  /widgets        → Reusable components
-  /utils          → Constants, routing, themes
+  /core
+    /constants       → Appwrite constants (collections, buckets, database IDs)
+    /services        → SyncService, NotificationService, AppwriteService
+    /theme           → Theme provider, custom Healing Teal palette, Toastification alerts
+    /widgets         → Role router, custom markdown editing controller
+  /features
+    /auth            → Shared repository & login triggers
+    /user_selector   → Dynamic role selection & SharedPreferences persistence
+    /personal_user   → Client module: journals, mood inputs, goals, AI ChatPal, SOS, community
+    /professional_user → Therapist module: sessions, client tracking, certificates upload, CMS
+    /organizational_user → Enterprise module: wellness heatmaps, survey dashboards, bulk CSV invites
 ```
 
-</details>
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+*   [Flutter SDK](https://docs.flutter.dev/get-started/install) installed locally.
+*   An active [Appwrite Console](https://appwrite.io/) instance or local docker deploy.
+*   A Google Gemini API key from [Google AI Studio](https://aistudio.google.com/).
+
+### Setup
+1.  **Clone the Project:**
+    ```bash
+    git clone https://github.com/TeamCtrlFreaks/MindSarthi.git
+    cd MindSarthi
+    ```
+2.  **Install Dependencies:**
+    ```bash
+    flutter pub get
+    ```
+
+### Database & Storage Auto-Initialization
+We supply a database schema config script that automatically initializes all Appwrite collections, schema attributes, document indexes, and the storage bucket for certificates.
+
+3.  **Run the Schema Setup Script:**
+    Open PowerShell in the project directory and execute:
+    ```powershell
+    ./setup_schema.ps1
+    ```
+    *(Ensure you provide your Appwrite Endpoint, Project ID, and API Secret key inside the prompts or as environment variables).*
+
+4.  **Register Hive Adapters:**
+    Compile the localized database serialization adapters:
+    ```bash
+    flutter pub run build_runner build --delete-conflicting-outputs
+    ```
+
+5.  **Launch MindSarthi:**
+    ```bash
+    flutter run
+    ```
 
 ---
 
-## 👥 Team Ctrl Freaks
+## 🛡️ Security & Quality Standards
+
+*   **Zero Secrets Committed:** All sensitive configurations, Firebase/Appwrite keys, and private API keys are decoupled from compile binaries and managed through `secrets.json` and environmental parameters.
+*   **Safe Code Guidelines:** Graced with zero compiler errors. Clean lint standards applied via `flutter analyze`.
+*   **Granular Privacy Toggles:** Organizational reports, moods, and surveys are strictly anonymized, ensuring employee safety. Personal notification triggers respect strict, user-configurable toggles cached in local Hive preferences.
+
+---
+
+## 👥 The Ctrl Freaks Team
 
 <div align="center">
 
-<table>
-  <tr>
-    <td align="center">
-      <a href="https://github.com/GeetishM">
-        <img src="https://github.com/GeetishM.png" width="80" style="border-radius:50%"/><br/>
-        <b>Geetish Mahato</b>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://github.com/anamikadey099">
-        <img src="https://github.com/anamikadey099.png" width="80" style="border-radius:50%"/><br/>
-        <b>Anamika Dey</b>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://github.com/Pragya-Kumar">
-        <img src="https://github.com/Pragya-Kumar.png" width="80" style="border-radius:50%"/><br/>
-        <b>Pragya Kumar</b>
-      </a>
-    </td>
-  </tr>
-</table>
+| [<img src="https://github.com/GeetishM.png" width="90" style="border-radius:50%"/><br/><sub><b>Geetish Mahato</b></sub>](https://github.com/GeetishM) | [<img src="https://github.com/anamikadey099.png" width="90" style="border-radius:50%"/><br/><sub><b>Anamika Dey</b></sub>](https://github.com/anamikadey099) | [<img src="https://github.com/Pragya-Kumar.png" width="90" style="border-radius:50%"/><br/><sub><b>Pragya Kumar</b></sub>](https://github.com/Pragya-Kumar) |
+|:---:|:---:|:---:|
 
-</div>
-
----
-
-## 🙏 Acknowledgments
-
-- 🏆 Mentors & Judges from **Hacksagon 2025**
-- 🔥 **Google Firebase** + **Gemini APIs**
-- 💙 **Flutter Community**
-- 💜 Mental health advocates who inspired this idea
-
----
-
-<div align="center">
-
-*If MindSarthi resonates with you, please consider giving it a* ⭐
-
-> 💜 *Mental health matters. You are not alone.*
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=18,20,24&height=100&section=footer"/>
+*Crafted with 💜. Remember: Mental health matters, and you are never alone. If MindSarthi resonates with you, please consider giving it a ⭐!*
 
 </div>
